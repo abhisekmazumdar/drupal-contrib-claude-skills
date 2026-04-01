@@ -9,12 +9,17 @@ Example:
     python3 fetch.py https://git.drupalcode.org/project/ai/-/merge_requests/899
 
 Token:
-    Set GITLAB_TOKEN env var for private projects. Public projects work without it.
+    Store your GitLab token in macOS Keychain (one-time setup):
+        security add-generic-password -s "drupal-gitlab" -a "token" -w "YOUR_TOKEN"
+
+    Falls back to GITLAB_TOKEN env var if keychain lookup fails.
+    Public projects work without any token.
 """
 
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.request
 import urllib.error
@@ -25,6 +30,20 @@ BASE = "https://git.drupalcode.org"
 def die(msg):
     print(f"ERROR: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def _get_token():
+    """Read GitLab token from macOS Keychain, falling back to GITLAB_TOKEN env var."""
+    try:
+        result = subprocess.run(
+            ["security", "find-generic-password", "-s", "drupal-gitlab", "-a", "token", "-w"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return os.environ.get("GITLAB_TOKEN", "")
 
 
 def parse_url(url):
@@ -40,7 +59,7 @@ def parse_url(url):
 
 
 def fetch(url):
-    token = os.environ.get("GITLAB_TOKEN", "")
+    token = _get_token()
     req = urllib.request.Request(url)
     if token:
         req.add_header("PRIVATE-TOKEN", token)

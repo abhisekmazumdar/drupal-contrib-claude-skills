@@ -34,13 +34,66 @@ The script handles everything: token auth, URL parsing, pagination, filtering, a
 
 ---
 
-## Token
+## Token setup (one-time, macOS)
 
-The script reads `GITLAB_TOKEN` from the environment. Drupal projects are mostly public so
-it works without a token. It will stop with a clear error on 401.
+Drupal projects are mostly public — no token needed. For private projects or to avoid 401s,
+store your token in macOS Keychain so it is never exposed to the shell environment or to AI.
 
-To generate a token (needed for private projects):
-`https://git.drupalcode.org/-/user_settings/personal_access_tokens` — `read_api` scope is enough.
+**1. Generate a token**
+
+Go to `https://git.drupalcode.org/-/user_settings/personal_access_tokens` and create one
+with `read_api` scope.
+
+**2. Store it in macOS Keychain**
+
+```bash
+security add-generic-password -s "drupal-gitlab" -a "token" -w "YOUR_TOKEN_HERE"
+```
+
+The script calls `security find-generic-password` at runtime to retrieve it. The token never
+touches an environment variable and is never visible in the conversation.
+
+**3. Add a PreToolUse hook to your project's `.claude/settings.json`**
+
+This is the belt-and-suspenders layer: even if `GITLAB_TOKEN` is accidentally set in your
+shell, the hook strips it before Claude runs the script — forcing keychain-only auth.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json; d=json.load(sys.stdin); cmd=d.get('tool_input',{}).get('command',''); d.setdefault('tool_input',{})['command']='env -u GITLAB_TOKEN '+cmd if 'fetch.py' in cmd else cmd; print(json.dumps(d))\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+If `.claude/settings.json` already exists in your project, merge the `hooks` block into it.
+
+**Verify the keychain entry works**
+
+```bash
+security find-generic-password -s "drupal-gitlab" -a "token" -w
+```
+
+Should print your token. To remove it later:
+
+```bash
+security delete-generic-password -s "drupal-gitlab" -a "token"
+```
+
+**Fallback**
+
+If `security` is unavailable (non-macOS CI, Linux), the script falls back to the
+`GITLAB_TOKEN` environment variable automatically.
 
 ---
 
