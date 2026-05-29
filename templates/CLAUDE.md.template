@@ -1,0 +1,135 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this project is
+
+A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `web/modules/contrib/`.
+
+The entry point for any contribution task is the **`drupal-issue-agent`** — give it an issue URL or NID and it handles the full lifecycle.
+
+---
+
+## Local environment (DDEV)
+
+| Detail | Value |
+|---|---|
+| Project name | `{{DDEV_PROJECT}}` |
+| Site URL | `{{SITE_URL}}` |
+| PHP | {{PHP_VERSION}} |
+| Database | MariaDB {{MARIADB_VERSION}} |
+| Docroot | `web/` |
+
+Always use `ddev drush` and `ddev composer` — never bare `drush` or `composer`.
+
+Claude Code runs inside the container via the `ddev-assistant-claude` addon. `phpcs`, `phpcbf`, `phpunit`, and `phpstan` are all on PATH inside ddev.
+
+---
+
+## Coding standards (PHPCS / PHPCBF)
+
+Each contrib module ships its own `phpcs.xml`. **Always detect and use it** — do not hardcode `--standard=Drupal` alone, as modules like `ai` add `DrupalPractice` too.
+
+Two equivalent invocation styles — both work:
+
+```bash
+# From project root, using host PHP (faster, no ddev overhead)
+php vendor/bin/phpcs --standard=web/modules/contrib/<module>/phpcs.xml <path>
+php vendor/bin/phpcbf --standard=web/modules/contrib/<module>/phpcs.xml <path>
+
+# Inside ddev (e.g. from a script or when host PHP differs)
+ddev exec phpcs --standard=/var/www/html/web/modules/contrib/<module>/phpcs.xml /var/www/html/<path>
+ddev exec phpcbf --standard=/var/www/html/web/modules/contrib/<module>/phpcs.xml /var/www/html/<path>
+```
+
+If a module has no `phpcs.xml`, fall back to `--standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml`.
+
+Walk **up** from the target file toward the project root to find the nearest `phpcs.xml` — submodules (e.g. `ai_agents/modules/ai_agents_views/`) inherit the parent module's config.
+
+---
+
+## Running tests (PHPUnit)
+
+**Unit tests** — no database needed:
+```bash
+ddev exec phpunit \
+  --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  /var/www/html/web/modules/contrib/<module>/tests/src/Unit
+```
+
+**Kernel and Functional tests** — require database and base URL:
+```bash
+ddev exec bash -c "
+  SIMPLETEST_BASE_URL={{SITE_URL}} \
+  SIMPLETEST_DB=mysql://db:db@db/db \
+  phpunit --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  /var/www/html/web/modules/contrib/<module>/tests/src/Kernel
+"
+```
+
+**Filter to a single test:**
+```bash
+ddev exec bash -c "
+  SIMPLETEST_BASE_URL={{SITE_URL}} \
+  SIMPLETEST_DB=mysql://db:db@db/db \
+  phpunit --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  --filter testMethodName \
+  /var/www/html/web/modules/contrib/<module>/tests/src
+"
+```
+
+---
+
+## Contribution toolchain
+
+Two CLI tools are required and both are installed:
+
+| Tool | Command | Purpose |
+|---|---|---|
+| drupalorg-cli | `drupalorg` | Issue/MR lifecycle (show, diff, checkout, push) |
+| GitLab CLI | `glab` | Pipeline status, inline threads, MR ops |
+
+**`glab` must always be prefixed with `GITLAB_HOST=git.drupalcode.org`** when targeting the Drupal GitLab instance. It is authenticated — no token setup needed.
+
+---
+
+## Issue queue types
+
+Two URL forms are valid inputs to the agent:
+- `https://www.drupal.org/project/<name>/issues/<nid>` — classic Drupal.org queue
+- `https://git.drupalcode.org/project/<name>/-/work_items/<nid>` — migrated GitLab queue
+
+**Detection:** if `drupalorg issue:show <nid>` returns an empty `<issue_id>` and `<title>`, the project has migrated its issue queue to GitLab. Fetch issue body and comments from GitLab instead:
+
+```bash
+# Issue body
+GITLAB_HOST=git.drupalcode.org glab issue view <nid> --repo project/<name>
+
+# All comments (chronological, system notes filtered)
+python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py project/<name>#<nid>
+```
+
+`drupalorg mr:list`, `mr:diff`, `mr:status`, and `mr:logs` **still work** for both migrated and non-migrated projects — only the issue body/comments differ.
+
+---
+
+## Key contrib modules
+
+| Module | Path | Issue queue |
+|---|---|---|
+| *(add your modules here)* | `web/modules/contrib/…` | drupal.org |
+
+For a module to be available for git operations (checkout, branch, push), its directory must be a git clone — not just a Composer-extracted directory. Run `/drupal-clone-contrib <module>` if needed.
+
+---
+
+## Skills and agents
+
+Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/agents/drupal-issue-agent.md`.
+
+Key skills used by the agent:
+- `drupal-work-on-issue` — fork setup, remote, checkout, push, pipeline loop
+- `drupal-review-issue` — diff review, inline thread analysis, checklist
+- `drupal-gitlab-inline-comments` — fetch MR inline threads (`fetch.py`) and issue notes (`fetch_issue_notes.py`)
+- `drupal-coding-standards` — PHPCS/PHPCBF with correct module config detection
+- `drupalorg-cli` — reference stub for `drupalorg` command usage
