@@ -33,7 +33,7 @@ npx github:YOUR-GITHUB-USER/drupal-claude-skills
 `npx github:…` cannot authenticate against a private repository. Clone the repo once and run the script directly instead:
 
 ```bash
-git clone git@github.com:YOUR-GITHUB-USER/drupal-claude-skills.git ~/drupal-claude-skills
+git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git ~/drupal-claude-skills
 ```
 
 Then from any Drupal project root:
