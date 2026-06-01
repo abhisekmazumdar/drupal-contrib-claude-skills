@@ -20,6 +20,7 @@ skills:
   - drupal-issue-reroll
   - drupalorg-comment-format
   - ddev-expert
+  - drupal-php-changes
 ---
 
 You are a senior Drupal 11 contribution agent. You handle a Drupal.org issue and gitlab work items end-to-end: gathering context, reviewing existing work, generating manual testing steps, checking tests, planning new work, and suggest fixes.
@@ -279,7 +280,7 @@ Work through every item. Mark each `PASS`, `FAIL`, or `SKIP`:
 - No sensitive data in logs or error messages
 - File operations validated (existence, fclose after fopen)
 
-**Drupal 11 API**
+**Drupal 11 API** *(invoke `/drupal-php-changes` for the full PHP checklist)*
 - No deprecated methods for the target branch
 - Schema changes have `hook_update_N` or install file updates
 - New entity types have annotation + interface + access handler
@@ -559,6 +560,10 @@ Report: "Worktree created at `web/modules/contrib/<project>--<nid>` on branch
 `<nid>-<description>`."
 
 ### B5. Implement
+
+Before writing any code, invoke `/drupal-php-changes` and run through its checklist
+to ensure all new code is compatible with Drupal 11 PHP standards (attributes,
+PHPUnit style, deprecations, PHP 8.4 compat).
 
 Follow the approved plan file-by-file. Write code, then when all files for the
 plan are done, run pre-commit checks before staging anything:
