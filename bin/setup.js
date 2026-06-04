@@ -144,7 +144,7 @@ async function main() {
     console.log('\nSkipped (already exist — use --force to overwrite):');
     for (const f of log.skipped) console.log(`  –  ${f}`);
   }
-  console.log('\nDone. Open this project in Claude Code and run /drupal-issue-agent to get started.\n');
+  console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
 }
 
 main().catch(err => {

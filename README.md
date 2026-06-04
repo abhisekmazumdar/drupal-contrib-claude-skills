@@ -4,7 +4,7 @@ Claude Code skills and agent for Drupal open source contribution. Run once from 
 
 ## What gets installed
 
-- **15 skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, Playwright, and more
+- **18 skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, Playwright, and more
 - **1 agent** in `.claude/agents/drupal-issue-agent.md` — give it a Drupal.org or GitLab work-item URL and it handles the full issue lifecycle end-to-end
 - **CLAUDE.md** at your project root — pre-filled with your DDEV project name, site URL, and stack details
 - **`.claude/settings.json`** — pre-configured Claude Code permissions for all the tools the agent uses
@@ -70,7 +70,7 @@ Press Enter to accept a default, or type a custom value.
 
 ### What happens
 
-1. `.claude/skills/` is created (or merged) with all 15 skills
+1. `.claude/skills/` is created (or merged) with all 18 skills
 2. `.claude/agents/drupal-issue-agent.md` is installed
 3. `.claude/settings.json` is written with pre-approved permissions
 4. `CLAUDE.md` is generated with your project details substituted in — if one already exists, you are asked before it is overwritten
