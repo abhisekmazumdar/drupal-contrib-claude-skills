@@ -108,14 +108,22 @@ git -C web/modules/contrib/<project> rebase origin/<DEFAULT_BRANCH>
    git -C web/modules/contrib/<project> diff --name-only --diff-filter=U
    ```
 
-2. Read each conflicted file in full. For each, attempt to resolve if the
-   conflict is trivial (e.g. both sides add/remove unrelated lines, or a
-   whitespace-only conflict). Use the Edit tool to resolve.
+2. Read each conflicted file in full. For every conflict — trivial or not — prepare a proposed resolution but **do not apply it yet**.
 
-3. For non-trivial conflicts (overlapping logic changes), show the conflict
-   markers to the user and ask which side to keep.
+3. **[PAUSE]** Present the full conflict report and wait for approval before editing any file:
 
-4. After resolving all conflicts:
+   ```
+   ## Rebase Conflicts Found
+
+   | File | Conflict type | Proposed resolution |
+   |------|--------------|-------------------|
+   | <file> | <e.g. whitespace / overlapping logic / both added lines> | <keep ours / keep theirs / merge — description> |
+
+   I will not edit any files until you approve these resolutions.
+   Should I proceed with the proposals above, or do you want to adjust any of them?
+   ```
+
+4. Only after the user approves, apply the resolutions using the Edit tool. After resolving all conflicts:
    ```bash
    git -C web/modules/contrib/<project> add <resolved-files>
    git -C web/modules/contrib/<project> rebase --continue
@@ -144,8 +152,24 @@ ddev exec bash -c "cd /var/www/html/web/modules/contrib/<project> && \
 ```
 Skip if no `phpstan.neon` exists in the module root.
 
-If either check fails, fix the violations (using PHPCBF or Edit tool), then
-re-run the check before proceeding. Do not push failing code.
+If either check fails, **do not auto-fix**. Instead, present the violations and wait for approval:
+
+```
+## Quality Check Failures
+
+### PHPCS violations
+<list of errors/warnings with file and line>
+
+### PHPStan errors (if any)
+<list>
+
+Proposed fixes:
+- <file>: <what PHPCBF will auto-fix or what manual edit is needed>
+
+Shall I apply these fixes?
+```
+
+Only after the user approves, apply fixes (PHPCBF or Edit tool), re-run the check, and confirm it passes before proceeding. Do not push failing code.
 
 ### Step 5: Push
 
@@ -180,8 +204,7 @@ Pipeline will start shortly. Monitor with:
 ## Notes
 
 - Always `--force-with-lease`, never bare `--force` — safer and communicates intent.
-- If the module directory is not a git clone, invoke `drupal-clone-contrib`
-  skill automatically before proceeding.
+- If the module directory is not a git clone, pause and ask the user before invoking `drupal-clone-contrib` — cloning creates files on disk and requires explicit approval.
 - Rerolling does NOT create a new MR — the existing MR updates automatically
   when the branch is pushed.
 - After a reroll, post a short comment on the issue noting the reroll so

@@ -55,14 +55,27 @@ and skip the directory prompt. Only fall back to running `git remote get-url ori
 asking the user if `CLAUDE.md` provides no guidance.
 
 **Branch selection:** Count branches from the `issue:get-fork` output that match `<nid>-*`:
-- **Exactly one match** → select it automatically; no prompt needed.
-- **Multiple matches** → list them and ask the user which to check out.
-- **No matches** → note that no branches exist yet and ask the user how to proceed
-  (e.g. create a new branch from the upstream project default branch).
+- **Exactly one match** → propose it in the report card below.
+- **Multiple matches** → list them in the report card and ask the user which to check out.
+- **No matches** → note that no branches exist yet and ask the user how to proceed.
 
-**[PAUSE]** Only pause here if **multiple branches exist** and the user must pick one,
-or if no branches exist at all and a new branch is needed. For any other ambiguity,
-proceed automatically.
+**[PAUSE]** Always present the following report card and wait for explicit confirmation before proceeding to Step 2:
+
+```
+## Issue <nid>: <title>
+
+- Project:  <project>
+- Status:   <issue status>
+- Fork:     <fork exists: yes / no>
+- Branch:   <branch name, or "none — new branch needed">
+- Queue:    <drupal.org | GitLab work items>
+
+Proposed next step: check out branch `<branch>` in web/modules/contrib/<project>
+
+Shall I proceed?
+```
+
+Do not move to Step 2 until the user explicitly says yes.
 
 ---
 
@@ -72,8 +85,7 @@ proceed automatically.
 > root using `git -C web/modules/contrib/<project> <cmd>`. The `drupalorg`
 > commands are run from the Drupal root and do not need a directory change.
 
-Execute the following **without asking for permission** — this is expected
-autonomous behaviour when working on an issue:
+Execute the following after the user has confirmed in Step 1's report card:
 
 **Non-migrated project (issue on drupal.org):**
 ```bash
@@ -164,6 +176,27 @@ Summarise:
 >
 > **Always ask before `git add`, `git commit`, `git push`** — these require explicit
 > user approval.
+
+**[PAUSE]** Before writing any code, present a plan card and wait for approval:
+
+```
+## Work Plan
+
+### What I will change
+| File | Change | Reason |
+|------|--------|--------|
+| <file> | <what> | <why> |
+
+### What I will NOT touch
+<anything explicitly out of scope>
+
+### Open questions (if any)
+<anything unclear from the issue>
+
+Shall I proceed with these changes?
+```
+
+Do not write, edit, or create any files until the user approves the plan. Only work on items the user explicitly approves — do not fix anything else noticed along the way.
 
 Iterate until the pipeline is green or the user asks to stop:
 

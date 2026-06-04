@@ -67,7 +67,20 @@ drupalorg mr:logs <nid> <mr-iid>
 
 ### Step 2 — Read the code locally
 
-Check out the branch so you can read files in full context (not just the diff):
+**[PAUSE]** Before touching the local git state, present this card and wait for confirmation:
+
+```
+## Ready to check out branch
+
+- Module:  web/modules/contrib/<project>
+- Branch:  <branch>
+- Remote:  drupalorg (git@git.drupal.org:issue/<project>-<nid>.git)
+
+This will change the local git state of the module directory.
+Shall I proceed with the checkout?
+```
+
+Do not run `issue:checkout` until the user says yes. Once confirmed:
 
 ```bash
 drupalorg issue:setup-remote <nid>

@@ -31,6 +31,23 @@ Drupal root (the directory containing `web/` and `vendor/`).
 
 ---
 
+## Approval Gates — Non-Negotiable
+
+These rules govern every phase and path below. Read them first.
+
+- **Gather first, act second.** Reading, fetching, and analysing code are always permitted without asking. Writing files, editing files, cloning repos, staging, committing, and pushing are **never permitted** until the user has explicitly approved the specific work at a `[PAUSE]` step.
+- **At every `[PAUSE]`, stop completely.** Present the structured report, ask the question, and wait. A prior "go ahead" in the conversation does not carry forward — each pause requires a fresh response from the user.
+- **Approvals are item-specific.** If the user approves items 1 and 3, fix only 1 and 3. Do not fix anything else noticed along the way, even if trivial.
+- **Clone operations require approval.** Cloning a contrib module creates files on disk. Always pause and ask the user before invoking `drupal-clone-contrib`.
+- **Branch checkout requires approval.** Always show which branch will be checked out and ask the user to confirm before running `issue:checkout` or `glab mr checkout`.
+- **Never post to Drupal.org** without showing the draft and getting explicit approval.
+- **Never force-push** unless the user explicitly requests it.
+- **Always ask before `git add`, `git commit`, `git push`** — these require explicit user approval every time, not just once per session.
+
+---
+
+---
+
 ## Phase 0 — Resolve the input
 
 The user may give you:
@@ -183,15 +200,20 @@ find web/modules/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
 find web/themes/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
 ```
 
-If the directory is not a git clone (or does not exist), invoke the
-`drupal-clone-contrib` skill automatically — do not ask the user to do it:
+If the directory is not a git clone (or does not exist), **pause and ask the user**:
 
 ```
-/drupal-clone-contrib <project>
+The module directory for `<project>` was not found locally.
+I need to clone it before proceeding.
+
+Proposed action: invoke `/drupal-clone-contrib <project>`
+
+Shall I go ahead?
 ```
 
-Once the clone completes, set up the remote and check out the branch
-automatically — no permission needed for these read-only git operations.
+Do not clone until the user confirms. Once the user approves and the clone
+completes, set up the remote and proceed to checkout (which also requires
+approval — see the [PAUSE] below).
 **Stop here. Do not read files, run analysis, or make any changes until
 the full A1-A8 gathering is complete and A9 is presented.**
 
@@ -209,7 +231,24 @@ if echo "$url" | grep -q "^https://"; then
   git -C web/modules/contrib/<project> remote set-url drupalorg \
     git@git.drupal.org:issue/<project>-<nid>.git
 fi
+```
 
+**[PAUSE]** Before checking out, present this card and wait for confirmation:
+
+```
+## Ready to check out branch
+
+- Module:  web/modules/contrib/<project>
+- Branch:  <branch>
+- Remote:  drupalorg (git@git.drupal.org:issue/<project>-<nid>.git)
+
+This will change the local git state of the module directory.
+Shall I proceed with the checkout?
+```
+
+Do not run `issue:checkout` until the user says yes. Once confirmed:
+
+```bash
 drupalorg issue:checkout <nid> <branch>
 ```
 
@@ -476,14 +515,18 @@ Locate the module:
 find web/modules/contrib -maxdepth 1 -name "<project>" -type d
 ```
 
-If not found, invoke the `drupal-clone-contrib` skill automatically — do not
-ask the user to do it:
+If not found, **pause and ask the user**:
 
 ```
-/drupal-clone-contrib <project>
+The module directory for `<project>` was not found locally.
+I need to clone it before I can read the codebase.
+
+Proposed action: invoke `/drupal-clone-contrib <project>`
+
+Shall I go ahead?
 ```
 
-Once found, read:
+Do not clone until the user confirms. Once approved and cloned, read:
 - `<module>.info.yml` — dependencies, version
 - Relevant `.php` files identified from the issue description (use Grep to find
   classes, hooks, routes, services mentioned in the issue)
