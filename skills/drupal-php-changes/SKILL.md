@@ -169,6 +169,7 @@ update signatures and switch to the OOP/service replacement to avoid CI failures
 | 11.4.x  | Implementations of `CategorizingPluginManagerInterface::getSortedDefinitions()` and `::getGroupedDefinitions()` now **require** a `$labelKey` argument |
 | 11.4.x  | New `FileReferenceResolver` service replaces the procedural `file_get_file_references()` |
 | 11.4.x  | New repository service for filter formats replaces `filter_formats()`, `filter_formats_reset()`, `filter_get_formats_by_role()`, `filter_default_format()`, `filter_fallback_format()` |
+| 11.4.x  | `\Drupal\user\OneTimeAuthentication` service replaces procedural `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()` (removed in 13.0) |
 
 When implementing one of these interfaces, match the new required argument exactly —
 omitting it is a fatal error on 11.4+, not just a deprecation.
@@ -194,6 +195,7 @@ them in MRs or patches:
 | `check_markup()` procedural function | See change record (filter pipeline service) | 11.4.x |
 | `file_get_file_references()` | `FileReferenceResolver` service | 11.4.x |
 | `filter_formats()` & related procedural functions | Filter format repository service | 11.4.x |
+| `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()` | Methods on `\Drupal\user\OneTimeAuthentication` | 11.4.x |
 
 ---
 

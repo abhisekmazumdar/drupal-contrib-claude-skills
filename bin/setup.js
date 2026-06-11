@@ -51,6 +51,25 @@ function renderTemplate(templatePath, vars) {
   return content;
 }
 
+function copyDirMergeRendered(src, dest, vars, force, log) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirMergeRendered(srcPath, destPath, vars, force, log);
+    } else {
+      if (fs.existsSync(destPath) && !force) {
+        log.skipped.push(path.relative(CWD, destPath));
+      } else {
+        const rendered = renderTemplate(srcPath, vars);
+        fs.writeFileSync(destPath, rendered);
+        log.copied.push(path.relative(CWD, destPath));
+      }
+    }
+  }
+}
+
 function ask(rl, question) {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
 }
@@ -98,10 +117,10 @@ async function main() {
   const skillsDest = path.join(claudeDir, 'skills');
   copyDirMerge(skillsSrc, skillsDest, FORCE, log);
 
-  // Copy agents
+  // Copy agents (with template substitution for {{...}} placeholders)
   const agentsSrc = path.join(PACKAGE_ROOT, 'agents');
   const agentsDest = path.join(claudeDir, 'agents');
-  copyDirMerge(agentsSrc, agentsDest, FORCE, log);
+  copyDirMergeRendered(agentsSrc, agentsDest, vars, FORCE, log);
 
   // Generate .claude/settings.json
   const settingsTemplate = path.join(PACKAGE_ROOT, 'templates', 'settings.json.template');

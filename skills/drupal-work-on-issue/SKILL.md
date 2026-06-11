@@ -176,6 +176,10 @@ Summarise:
 >
 > **Always ask before `git add`, `git commit`, `git push`** — these require explicit
 > user approval.
+>
+> **When a force-push is needed** (e.g. after a rebase), always use `--force-with-lease`,
+> never bare `--force`. `--force-with-lease` refuses if someone else pushed to the remote
+> since your last fetch, preventing accidental overwrites.
 
 **[PAUSE]** Before writing any code, present a plan card and wait for approval:
 
