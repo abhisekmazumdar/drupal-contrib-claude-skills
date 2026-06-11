@@ -159,6 +159,8 @@ None. / Describe schema/data changes if any.
 
 ## Voice and Tone
 
+> **Canonical source:** The voice rules below are the technical register subset of the global `write-like-abhisek` skill. If the two ever diverge, `write-like-abhisek` is authoritative — update both together.
+
 All Drupal.org content must follow Abhisek Mazumdar's technical writing voice:
 
 **Register**

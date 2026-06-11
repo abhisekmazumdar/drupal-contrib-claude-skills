@@ -363,9 +363,13 @@ Work through every item. Mark each `PASS`, `FAIL`, or `SKIP`:
 - New entity types have annotation + interface + access handler
 - Routes in `.routing.yml` match controller/form signatures
 - Permissions in `.permissions.yml`
+- Plugins use PHP Attribute classes (not annotation-only)
 - Uses PHP 8 attribute syntax (`#[...]`) for PHPUnit test metadata instead of
   docblock annotations (Drupal 11.3+) — e.g. `#[RunTestsInSeparateProcesses]`,
   `#[Group('mygroup')]`, `#[CoversClass(MyClass::class)]`, `#[RequiresPhpExtension('...')]`
+- No `DRUPAL_DISABLED` / `DRUPAL_OPTIONAL` / `DRUPAL_REQUIRED` constants — use `\Drupal\Core\Extension\RequiredModuleStatus` enum (deprecated 11.3.x)
+- No `trigger_error(E_USER_ERROR)` — throw an exception instead
+- Deprecated procedural functions replaced with service equivalents — `file_get_file_references()`, `filter_formats()`, `check_markup()`, `hide()`/`show()`, `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()`
 - No `t()` outside class context (use `$this->t()`)
 
 **Tests**

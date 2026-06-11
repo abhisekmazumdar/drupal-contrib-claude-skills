@@ -96,9 +96,9 @@ class MyModuleKernelTest extends KernelTestBase {
 | 11.3.x  | Added `--phpunit-configuration` argument to `run-tests.sh` |
 | 11.4.x  | Kernel tests can now make HTTP requests with `drupalGet()` |
 | 11.4.x  | `TestRequirementsTrait` is **deprecated** — use PHPUnit attributes / requirements instead |
-| 12.0.x  | `run-tests.sh --types` now requires PHPUnit test suite names |
-| 12.0.x  | Tests will report missing return types in Drupal code |
-| 12.0.x  | Tests with PHPUnit 10 (PHPUnit) **attributes** are now **required** (docblock `@group`/`@covers` annotations no longer accepted) |
+| 12.0.x _(forward compat)_ | `run-tests.sh --types` now requires PHPUnit test suite names |
+| 12.0.x _(forward compat)_ | Tests will report missing return types in Drupal code |
+| 12.0.x _(forward compat)_ | PHPUnit attribute equivalents **required** — docblock `@group`/`@covers` no longer accepted |
 
 ### What to do in contribution work
 
@@ -112,14 +112,7 @@ class MyModuleKernelTest extends KernelTestBase {
 
 ## PHP Fibers
 
-| Version | Change |
-|---------|--------|
-| 11.3.x  | `FiberResumeType` enum introduced to let fiber suspensions declare intent |
-
-Drupal uses PHP Fibers for async/concurrent operations. When working on issues that
-touch the render pipeline or async tasks, be aware that `FiberResumeType` values
-communicate _why_ a fiber is being resumed — check the enum before adding new
-suspension points.
+Relevant only for core render pipeline or async work. If you encounter fiber suspension points, check the `FiberResumeType` enum (11.3.x) — it communicates _why_ a fiber is resumed. Not relevant for typical contrib module issues.
 
 ---
 
@@ -130,17 +123,7 @@ suspension points.
 | 11.1.x  | `trigger_error(E_USER_ERROR)` deprecated — use exceptions |
 | 11.3.x  | Use specific PDO driver classes instead of `PDOConnection` on PHP 8.4+ |
 
-### PDO driver change (11.3.x)
-
-PHP 8.4 deprecates implicit `PDOConnection` usage. Drupal 11.3 introduces a new
-`mysqli` database driver for MySQL/MariaDB parallel queries and requires explicit
-driver class usage.
-
-When reviewing database-touching code for PHP 8.4 compatibility:
-- Replace `new \PDO(...)` or `\PDOConnection` references with the appropriate
-  Drupal database driver API.
-- Use `\Drupal\Core\Database\Driver\mysql\Connection` (or equivalent) rather than
-  raw PDO.
+PHP 8.4 deprecates implicit `PDOConnection` usage — replace `new \PDO(...)` or `\PDOConnection` references with the Drupal database driver API. This is low-level database driver work; most contrib modules won't touch it directly.
 
 ---
 
@@ -205,8 +188,6 @@ These are new, non-deprecated APIs introduced in Drupal 11.x that improve code q
 
 - **`symfony/polyfill-php86`** (11.4.x) — PHP 8.6 polyfill available; use new PHP 8.6
   functions without breaking 8.3 compatibility.
-- **`symfony/runtime`** (11.4.x) — Bootstrap is now separated; don't rely on global
-  bootstrap state.
 - **Autowired `create()` factories** (11.3.x PluginBase, 11.4.x FormBase) — Constructor
   dependencies are auto-injected; remove manual `$container->get()` boilerplate.
 - **`mysqli` database driver** (11.3.x) — Enables parallel queries; use for performance-
@@ -229,7 +210,7 @@ Use this when the `drupal-issue-agent` hands you a patch or MR to review:
 - [ ] Constraint plugins use named arguments
 - [ ] PHPUnit tests use PHPUnit 11 compatible style; tests use PHPUnit attributes (not docblock annotations) for 12.0 readiness
 - [ ] Interface implementations match new required args (`ExecutableInterface::execute($object)`, `CategorizingPluginManagerInterface::get*Definitions($labelKey)`)
-- [ ] Deprecated procedural functions replaced with their service equivalents (`file_get_file_references()`, `filter_formats()`, `check_markup()`, `hide()`/`show()`)
+- [ ] Deprecated procedural functions replaced with their service equivalents (`file_get_file_references()`, `filter_formats()`, `check_markup()`, `hide()`/`show()`, `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()`)
 
 ---
 
