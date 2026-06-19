@@ -25,24 +25,6 @@ function isDrupalRoot(dir) {
   return false;
 }
 
-function copyDirMerge(src, dest, force, log) {
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDirMerge(srcPath, destPath, force, log);
-    } else {
-      if (fs.existsSync(destPath) && !force) {
-        log.skipped.push(path.relative(CWD, destPath));
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-        log.copied.push(path.relative(CWD, destPath));
-      }
-    }
-  }
-}
-
 function renderTemplate(templatePath, vars) {
   let content = fs.readFileSync(templatePath, 'utf8');
   for (const [key, value] of Object.entries(vars)) {
@@ -51,21 +33,78 @@ function renderTemplate(templatePath, vars) {
   return content;
 }
 
-function copyDirMergeRendered(src, dest, vars, force, log) {
+/**
+ * Returns lines present in destContent but absent from srcContent (non-empty
+ * lines only). A non-empty result means the destination has content that would
+ * be lost if we overwrote it — a conflict the user must resolve.
+ */
+function linesOnlyInDest(srcContent, destContent) {
+  const srcLines = new Set(srcContent.split('\n'));
+  return destContent
+    .split('\n')
+    .filter(line => line.trim() !== '' && !srcLines.has(line));
+}
+
+/**
+ * Safe-copy a single file.
+ *
+ * Decision table (when --force is NOT set):
+ *   dest does not exist          → copy   (new file)
+ *   dest identical to src        → copy   (no-op write, keeps log clean)
+ *   src has content dest lacks   → copy   (source is ahead — safe update)
+ *   dest has content src lacks   → SKIP   (conflict — destination is ahead)
+ *
+ * With --force: always overwrite without checking.
+ *
+ * @returns {'copied'|'identical'|'skipped'|'conflict'}
+ */
+function safeCopyFile(srcContent, destPath, log) {
+  const rel = path.relative(CWD, destPath);
+
+  if (FORCE) {
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.writeFileSync(destPath, srcContent);
+    log.copied.push(rel);
+    return 'copied';
+  }
+
+  if (!fs.existsSync(destPath)) {
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.writeFileSync(destPath, srcContent);
+    log.copied.push(rel);
+    return 'copied';
+  }
+
+  const destContent = fs.readFileSync(destPath, 'utf8');
+
+  if (destContent === srcContent) {
+    log.identical.push(rel);
+    return 'identical';
+  }
+
+  const lost = linesOnlyInDest(srcContent, destContent);
+  if (lost.length > 0) {
+    // Destination has unique content — do not overwrite.
+    log.conflicts.push({ file: rel, lostLines: lost });
+    return 'conflict';
+  }
+
+  // Source is ahead — safe to update.
+  fs.writeFileSync(destPath, srcContent);
+  log.copied.push(rel);
+  return 'copied';
+}
+
+function copyDirMerge(src, dest, vars, log) {
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
-      copyDirMergeRendered(srcPath, destPath, vars, force, log);
+      copyDirMerge(srcPath, destPath, vars, log);
     } else {
-      if (fs.existsSync(destPath) && !force) {
-        log.skipped.push(path.relative(CWD, destPath));
-      } else {
-        const rendered = renderTemplate(srcPath, vars);
-        fs.writeFileSync(destPath, rendered);
-        log.copied.push(path.relative(CWD, destPath));
-      }
+      const srcContent = vars ? renderTemplate(srcPath, vars) : fs.readFileSync(srcPath, 'utf8');
+      safeCopyFile(srcContent, destPath, log);
     }
   }
 }
@@ -79,14 +118,12 @@ function ask(rl, question) {
 async function main() {
   console.log('\n🎸 drupal-claude-skills setup\n');
 
-  // Drupal root detection
   if (!isDrupalRoot(CWD)) {
     console.warn('⚠️  Warning: this directory does not look like a Drupal project root.');
     console.warn('   (No web/ directory and no composer.json with drupal/* dependencies found.)');
     console.warn('   You can still continue — files will be written to the current directory.\n');
   }
 
-  // Interactive prompts
   const dirName = path.basename(CWD);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -106,64 +143,77 @@ async function main() {
     MARIADB_VERSION: mariadbVersion,
   };
 
-  // .claude/ directory
   const claudeDir = path.join(CWD, '.claude');
   if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
 
-  const log = { copied: [], skipped: [] };
+  const log = { copied: [], identical: [], conflicts: [] };
 
-  // Copy skills
-  const skillsSrc = path.join(PACKAGE_ROOT, 'skills');
-  const skillsDest = path.join(claudeDir, 'skills');
-  copyDirMerge(skillsSrc, skillsDest, FORCE, log);
+  // Skills — no template vars in skill files
+  copyDirMerge(
+    path.join(PACKAGE_ROOT, 'skills'),
+    path.join(claudeDir, 'skills'),
+    null,
+    log
+  );
 
-  // Copy agents (with template substitution for {{...}} placeholders)
-  const agentsSrc = path.join(PACKAGE_ROOT, 'agents');
-  const agentsDest = path.join(claudeDir, 'agents');
-  copyDirMergeRendered(agentsSrc, agentsDest, vars, FORCE, log);
+  // Agents — render {{...}} placeholders
+  copyDirMerge(
+    path.join(PACKAGE_ROOT, 'agents'),
+    path.join(claudeDir, 'agents'),
+    vars,
+    log
+  );
 
-  // Generate .claude/settings.json
-  const settingsTemplate = path.join(PACKAGE_ROOT, 'templates', 'settings.json.template');
-  const settingsDest = path.join(claudeDir, 'settings.json');
-  if (fs.existsSync(settingsDest) && !FORCE) {
-    log.skipped.push('.claude/settings.json');
-  } else {
-    const settingsContent = renderTemplate(settingsTemplate, vars);
-    fs.writeFileSync(settingsDest, settingsContent);
-    log.copied.push('.claude/settings.json');
-  }
+  // settings.json
+  const settingsContent = renderTemplate(
+    path.join(PACKAGE_ROOT, 'templates', 'settings.json.template'),
+    vars
+  );
+  safeCopyFile(settingsContent, path.join(claudeDir, 'settings.json'), log);
 
-  // Generate CLAUDE.md (ask if already exists)
+  // CLAUDE.md — never overwritten without --force (it is project-specific and
+  // heavily customised after first install; use --force to deliberately refresh it).
   const claudeMdDest = path.join(CWD, 'CLAUDE.md');
-  const claudeMdTemplate = path.join(PACKAGE_ROOT, 'templates', 'CLAUDE.md.template');
+  const claudeMdContent = renderTemplate(
+    path.join(PACKAGE_ROOT, 'templates', 'CLAUDE.md.template'),
+    vars
+  );
 
-  let writeClaude = true;
   if (fs.existsSync(claudeMdDest) && !FORCE) {
-    const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const answer = await ask(rl2, 'CLAUDE.md already exists. Overwrite? [y/N]: ');
-    rl2.close();
-    writeClaude = answer.toLowerCase() === 'y';
-  }
-
-  if (writeClaude) {
-    const claudeMdContent = renderTemplate(claudeMdTemplate, vars);
-    fs.writeFileSync(claudeMdDest, claudeMdContent);
-    log.copied.push('CLAUDE.md');
+    log.identical.push('CLAUDE.md (project-customised — use --force to refresh)');
   } else {
-    log.skipped.push('CLAUDE.md');
+    safeCopyFile(claudeMdContent, claudeMdDest, log);
   }
 
-  // Summary
+  // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n── Summary ──────────────────────────────────────────────────');
+
   if (log.copied.length) {
     console.log('\nCreated / updated:');
     for (const f of log.copied) console.log(`  ✓  ${f}`);
   }
-  if (log.skipped.length) {
-    console.log('\nSkipped (already exist — use --force to overwrite):');
-    for (const f of log.skipped) console.log(`  –  ${f}`);
+
+  if (log.identical.length) {
+    console.log('\nAlready up to date:');
+    for (const f of log.identical) console.log(`  =  ${f}`);
   }
-  console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
+
+  if (log.conflicts.length) {
+    console.log('\n⚠️  Conflicts — destination has content not in source (skipped to avoid data loss):');
+    for (const { file, lostLines } of log.conflicts) {
+      console.log(`\n  ✗  ${file}`);
+      console.log('     Lines that exist in destination but not in source:');
+      for (const line of lostLines.slice(0, 8)) {
+        console.log(`       ${line}`);
+      }
+      if (lostLines.length > 8) {
+        console.log(`       … and ${lostLines.length - 8} more line(s)`);
+      }
+    }
+    console.log('\n  Review the conflicts above, then re-run with --force to overwrite if intentional.\n');
+  } else {
+    console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
+  }
 }
 
 main().catch(err => {

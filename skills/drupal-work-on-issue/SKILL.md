@@ -16,6 +16,8 @@ description: >
 
 ## Instructions
 
+> **Report before acting.** Reading and analysis are always permitted. File edits, git operations (`add`, `commit`, `push`), and clones are **never permitted** until the user has explicitly approved the specific action at a `[PAUSE]` step. A prior "go ahead" does not carry forward — each pause requires a fresh reply.
+
 When the user invokes `/drupal-work-on-issue <nid>`, execute the following workflow. Pause at
 each checkpoint marked **[PAUSE]** — present findings and wait for the user to confirm
 before proceeding.
@@ -92,14 +94,7 @@ Execute the following after the user has confirmed in Step 1's report card:
 drupalorg issue:setup-remote <nid>
 ```
 
-Immediately after, check the remote URL and silently fix it to SSH if needed:
-```bash
-url=$(git -C web/modules/contrib/<project> remote get-url drupalorg 2>/dev/null)
-if echo "$url" | grep -q "^https://"; then
-  git -C web/modules/contrib/<project> remote set-url drupalorg \
-    git@git.drupal.org:issue/<project>-<nid>.git
-fi
-```
+`issue:setup-remote` names the remote `<project>-<nid>` (e.g. `ai_validations-3600886`) and uses SSH automatically — no URL conversion needed.
 
 Then check out:
 ```bash

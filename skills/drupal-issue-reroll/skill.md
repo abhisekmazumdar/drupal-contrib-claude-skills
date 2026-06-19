@@ -33,10 +33,11 @@ git branch name (`<nid>-*`) or ask the user.
 
 ## Environment
 
-- All git operations use `git -C web/modules/contrib/<project>` — never `cd`
+- All git operations use `git -C <module_path>` where `<module_path>` is detected in Step 0 — never `cd`, never hardcode the path
 - PHPStan always runs via `ddev exec` from the module root (host PHP version differs)
 - PHPCS uses the `drupal-coding-standards` skill
 - Force-push uses `--force-with-lease` (safe — rejects if remote moved unexpectedly)
+- Push remote is the issue fork remote named `<project>-<nid>` (e.g. `ai-3584951`) — **never** `drupalorg`
 
 ---
 
@@ -44,20 +45,33 @@ git branch name (`<nid>-*`) or ask the user.
 
 ### Step 0: Resolve inputs
 
-1. If `<nid>` not provided, check the current branch name:
+1. **Detect the module path** — never hardcode `web/modules/contrib/<project>`. Find it:
    ```bash
-   git -C web/modules/contrib/<project> branch --show-current
+   find . -maxdepth 6 -type d -name "<project>" | grep "modules/contrib" | head -1
+   ```
+   Store as `MODULE_PATH` (e.g. `drupal/web/modules/contrib/ai`). Use this in all
+   subsequent `git -C <MODULE_PATH>` commands.
+
+2. If `<nid>` not provided, check the current branch name:
+   ```bash
+   git -C <MODULE_PATH> branch --show-current
    ```
    Extract the NID from the branch name (first numeric segment, e.g.
    `3478123-fix-provider-config` → `3478123`).
 
-2. If `<project>` not provided, find the module directory:
-   ```bash
-   find web/modules/contrib -maxdepth 1 -type d -name "<derived-from-branch>"
-   ```
-   Or check `CLAUDE.md` for documented paths.
+3. If `<project>` not provided, derive it from the branch name or the detected
+   module path.
 
-3. Confirm the working tree is clean before rebasing:
+4. **Detect the push remote** — list remotes and find the one named `<project>-<nid>`:
+   ```bash
+   git -C <MODULE_PATH> remote -v | grep "<project>-<nid>"
+   ```
+   Store as `FORK_REMOTE` (e.g. `ai-3584951`). If not found, report:
+   > "No fork remote named `<project>-<nid>` found. Available remotes:" (list them)
+   > "Please run `/drupal-work-on-issue <nid>` to set up the fork remote first."
+   and stop.
+
+5. Confirm the working tree is clean before rebasing:
    ```bash
    git -C web/modules/contrib/<project> status --porcelain
    ```
@@ -142,12 +156,13 @@ Do not push until both pass.
 
 **PHPCS:** Use the `drupal-coding-standards` skill on the module directory:
 ```
-/drupal-coding-standards web/modules/contrib/<project>
+/drupal-coding-standards <MODULE_PATH>
 ```
 
-**PHPStan:** Run from the module root via ddev (never host PHP):
+**PHPStan:** Derive the ddev-internal path by stripping the project root prefix
+from `MODULE_PATH` and prepending `/var/www/html/`:
 ```bash
-ddev exec bash -c "cd /var/www/html/web/modules/contrib/<project> && \
+ddev exec bash -c "cd /var/www/html/<ddev-relative-MODULE_PATH> && \
   phpstan analyse --configuration=phpstan.neon --memory-limit=256M 2>&1"
 ```
 Skip if no `phpstan.neon` exists in the module root.
@@ -176,8 +191,11 @@ Only after the user approves, apply fixes (PHPCBF or Edit tool), re-run the chec
 **Requires user approval before running.**
 
 ```bash
-git -C web/modules/contrib/<project> push drupalorg HEAD --force-with-lease
+git -C <MODULE_PATH> push <FORK_REMOTE> <branch> --force-with-lease
 ```
+
+Where `<FORK_REMOTE>` is the remote detected in Step 0 (e.g. `ai-3584951`) and
+`<branch>` is the current branch name (e.g. `3584951-add-kernel-test-for`).
 
 `--force-with-lease` is required after a rebase — it rewrites history. It
 rejects the push if the remote has moved since the last fetch (safe guard

@@ -36,6 +36,7 @@ When reviewing a patch or MR, check that:
 - No PHP 8.4-only syntax is used unless the change record explicitly targets 8.4+
 - PHP 8.3 typed properties, readonly classes, and named arguments are acceptable
 - `trigger_error(E_USER_ERROR)` is **deprecated** as of 11.1.x — use exceptions instead
+- PHP sessions use strict mode by default as of 11.2.x — do not pass a non-empty session ID to `session_id()` before `session_start()`
 
 ---
 
@@ -44,6 +45,12 @@ When reviewing a patch or MR, check that:
 Drupal is actively migrating from docblock annotations to native PHP attributes.
 This is the **most impactful PHP change** for contrib developers.
 
+> **Note (11.x / 10.6.x):** `doctrine/annotations` has been forked into Drupal core itself
+> (`drupal/annotations`). Annotation-based plugin discovery still works but is backed by
+> the internal fork — no external `doctrine/annotations` dependency is required.
+> This is transparent for most contrib, but confirms annotations will keep working during
+> the transition period while attribute classes are added.
+
 ### What changed
 
 | Version | Change |
@@ -51,6 +58,7 @@ This is the **most impactful PHP change** for contrib developers.
 | 11.2.x  | Plugins converted from Annotations to Attributes; `DefaultPluginManager` tries attribute before annotation |
 | 11.2.x  | Not providing a PHP attribute class for annotation-based plugin discovery is **deprecated** |
 | 11.2.x  | Hook implementations can now be removed with `#[RemoveHook]` |
+| 11.3.x  | `PluginBase::create()` factory method now supports autowired parameters |
 | 11.3.x  | New `#[TwigAllowed]` method attribute for Twig-accessible methods |
 | 11.3.x  | `#[RunTestsInSeparateProcesses]` attribute **required** on all Kernel, Functional, and FunctionalJavascript test classes |
 | 11.3.x  | `getDependencies()` / `setDependencies()` added to the plugin Attribute interface (`AttributeInterface`) — attribute classes can now declare dependencies |
@@ -121,9 +129,14 @@ Relevant only for core render pipeline or async work. If you encounter fiber sus
 | Version | Change |
 |---------|--------|
 | 11.1.x  | `trigger_error(E_USER_ERROR)` deprecated — use exceptions |
+| 11.2.x  | PHP sessions now use **strict mode** by default (`session.use_strict_mode = 1`) |
 | 11.3.x  | Use specific PDO driver classes instead of `PDOConnection` on PHP 8.4+ |
+| 11.4.x  | Password hashing algorithm and options are now configurable via **kernel parameters** |
+| 12.0.x  | Default password hashing algorithm changed to **argon2id** (was bcrypt-based); can be reverted via kernel parameters if argon2 is unavailable |
 
 PHP 8.4 deprecates implicit `PDOConnection` usage — replace `new \PDO(...)` or `\PDOConnection` references with the Drupal database driver API. This is low-level database driver work; most contrib modules won't touch it directly.
+
+The argon2id switch in Drupal 12 is transparent to users (existing hashes still verify), but contrib code that reads/writes password hashes directly must not assume a fixed algorithm.
 
 ---
 
@@ -153,6 +166,8 @@ update signatures and switch to the OOP/service replacement to avoid CI failures
 | 11.4.x  | New `FileReferenceResolver` service replaces the procedural `file_get_file_references()` |
 | 11.4.x  | New repository service for filter formats replaces `filter_formats()`, `filter_formats_reset()`, `filter_get_formats_by_role()`, `filter_default_format()`, `filter_fallback_format()` |
 | 11.4.x  | `\Drupal\user\OneTimeAuthentication` service replaces procedural `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()` (removed in 13.0) |
+| 11.4.x  | `EntityTypeInterface::getOriginalClass()` is **deprecated** — no longer needed since entity type class overrides now work cumulatively |
+| 11.4.x  | `SessionManager::delete()` is **deprecated** — use `\Drupal\Core\Session\UserSessionRepository::deleteAll()` instead |
 
 When implementing one of these interfaces, match the new required argument exactly —
 omitting it is a fatal error on 11.4+, not just a deprecation.
@@ -179,6 +194,10 @@ them in MRs or patches:
 | `file_get_file_references()` | `FileReferenceResolver` service | 11.4.x |
 | `filter_formats()` & related procedural functions | Filter format repository service | 11.4.x |
 | `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()` | Methods on `\Drupal\user\OneTimeAuthentication` | 11.4.x |
+| `user_load_by_mail()`, `user_load_by_name()` | Load `User` entities via `\Drupal\user\UserStorageInterface` by property | 11.4.x |
+| `user_cookie_save()`, `user_cookie_delete()` | See [change record 3581570](https://www.drupal.org/node/3581570) for replacements | 11.4.x |
+| `SessionManager::delete()` | `\Drupal\Core\Session\UserSessionRepository::deleteAll()` | 11.4.x |
+| `EntityTypeInterface::getOriginalClass()` | No longer needed; entity type class overrides now stack correctly | 11.4.x |
 
 ---
 
@@ -194,6 +213,13 @@ These are new, non-deprecated APIs introduced in Drupal 11.x that improve code q
   sensitive database work.
 - **`#[RemoveHook]` attribute** (11.2.x) — Remove a parent class hook implementation
   without overriding the whole method.
+- **`symfony/runtime` bootstrap separation** (11.4.x) — Drupal's bootstrap now uses
+  `symfony/runtime`; this separates the kernel from the HTTP handler and enables
+  cleaner CLI/HTTP entry points. Affects custom entry-point scripts.
+- **Password hashing via kernel parameters** (11.4.x) — The algorithm and options passed
+  to `password_hash()` are now configurable in `services.yml` kernel parameters. Drupal 12
+  switches the default to `argon2id`; contrib code should use the password manager service
+  and not hard-code algorithm names.
 
 ---
 
@@ -210,7 +236,10 @@ Use this when the `drupal-issue-agent` hands you a patch or MR to review:
 - [ ] Constraint plugins use named arguments
 - [ ] PHPUnit tests use PHPUnit 11 compatible style; tests use PHPUnit attributes (not docblock annotations) for 12.0 readiness
 - [ ] Interface implementations match new required args (`ExecutableInterface::execute($object)`, `CategorizingPluginManagerInterface::get*Definitions($labelKey)`)
-- [ ] Deprecated procedural functions replaced with their service equivalents (`file_get_file_references()`, `filter_formats()`, `check_markup()`, `hide()`/`show()`, `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()`)
+- [ ] Deprecated procedural functions replaced with their service equivalents (`file_get_file_references()`, `filter_formats()`, `check_markup()`, `hide()`/`show()`, `user_pass_rehash()`, `user_cancel_url()`, `user_mail_tokens()`, `user_pass_reset_url()`, `user_load_by_mail()`, `user_load_by_name()`, `user_cookie_save()`, `user_cookie_delete()`)
+- [ ] No `SessionManager::delete()` calls — use `UserSessionRepository::deleteAll()`
+- [ ] No `EntityTypeInterface::getOriginalClass()` calls (deprecated 11.4.x)
+- [ ] Password hashing code uses the password manager service, not hard-coded algorithms
 
 ---
 

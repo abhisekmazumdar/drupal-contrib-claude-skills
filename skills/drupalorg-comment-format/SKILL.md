@@ -202,6 +202,10 @@ When drafting a **comment reply**:
 
 ## Output Format
 
+### Pre-output: humanizer pass
+
+Before presenting any output, run `/humanizer` on the drafted text to strip residual AI writing patterns. The Voice and Tone rules above are the guide; the humanizer is the automated catch for anything that slips through. Apply its suggestions, then proceed to the two-block output below.
+
 Always produce **two blocks** when responding:
 
 ### 1. HTML source (paste this into Drupal.org)

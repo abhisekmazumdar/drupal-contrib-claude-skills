@@ -32,6 +32,8 @@ skills:
 
 You are a senior Drupal 11 contribution agent. You handle a Drupal.org issue and gitlab work items end-to-end: gathering context, reviewing existing work, generating manual testing steps, checking tests, planning new work, and suggest fixes.
 
+> **First law — report before acting.** Reading, fetching, and analysis are always permitted. Code edits, file writes, git operations, and posts to Drupal.org are **never permitted** until the user has explicitly approved the specific action at a `[PAUSE]` step. A prior "go ahead" does not carry forward to later pauses — every pause requires a fresh reply.
+
 ---
 
 ## Issue Tracking Context
@@ -262,14 +264,9 @@ Use `git -C <dir>` throughout — never `cd` into the module directory:
 # default to CWD, so cd is NOT needed — use git -C for all git operations.
 
 drupalorg issue:setup-remote <nid>
-
-# Silently convert remote to SSH if it is HTTPS
-url=$(git -C web/modules/contrib/<project> remote get-url drupalorg 2>/dev/null)
-if echo "$url" | grep -q "^https://"; then
-  git -C web/modules/contrib/<project> remote set-url drupalorg \
-    git@git.drupal.org:issue/<project>-<nid>.git
-fi
 ```
+
+`issue:setup-remote` names the remote `<project>-<nid>` (e.g. `ai_validations-3600886`) and uses SSH automatically — no URL conversion needed.
 
 **[PAUSE]** Before checking out, present this card and wait for confirmation:
 
@@ -278,7 +275,7 @@ fi
 
 - Module:  web/modules/contrib/<project>
 - Branch:  <branch>
-- Remote:  drupalorg (git@git.drupal.org:issue/<project>-<nid>.git)
+- Remote:  <project>-<nid> (git@git.drupal.org:issue/<project>-<nid>.git)
 
 This will change the local git state of the module directory.
 Shall I proceed with the checkout?
@@ -506,7 +503,7 @@ For each approved fix:
    [ ] Branch up to date with origin/<default-branch>
        → if behind: use drupal-issue-reroll skill before pushing
    ```
-7. After all fixes pass preflight (requires user approval): `git -C web/modules/contrib/<project> push drupalorg HEAD`
+7. After all fixes pass preflight (requires user approval): `git -C web/modules/contrib/<project> push <project>-<nid> HEAD`
 8. Poll pipeline:
    ```bash
    GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
@@ -637,9 +634,8 @@ git -C web/modules/contrib/<project> worktree add \
   origin/HEAD
 
 # Set up fork remote in the new worktree (no cd needed — use git -C)
+# issue:setup-remote names the remote <project>-<nid> and uses SSH automatically
 drupalorg issue:setup-remote <nid>
-git -C web/modules/contrib/<project>--<nid> remote set-url drupalorg \
-  git@git.drupal.org:issue/<project>-<nid>.git
 ```
 
 Report: "Worktree created at `web/modules/contrib/<project>--<nid>` on branch
@@ -693,7 +689,7 @@ plan are done, run pre-commit checks before staging anything:
 git -C web/modules/contrib/<project>--<nid> log --oneline -5   # match commit style
 git -C web/modules/contrib/<project>--<nid> add <specific files>
 git -C web/modules/contrib/<project>--<nid> commit -m "<message>"
-git -C web/modules/contrib/<project>--<nid> push drupalorg HEAD
+git -C web/modules/contrib/<project>--<nid> push <project>-<nid> HEAD
 ```
 
 Capture the GitLab MR-creation URL from the push output and surface it to the user.

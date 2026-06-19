@@ -10,6 +10,12 @@ The entry point for any contribution task is the **`drupal-issue-agent`** — gi
 
 ---
 
+## Global Rule — Report Before Acting
+
+Before any code change, file edit, git operation, or other write action: **present a structured findings report** describing what you found and what you plan to do, then wait for explicit approval. Reading, fetching, and analysis are always permitted without asking. A prior "go ahead" in the conversation does not carry forward — each new action phase requires fresh approval.
+
+---
+
 ## Local environment (DDEV)
 
 | Detail | Value |
@@ -39,7 +45,7 @@ issues/
 
 ### Key workflow rules
 
-1. **`/drupal-issue-start <url>` is the only entry point.** Never invoke `drupal-issue-agent` directly.
+1. **Always use the `drupal-issue-agent` Agent tool** (with `subagent_type: "drupal-issue-agent"`) as the entry point for any issue work. The agent will guide the use of skills like `drupal-issue-start`, `drupal-review-issue`, and `drupal-work-on-issue` as needed.
 2. The issue record is always created/read **before** any work begins.
 3. After every session, **`/issue-record-update <nid>`** logs what was done.
 4. Screenshots go in `issues/<nid>/screenshots/` via **`/issue-record-screenshot`**.
@@ -76,9 +82,8 @@ Every mem0 call must include:
 | Event | Action |
 |---|---|
 | Session start | `CLAUDE.md` imported into mem0; coding categories applied |
-| `/drupal-issue-start <url>` | Phase 1b searches mem0 for prior context on the issue NID |
+| `drupal-issue-agent` (Agent tool) | Searches mem0 for prior context on the issue NID before any context gathering |
 | `/issue-record-update <nid>` | Step 8 stores a compact session summary in mem0 |
-| `drupal-issue-agent` Phase 0 | Searches mem0 for the issue NID before any context gathering |
 
 ### Key mem0 skills
 
