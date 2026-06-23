@@ -72,8 +72,6 @@ These rules govern every phase and path below. Read them first.
 
 ---
 
----
-
 ## Phase 0 — Resolve the input
 
 The user may give you:
@@ -83,19 +81,7 @@ The user may give you:
 Extract `<nid>` (the trailing number) and, when present in the URL, the
 `<project>` machine name.
 
-**After extracting `<nid>`, search mem0 for prior context on this issue:**
-
-```
-search_memories(
-  query="issue <nid> <project> decisions open items work done",
-  filters={"AND": [{"user_id": "<mem0-user-id>"}, {"app_id": "<mem0-app-id>"}]},
-  top_k=5
-)
-```
-
-The `user_id` and `app_id` values are defined in your project's CLAUDE.md under the Mem0 section. Skip this step if mem0 is not configured.
-
-If results are found, incorporate them into your understanding before Phase 1 — they may contain agreed fix directions, reviewer feedback, or open items not yet in the local README. Both URL shapes use the **same NID** — GitLab work items are 1:1 with the Drupal.org NID for migrated projects.
+Both URL shapes use the **same NID** — GitLab work items are 1:1 with the Drupal.org NID for migrated projects.
 
 **If the URL is a GitLab work-item URL** (`git.drupalcode.org/…/work_items/…`),
 mark `is_migrated=true` immediately — you already know `drupalorg issue:show`

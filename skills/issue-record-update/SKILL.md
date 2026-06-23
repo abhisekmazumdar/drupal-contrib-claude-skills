@@ -100,17 +100,3 @@ Tell the user: "Session logged in `issues/<nid>/README.md`."
 
 ---
 
-## Step 8 — Store session summary in mem0
-
-After the README is confirmed, store a compact memory so future sessions can search for it:
-
-```
-add_memory(
-  text="Issue <nid> (<project>) session <YYYY-MM-DD>: <1-2 sentence summary of what was done and what is still open>",
-  user_id="<your-mem0-user-id>",
-  app_id="{{DDEV_PROJECT}}",
-  metadata={"type": "project", "issue_nid": "<nid>", "project": "<project>"}
-)
-```
-
-Keep the text under 200 characters — focus on decisions made and open items, not raw activity. Do not store a memory if the session was purely context-loading with no work done.

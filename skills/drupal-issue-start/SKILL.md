@@ -54,22 +54,6 @@ ls issues/<nid>/README.md 2>/dev/null
 
 **If the file does not exist:** Note this as a first-time visit. The directory and README will be created after Phase 2.
 
-## Phase 1b — Search mem0 for prior context
-
-Run a mem0 search for stored decisions, open items, or session notes for this issue:
-
-```
-search_memories(
-  query="issue <nid> <project> decisions open items work done",
-  filters={"AND": [{"user_id": "<your-mem0-user-id>"}, {"app_id": "{{DDEV_PROJECT}}"}]},
-  top_k=5
-)
-```
-
-If results are found, collect them — they will be surfaced in the Phase 4 report under "Prior Work (mem0)". Mem0 context may include technical decisions, agreed-upon fix directions, or open items that predate or extend the local README.
-
----
-
 ## Phase 2 — Fetch live issue context
 
 Run all applicable commands. For **non-migrated** issues:
@@ -151,11 +135,6 @@ Present this in full. Do not skip sections.
 <If prior sessions: one bullet per session — date, what was done, any open MRs from that session.>
 
 <If Notes has content: reproduce it verbatim here.>
-
-### Prior Work (mem0)
-
-<If mem0 returned results: list each finding — e.g. agreed fix direction, open items, posted comments, decisions not to implement yet.>
-<If no mem0 results: omit this section entirely.>
 
 ---
 
