@@ -204,37 +204,66 @@ When drafting a **comment reply**:
 
 ### Pre-output: humanizer pass
 
-Before presenting any output, run `/humanizer` on the drafted text to strip residual AI writing patterns. The Voice and Tone rules above are the guide; the humanizer is the automated catch for anything that slips through. Apply its suggestions, then proceed to the two-block output below.
-
-Always produce **two blocks** when responding:
-
-### 1. HTML source (paste this into Drupal.org)
-
-Present the raw HTML output inside a fenced code block labelled `html` so the
-user can copy it directly and paste it into the Drupal.org text field.
-
-```html
-<!-- The actual HTML-formatted content goes here -->
-```
-
-### 2. Rendered preview (for reading in this chat)
-
-Immediately after the HTML block, show a **Markdown preview** of the same
-content so the user can read it naturally in the chat interface without having
-to mentally parse raw HTML. Label it clearly, for example:
+Before producing any output, run `/humanizer` on the drafted text to strip residual AI writing patterns. The Voice and Tone rules above are the guide; the humanizer is the automated catch for anything that slips through. Apply its suggestions, then proceed.
 
 ---
-**Preview (how it will look on Drupal.org):**
 
-> ...rendered content here using Markdown equivalents...
+### Always: save to file
+
+Regardless of issue type, write the comment to a file in the issue directory:
+
+```
+issues/<nid>/comments/YYYY-MM-DD-HHmmss-<label>.md
+```
+
+- Create the directory if it does not exist: `mkdir -p issues/<nid>/comments`
+- `<label>` — 2–4 word slug derived from the comment purpose, e.g. `review-feedback`, `reroll-note`, `rtbc`
+- File always uses `.md` extension
+
+---
+
+### GitLab (migrated queue)
+
+The file content is **GitLab Flavored Markdown** — this is exactly what gets pasted into the work item comment field. No further output is needed in chat beyond:
+
+```
+Comment saved to issues/<nid>/comments/<filename>.md
+Paste the file contents into the GitLab work item comment field.
+```
+
+---
+
+### Drupal.org (non-migrated queue)
+
+The file content is the **HTML source** ready to paste into the Drupal.org text field.
+
+After saving the file, produce two additional blocks in chat:
+
+**1. Rendered preview** — so the user can read the comment naturally without parsing raw HTML:
+
+---
+**Preview:**
+
+> ...rendered content using Markdown equivalents...
 
 ---
 
 Rules for the preview:
-- Convert `<strong>` to `**bold**`, `<em>` to `*italic*`, `<code>` to backtick code.
-- Convert `<h2>`/`<h3>` to `##`/`###` Markdown headings.
-- Convert `<ul>`/`<ol>`/`<li>` to Markdown list syntax.
-- Convert `<pre><code>` blocks to triple-backtick fenced blocks.
-- Convert `<blockquote>` to `>` Markdown blockquotes.
-- Keep issue references like `[#1234]` as-is in the preview — they are self-explanatory.
-- The preview is for reading only; the HTML block is what gets pasted into Drupal.org.
+- `<strong>` → `**bold**`, `<em>` → `*italic*`, `<code>` → backtick code
+- `<h2>`/`<h3>` → `##`/`###` headings
+- `<ul>`/`<ol>`/`<li>` → Markdown list syntax
+- `<pre><code>` → triple-backtick fenced block
+- `<blockquote>` → `>` blockquote
+- Keep `[#1234]` issue references as-is
+
+**2. HTML snippet** — for direct copy-paste into Drupal.org:
+
+```html
+<!-- HTML content here -->
+```
+
+Then tell the user:
+```
+Comment saved to issues/<nid>/comments/<filename>.md
+Copy the HTML block above and paste it into the Drupal.org comment field.
+```

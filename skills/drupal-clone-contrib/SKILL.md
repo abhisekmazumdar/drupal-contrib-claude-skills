@@ -46,9 +46,9 @@ Parse the arguments from the string above:
 
 **If `--type` was not provided**, check local dirs first:
 ```bash
-ls web/modules/contrib/<project-name> 2>/dev/null && echo "module"
-ls web/themes/contrib/<project-name> 2>/dev/null && echo "theme"
-ls web/recipes/<project-name> 2>/dev/null && echo "recipe"
+ls {{DRUPAL_WEBROOT}}/modules/contrib/<project-name> 2>/dev/null && echo "module"
+ls {{DRUPAL_WEBROOT}}/themes/contrib/<project-name> 2>/dev/null && echo "theme"
+ls {{DRUPAL_PATH}}recipes/<project-name> 2>/dev/null && echo "recipe"
 ```
 
 If not found locally, fetch the project releases to infer the type:
@@ -76,9 +76,9 @@ ask the user which to use.
 
 | Type    | Target directory                  |
 |---------|-----------------------------------|
-| module  | `web/modules/contrib/<project>`   |
-| theme   | `web/themes/contrib/<project>`    |
-| recipe  | `web/recipes/<project>`           |
+| module  | `{{DRUPAL_WEBROOT}}/modules/contrib/<project>`   |
+| theme   | `{{DRUPAL_WEBROOT}}/themes/contrib/<project>`    |
+| recipe  | `{{DRUPAL_PATH}}recipes/<project>`           |
 
 **Check for conflicts:**
 - If the target directory already exists and is a git repository (`ls <target>/.git`),
@@ -91,7 +91,7 @@ ask the user which to use.
 
 Ensure the parent directory exists:
 ```bash
-mkdir -p web/modules/contrib   # (or themes/contrib, recipes as appropriate)
+mkdir -p {{DRUPAL_WEBROOT}}/modules/contrib   # (or themes/contrib, recipes as appropriate)
 ```
 
 ---
@@ -106,17 +106,17 @@ git clone --branch '<branch>' git@git.drupal.org:project/<project-name>.git <tar
 
 Example for a module:
 ```bash
-git clone --branch '2.0.x' git@git.drupal.org:project/ai.git web/modules/contrib/ai
+git clone --branch '2.0.x' git@git.drupal.org:project/ai.git {{DRUPAL_WEBROOT}}/modules/contrib/ai
 ```
 
 Example for a theme:
 ```bash
-git clone --branch '6.x' git@git.drupal.org:project/gin.git web/themes/contrib/gin
+git clone --branch '6.x' git@git.drupal.org:project/gin.git {{DRUPAL_WEBROOT}}/themes/contrib/gin
 ```
 
 Example for a recipe:
 ```bash
-git clone --branch '1.0.x' git@git.drupal.org:project/eca_starterkit.git web/recipes/eca_starterkit
+git clone --branch '1.0.x' git@git.drupal.org:project/eca_starterkit.git {{DRUPAL_PATH}}recipes/eca_starterkit
 ```
 
 ---
@@ -149,4 +149,4 @@ Report to the user:
   `drupalorg issue:setup-remote` and `drupalorg issue:checkout` for you.
 - If DDEV is in use, enable the module after cloning with `ddev drush en <project>`.
 - Recipes are not modules — do not enable with Drush. Apply with
-  `ddev drush recipe web/recipes/<project>`.
+  `ddev drush recipe {{DRUPAL_PATH}}recipes/<project>`.

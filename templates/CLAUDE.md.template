@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `web/modules/contrib/`.
+A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `{{DRUPAL_WEBROOT}}/modules/contrib/`.
 
-The entry point for any contribution task is the **`drupal-issue-agent`** — give it an issue URL or NID and it handles the full lifecycle.
+The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for direction. From there it delegates to `drupal-issue-agent` for review and implementation work, or `drupal-issue-catchup` to sync after time away.
 
 ---
 
@@ -24,7 +24,8 @@ Before any code change, file edit, git operation, or other write action: **prese
 | Site URL | `{{SITE_URL}}` |
 | PHP | {{PHP_VERSION}} |
 | Database | MariaDB {{MARIADB_VERSION}} |
-| Docroot | `web/` |
+| Drupal project | `{{DRUPAL_WEBROOT}}/..` |
+| Docroot | `{{DRUPAL_WEBROOT}}/` |
 
 Always use `ddev drush` and `ddev composer` — never bare `drush` or `composer`.
 
@@ -39,60 +40,20 @@ Every issue worked on has a directory at `issues/<nid>/`. These directories surv
 ```
 issues/
 └── 3456789/
-    ├── README.md         ← persistent record: summary, work log, human notes
+    ├── README.md         ← persistent record: summary, related issues, work log, human notes
+    ├── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
     └── screenshots/      ← Playwright screenshots
 ```
 
+The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too.
+
 ### Key workflow rules
 
-1. **Always use the `drupal-issue-agent` Agent tool** (with `subagent_type: "drupal-issue-agent"`) as the entry point for any issue work. The agent will guide the use of skills like `drupal-issue-start`, `drupal-review-issue`, and `drupal-work-on-issue` as needed.
-2. The issue record is always created/read **before** any work begins.
-3. After every session, **`/issue-record-update <nid>`** logs what was done.
+1. **Start every issue session with `/drupal-issue-start <url>`** — it loads the record, fetches live state, and presents a report before any work begins.
+2. After every session, **`/issue-record-update <nid>`** logs what was done (no confirmation prompt — writes directly).
+3. To catch up after time away, use **`/drupal-issue-catchup <nid>`** instead of re-running issue-start.
 4. Screenshots go in `issues/<nid>/screenshots/` via **`/issue-record-screenshot`**.
-
----
-
-## Mem0 persistent memory
-
-This project uses the **mem0ai plugin** for Claude Code to provide semantic memory across sessions. It stores decisions, open items, and session summaries searchable by any future AI session.
-
-### Setup
-
-```
-/plugin marketplace add mem0ai/mem0
-/plugin install mem0@mem0-plugins
-/reload-plugins
-```
-
-Get your API key from `https://app.mem0.ai/dashboard/api-keys` and set it in the Desktop app environment editor (environment dropdown → "Local" → gear icon):
-```
-MEM0_API_KEY = m0-your-key-here
-```
-
-Run `/mem0:onboard` once after setting the key.
-
-### Identity
-
-Every mem0 call must include:
-- `user_id`: your mem0 user ID
-- `app_id`: `{{DDEV_PROJECT}}`
-
-### What happens automatically
-
-| Event | Action |
-|---|---|
-| Session start | `CLAUDE.md` imported into mem0; coding categories applied |
-| `drupal-issue-agent` (Agent tool) | Searches mem0 for prior context on the issue NID before any context gathering |
-| `/issue-record-update <nid>` | Step 8 stores a compact session summary in mem0 |
-
-### Key mem0 skills
-
-| Skill | Purpose |
-|---|---|
-| `/mem0:onboard` | First-time setup wizard |
-| `/mem0:tour` | Show everything mem0 knows about this project |
-| `/mem0:remember` | Manually store a memory |
-| `/mem0:peek` | Quick search without full tour |
+5. Drafted comments are saved to `issues/<nid>/comments/` via the **`drupalorg-comment-format`** skill.
 
 ---
 
@@ -100,17 +61,14 @@ Every mem0 call must include:
 
 Each contrib module ships its own `phpcs.xml`. **Always detect and use it** — do not hardcode `--standard=Drupal` alone, as modules like `ai` add `DrupalPractice` too.
 
-Two equivalent invocation styles — both work:
+**Always run via `ddev exec`** — the container PHP version matches CI; host PHP may not.
 
 ```bash
-# From project root, using host PHP (faster, no ddev overhead)
-php vendor/bin/phpcs --standard=web/modules/contrib/<module>/phpcs.xml <path>
-php vendor/bin/phpcbf --standard=web/modules/contrib/<module>/phpcs.xml <path>
-
-# Inside ddev (e.g. from a script or when host PHP differs)
-ddev exec phpcs --standard=/var/www/html/web/modules/contrib/<module>/phpcs.xml /var/www/html/<path>
-ddev exec phpcbf --standard=/var/www/html/web/modules/contrib/<module>/phpcs.xml /var/www/html/<path>
+ddev exec php vendor/bin/phpcs --standard={{DRUPAL_WEBROOT}}/modules/contrib/<module>/phpcs.xml <relative-path>
+ddev exec php vendor/bin/phpcbf --standard={{DRUPAL_WEBROOT}}/modules/contrib/<module>/phpcs.xml <relative-path>
 ```
+
+Pass paths **relative to the Drupal root** — `ddev exec` runs from `/var/www/html`. Use the **`/drupal-coding-standards`** skill which handles root detection, config discovery, and path conversion automatically.
 
 If a module has no `phpcs.xml`, fall back to `--standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml`.
 
@@ -187,7 +145,7 @@ python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py projec
 
 | Module | Path | Issue queue |
 |---|---|---|
-| *(add your modules here)* | `web/modules/contrib/…` | drupal.org |
+| *(add your modules here)* | `{{DRUPAL_WEBROOT}}/modules/contrib/…` | drupal.org |
 
 For a module to be available for git operations (checkout, branch, push), its directory must be a git clone — not just a Composer-extracted directory. Run `/drupal-clone-contrib <module>` if needed.
 
@@ -197,14 +155,20 @@ For a module to be available for git operations (checkout, branch, push), its di
 
 Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/agents/drupal-issue-agent.md`.
 
+### Agents
+- `drupal-issue-agent` — full lifecycle: MR review (Path A) and new issue implementation (Path B)
+- `drupal-issue-catchup` — sync after time away: fetches new comments/threads, updates record, briefs human
+- `drupal-repo-setup` — sub-agent for git/module setup: clone, remote, checkout, worktree
+
 ### Entry point skills
-- `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report, wait for human direction
-- `issue-record-update` — append timestamped session log to `issues/<nid>/README.md`
+- `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report, wait for direction
+- `issue-record-update` — append timestamped session log to `issues/<nid>/README.md` (writes directly, no confirmation)
 - `issue-record-screenshot` — capture Playwright screenshot into `issues/<nid>/screenshots/`
+- `drupalorg-comment-format` — draft and save comments to `issues/<nid>/comments/` (HTML for Drupal.org, GFM for GitLab)
 
 ### Other key skills
-- `drupal-work-on-issue` — fork setup, remote, checkout, push, pipeline loop
-- `drupal-review-issue` — diff review, inline thread analysis, checklist
+- `drupal-issue-reroll` — rebase a branch on latest upstream, run checks, force-push
 - `drupal-gitlab-inline-comments` — fetch MR inline threads and issue notes
-- `drupal-coding-standards` — PHPCS/PHPCBF with module config detection
-- `drupalorg-cli` — reference stub for `drupalorg` command usage
+- `drupal-coding-standards` — PHPCS/PHPCBF via ddev with automatic module config detection
+- `drupalorg-cli` — reference stub; run `drupalorg skill:get drupalorg-cli` before using any `drupalorg` command
+- `ddev-expert` — ddev environment management, troubleshooting, container commands

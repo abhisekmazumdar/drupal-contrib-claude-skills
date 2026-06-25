@@ -73,7 +73,7 @@ git branch name (`<nid>-*`) or ask the user.
 
 5. Confirm the working tree is clean before rebasing:
    ```bash
-   git -C web/modules/contrib/<project> status --porcelain
+   git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> status --porcelain
    ```
    If there are uncommitted changes, stop and tell the user:
    > "There are uncommitted changes. Please stash or commit them first."
@@ -81,12 +81,12 @@ git branch name (`<nid>-*`) or ask the user.
 ### Step 1: Fetch the latest upstream
 
 ```bash
-git -C web/modules/contrib/<project> fetch origin
+git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> fetch origin
 ```
 
 Detect the default branch:
 ```bash
-git -C web/modules/contrib/<project> symbolic-ref refs/remotes/origin/HEAD \
+git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> symbolic-ref refs/remotes/origin/HEAD \
   | sed 's|refs/remotes/origin/||'
 ```
 
@@ -98,9 +98,9 @@ Current branch: `<current-branch>`. Rebasing onto `origin/<DEFAULT_BRANCH>`..."
 ### Step 2: Check if rebase is needed
 
 ```bash
-git -C web/modules/contrib/<project> log \
+git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> log \
   origin/<DEFAULT_BRANCH>..HEAD --oneline | wc -l  # commits ahead
-git -C web/modules/contrib/<project> log \
+git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> log \
   HEAD..origin/<DEFAULT_BRANCH> --oneline | wc -l  # commits behind
 ```
 
@@ -110,7 +110,7 @@ If the branch is 0 commits behind, report: "Branch is already up to date with
 ### Step 3: Rebase
 
 ```bash
-git -C web/modules/contrib/<project> rebase origin/<DEFAULT_BRANCH>
+git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> rebase origin/<DEFAULT_BRANCH>
 ```
 
 **If rebase succeeds (exit 0):** proceed to Step 4.
@@ -119,7 +119,7 @@ git -C web/modules/contrib/<project> rebase origin/<DEFAULT_BRANCH>
 
 1. Show the conflict list:
    ```bash
-   git -C web/modules/contrib/<project> diff --name-only --diff-filter=U
+   git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> diff --name-only --diff-filter=U
    ```
 
 2. Read each conflicted file in full. For every conflict — trivial or not — prepare a proposed resolution but **do not apply it yet**.
@@ -139,13 +139,13 @@ git -C web/modules/contrib/<project> rebase origin/<DEFAULT_BRANCH>
 
 4. Only after the user approves, apply the resolutions using the Edit tool. After resolving all conflicts:
    ```bash
-   git -C web/modules/contrib/<project> add <resolved-files>
-   git -C web/modules/contrib/<project> rebase --continue
+   git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> add <resolved-files>
+   git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> rebase --continue
    ```
 
 5. If the rebase still fails after resolution attempts, run:
    ```bash
-   git -C web/modules/contrib/<project> rebase --abort
+   git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> rebase --abort
    ```
    And report: "Rebase aborted — conflicts require manual resolution. The
    branch is unchanged."

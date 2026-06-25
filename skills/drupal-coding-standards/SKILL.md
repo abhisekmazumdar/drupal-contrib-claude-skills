@@ -20,9 +20,9 @@ or directory, matching exactly what the Drupal CI pipeline runs.
 
 **Examples:**
 ```
-/drupal-coding-standards web/modules/contrib/ai_agents/modules/ai_agents_views/src
-/drupal-coding-standards web/modules/contrib/ai_agents
-/drupal-coding-standards web/modules/contrib/ai/src
+/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai_agents/modules/ai_agents_views/src
+/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai_agents
+/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai/src
 /drupal-coding-standards src/Plugin/MyPlugin.php
 ```
 
@@ -32,29 +32,53 @@ If no path is provided, ask the user which module or file to check.
 
 ## Environment
 
-- **PHPCS binary:** `php vendor/bin/phpcs` (run from Drupal root — host PHP, no ddev needed)
-- **PHPCBF binary:** `php vendor/bin/phpcbf` (same)
+- **Runtime:** `ddev exec` — always run PHPCS and PHPCBF inside the DDEV container so the PHP version matches CI exactly
+- **PHPCS binary:** `ddev exec php vendor/bin/phpcs`
+- **PHPCBF binary:** `ddev exec php vendor/bin/phpcbf`
 - **Standard:** use the module's own `phpcs.xml` when present (authoritative — matches CI exactly); fall back to `--standard=Drupal` only if no config file exists
 - **Extensions fallback:** `php,module,inc,install,test,profile,theme,info,engine,yml`
+- **Paths inside ddev:** `ddev exec` runs from `/var/www/html` (the Drupal root). Always pass paths **relative to the Drupal root** (e.g. `web/modules/contrib/foo`), never absolute host paths.
 
 ---
 
 ## Instructions
 
-### Step 0: Detect the Drupal root (REQUIRED — do this first, every time)
+### Step 0: Detect the Drupal root and derive the relative target path (REQUIRED — do this first, every time)
 
 The skill is global and works across multiple projects. Never hardcode a path.
-Find the Drupal root by locating `vendor/bin/phpcs` walking up from the current
-working directory:
+Find the Drupal root by locating `vendor/bin/phpcs`. First walk UP from the
+current working directory (handles standard single-root projects), then check
+for a `drupal/` subdirectory one level down (handles workbench/monorepo layouts
+where the Drupal install lives in a `drupal/` subfolder):
 
 ```bash
-dir=$(pwd); while [ "$dir" != "/" ]; do [ -f "$dir/vendor/bin/phpcs" ] && echo "$dir" && break; dir=$(dirname "$dir"); done
+# Walk up from cwd
+DRUPAL_ROOT=""
+dir=$(pwd)
+while [ "$dir" != "/" ]; do
+  [ -f "$dir/vendor/bin/phpcs" ] && DRUPAL_ROOT="$dir" && break
+  dir=$(dirname "$dir")
+done
+
+# Fallback: check for a drupal/ subdirectory (workbench/monorepo layout)
+if [ -z "$DRUPAL_ROOT" ]; then
+  dir=$(pwd)
+  while [ "$dir" != "/" ]; do
+    [ -f "$dir/drupal/vendor/bin/phpcs" ] && DRUPAL_ROOT="$dir/drupal" && break
+    dir=$(dirname "$dir")
+  done
+fi
 ```
 
-If nothing is found, report: "Cannot find vendor/bin/phpcs. Make sure Composer
-dependencies are installed in your Drupal project root." and stop.
+If `DRUPAL_ROOT` is still empty, report: "Cannot find vendor/bin/phpcs. Make
+sure Composer dependencies are installed in your Drupal project root." and stop.
 
-Store the result as `DRUPAL_ROOT`. All subsequent commands must run from `$DRUPAL_ROOT`.
+Store the result as `DRUPAL_ROOT`. Derive the **relative path** for use inside ddev:
+```bash
+REL_PATH="${TARGET_PATH#$DRUPAL_ROOT/}"
+```
+
+All `ddev exec` commands must be run from `$DRUPAL_ROOT` on the host (so ddev maps it to `/var/www/html`). Pass `$REL_PATH` to PHPCS/PHPCBF — never pass host absolute paths.
 
 ### Step 1: Resolve the target path and locate the phpcs config
 
@@ -91,9 +115,9 @@ Running `--standard=Drupal` alone would miss DrupalPractice violations.
 
 ```bash
 cd "$DRUPAL_ROOT" && \
-  php vendor/bin/phpcbf --standard="$PHPCS_CONFIG" <resolved-path>
+  ddev exec php vendor/bin/phpcbf --standard="$PHPCS_CONFIG" "$REL_PATH"
 # or if no config found:
-  php vendor/bin/phpcbf --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml <resolved-path>
+  ddev exec php vendor/bin/phpcbf --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml "$REL_PATH"
 ```
 
 - Report how many files were fixed and how many violations remain.
@@ -104,9 +128,9 @@ cd "$DRUPAL_ROOT" && \
 
 ```bash
 cd "$DRUPAL_ROOT" && \
-  php vendor/bin/phpcs --standard="$PHPCS_CONFIG" <resolved-path>
+  ddev exec php vendor/bin/phpcs --standard="$PHPCS_CONFIG" "$REL_PATH"
 # or if no config found:
-  php vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml <resolved-path>
+  ddev exec php vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml "$REL_PATH"
 ```
 
 - Exit 0: report "No violations found. Pipeline will pass."
@@ -115,6 +139,8 @@ cd "$DRUPAL_ROOT" && \
   - Error or warning message
   - `[x]` = auto-fixable (PHPCBF should have caught it — re-run Step 2 if seen)
   - No marker = must be fixed manually
+
+**Note:** `ddev exec` prints a red `Failed to execute command... exit status 1` line when PHPCS exits 1. This is cosmetic — `ddev exec` forwards the subprocess exit code to the host. The actual PHPCS violation report is printed above that line; read it there.
 
 ### Step 4: Fix remaining violations manually
 
@@ -154,7 +180,8 @@ Summarise:
 
 - Never use `--standard=PEAR`, `--standard=PSR2`, or no standard — produces false errors.
 - Do NOT hardcode `--standard=Drupal` without checking for a `phpcs.xml` first. Many modules (e.g. `ai`) include `DrupalPractice` in their config; missing it means missing violations the CI will catch.
-- Run `php vendor/bin/phpcs` from the Drupal root (not `ddev exec` — host PHP is fine and faster).
+- Always run via `ddev exec php vendor/bin/phpcs` — the container PHP version matches CI; host PHP may not.
 - PHPCBF exit code 1 = "files were fixed" (not an error). Only 2+ is a real failure.
 - If PHPCS keeps looping on the same error after a fix attempt, stop and show the user
   the remaining violations rather than retrying indefinitely.
+- Warnings about `version`, `project`, and `datestamp` keys in `.info.yml` files are injected by the drupal.org packaging script and are not real violations. They will always appear on local Composer-managed installs and can be ignored — CI does not fail on them.

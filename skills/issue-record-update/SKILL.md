@@ -36,6 +36,7 @@ From the current conversation, collect:
 - Any Drupal.org comments drafted or posted
 - Current pipeline status if a push happened
 - What is still unresolved, blocked, or deferred to next session
+- Any related issues discovered this session (e.g. referenced in comments, or the fix touched code owned by another issue)
 
 ---
 
@@ -78,23 +79,20 @@ Rules:
 
 ---
 
-## Step 5 — Show draft and confirm
-
-Show the human the draft log entry and ask: "Does this accurately capture the session? Any changes or additions?"
-
-**[PAUSE]** Wait for confirmation before writing. If the human suggests changes, incorporate them and show again. Once they say "yes", "looks good", or similar — proceed.
-
----
-
-## Step 6 — Insert the entry
+## Step 5 — Insert the entry and update cross-references
 
 Insert the log entry immediately after the `## Work Log` heading and its following blank line, **before** any existing session entries. Most recent session is always first.
 
 If the issue status changed this session (e.g. an MR was merged and issue is now Fixed), also update the `**Status:**` line in the header.
 
+If any related issues were discovered this session, append them to the `## Related Issues` section (never remove existing entries). Format:
+```
+- #<nid> <title> — <one line on the relationship>
+```
+
 ---
 
-## Step 7 — Confirm
+## Step 6 — Confirm
 
 Tell the user: "Session logged in `issues/<nid>/README.md`."
 

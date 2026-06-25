@@ -78,6 +78,8 @@ GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
 
 Extract: title, project, current status, all MRs (iid + branch + pipeline status), comment count + date of last comment, whether a fork exists.
 
+Also note any **related issues** mentioned in comments or the issue body (e.g. "depends on #X", "follow-up to #X", "duplicate of #X", "blocks #X"). These will be written to the `## Related Issues` section.
+
 ---
 
 ## Phase 3 — Create or update the issue record
@@ -85,7 +87,7 @@ Extract: title, project, current status, all MRs (iid + branch + pipeline status
 **If `issues/<nid>/README.md` does NOT exist:**
 
 ```bash
-mkdir -p issues/<nid>/screenshots
+mkdir -p issues/<nid>/screenshots issues/<nid>/comments
 ```
 
 Write `issues/<nid>/README.md`:
@@ -102,6 +104,11 @@ Write `issues/<nid>/README.md`:
 <3-5 sentences: what is broken or missing, why it matters, current state of discussion,
 what kind of fix is being proposed. Concrete and factual — no vague filler.>
 
+## Related Issues
+<!-- Cross-references to issues that touch the same code, depend on this fix, or are
+     otherwise connected. Updated by AI when discovered; also human-editable.
+     Format: - #<nid> <title> — <one line on the relationship> -->
+
 ## Work Log
 
 ## Notes
@@ -111,7 +118,11 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
 
 **If `issues/<nid>/README.md` already exists:**
 
-Only update the `**Status:**` line in the header if the status has changed. Never touch the Work Log or Notes sections.
+- Update the `**Status:**` line in the header if the status has changed.
+- Add any newly discovered related issues to the `## Related Issues` section (append only — never remove existing entries).
+- Never touch the Work Log or Notes sections.
+
+Also check: if related issues were found and they have their own record at `issues/<related-nid>/README.md`, read those too and surface any relevant context in the report.
 
 ---
 
@@ -184,18 +195,19 @@ I will not start any work until you tell me.
 
 ## Phase 5 — Follow human direction
 
-Once the human replies, delegate to the appropriate skill or agent:
+Once the human replies, delegate to the appropriate agent or skill:
 
 | Human says | Action |
 |---|---|
-| "review the MR" / "do a code review" | Invoke `drupal-review-issue` with `<nid>` |
-| "work on it" / "implement" / "fix it" | Invoke `drupal-work-on-issue` with `<nid>` |
+| "review the MR" / "do a code review" / "work on it" / "implement" / "fix it" | Invoke `drupal-issue-agent` with `<nid>` and the loaded context |
+| "catch me up" / "what's new" / "what happened" | Invoke `drupal-issue-catchup` with `<nid>` |
 | "continue" / "pick up where we left off" | Re-read the Work Log, brief human on last session, ask what to do next |
 | "just track it" / "come back later" | Confirm record is saved, no further action |
 | "add a note" | Append to the Notes section of the README |
+| "this is related to #X" | Add the cross-reference to the `## Related Issues` section |
 | Specific instructions | Follow them, using the appropriate skills |
 
-Pass the `<nid>` and relevant context from the issue record to any delegated skill so it doesn't have to re-fetch everything.
+Pass `<nid>`, `<project>`, `is_migrated`, MR iids, and the full issue record content to any delegated agent so it does not have to re-fetch everything.
 
 ---
 
