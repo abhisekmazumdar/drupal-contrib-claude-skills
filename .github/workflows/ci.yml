@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax check
+        run: node --check bin/setup.js
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          let failed = false;
+          for (const skill of fs.readdirSync('skills')) {
+            const skillDir = path.join('skills', skill);
+            if (!fs.statSync(skillDir).isDirectory()) continue;
+            const skillFile = fs.readdirSync(skillDir).find(f => f.toLowerCase() === 'skill.md');
+            if (!skillFile) {
+              console.error('Missing SKILL.md in skills/' + skill);
+              failed = true;
+              continue;
+            }
+            const content = fs.readFileSync(path.join(skillDir, skillFile), 'utf8');
+            if (!/^name:/m.test(content)) {
+              console.error('Missing name: field in skills/' + skill + '/' + skillFile);
+              failed = true;
+            }
+          }
+          if (failed) process.exit(1);
+          console.log('All SKILL.md files OK');
+          "
+
+      - name: Validate template variables
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const knownVars = new Set(['DDEV_PROJECT','SITE_URL','PHP_VERSION','MARIADB_VERSION','DRUPAL_PATH','DRUPAL_WEBROOT']);
+          function scanDir(dir) {
+            const found = new Set();
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, entry.name);
+              if (entry.isDirectory()) { for (const v of scanDir(p)) found.add(v); }
+              else { for (const m of fs.readFileSync(p, 'utf8').matchAll(/\{\{([A-Z_]+)\}\}/g)) found.add(m[1]); }
+            }
+            return found;
+          }
+          let failed = false;
+          for (const v of new Set([...scanDir('skills'), ...scanDir('agents'), ...scanDir('templates')])) {
+            if (!knownVars.has(v)) { console.error('Unhandled template variable: {{' + v + '}}'); failed = true; }
+          }
+          if (failed) process.exit(1);
+          console.log('All template variables covered');
+          "
+
+      - name: Validate settings.json template
+        run: |
+          node -e "
+          const fs = require('fs');
+          const content = fs.readFileSync('templates/settings.json.template', 'utf8').replace(/\{\{[A-Z_]+\}\}/g, 'placeholder');
+          try { JSON.parse(content); console.log('settings.json.template is valid JSON'); }
+          catch (e) { console.error('settings.json.template invalid JSON:', e.message); process.exit(1); }
+          "
