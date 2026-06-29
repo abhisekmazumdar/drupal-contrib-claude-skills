@@ -1,11 +1,7 @@
 ---
 name: drupalorg-comment-format
 description: >
-  Apply Drupal.org text formatting rules when writing comment replies, issue
-  descriptions, or any text destined for Drupal.org. Use this skill when the
-  user asks to "write a comment for Drupal.org", "reply to a Drupal issue",
-  "create a Drupal.org issue", "draft issue description", "help me comment on
-  this issue", or similar requests targeting Drupal.org text input fields.
+  Use this skill when writing content destined for a Drupal.org issue queue — comments, issue descriptions, issue summaries, or proposed resolutions. Triggers on requests to draft, format, or compose text for Drupal.org issue fields, including explaining a patch, reporting a regression, describing a fix, or updating an issue summary. Covers both classic Drupal.org HTML formatting and GitLab Markdown for migrated queues. Does NOT apply to forum posts, README files, commit messages, GitHub PRs, or general documentation.
 version: 1.0.0
 ---
 

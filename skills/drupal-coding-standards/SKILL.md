@@ -1,10 +1,7 @@
 ---
 name: drupal-coding-standards
 description: >
-  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or
-  directory, matching exactly what the Drupal CI pipeline runs. Use when the user
-  asks to check coding standards, fix CS violations, run phpcs, or before committing
-  contribution work.
+  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or directory, matching exactly what the Drupal CI pipeline runs. Use when the user asks to check coding standards, fix CS violations, run phpcs, or before committing contribution work.
 argument-hint: "[path]"
 ---
 

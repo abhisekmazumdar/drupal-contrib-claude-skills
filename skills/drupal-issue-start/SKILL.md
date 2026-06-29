@@ -1,12 +1,7 @@
 ---
 name: drupal-issue-start
 description: >
-  PRIMARY ENTRY POINT for all Drupal issue work. Given a Drupal.org or GitLab issue URL,
-  loads any prior work context from issues/<nid>/README.md, fetches live issue state via
-  CLI tools and Playwright, generates a structured status report, and waits for human
-  direction before doing anything. Use whenever the user pastes a Drupal issue URL,
-  says "work on issue <nid>", "start on <nid>", "review issue <url>", "continue on <nid>",
-  or just drops an issue link.
+  Use when the user wants to start, continue, or get oriented on a specific Drupal issue — whether they paste a drupal.org or GitLab issue URL, reference an issue by number (e.g. "issue 3234567"), or ask to pick up, review, or catch up on a named issue. Handles first visits and returning sessions alike: loads any prior work context, fetches the current issue state, and presents a structured summary before any action is taken. Trigger on: bare issue URLs, "work on issue N", "start on N", "continue on N", "what's needed for issue N", "get me up to speed on issue N".
 argument-hint: <issue-url>
 ---
 

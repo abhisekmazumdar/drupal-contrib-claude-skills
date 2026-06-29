@@ -1,10 +1,7 @@
 ---
 name: drupal-php-changes
 description: >
-  Apply knowledge of PHP-related changes introduced in Drupal 11.x when reviewing,
-  fixing, or contributing to Drupal issues. Use when the user asks about PHP
-  compatibility, deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers,
-  or when reviewing code that needs to pass Drupal 11 CI.
+  Apply knowledge of PHP-related changes introduced in Drupal 11.x when reviewing, fixing, or contributing to Drupal issues. Use when the user asks about PHP compatibility, deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, or when reviewing code that needs to pass Drupal 11 CI.
 argument-hint: "[drupal-version or topic]"
 ---
 

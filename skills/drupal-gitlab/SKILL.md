@@ -1,6 +1,7 @@
 ---
 name: drupal-gitlab
-description: Use GitLab CLI and API to manage issues, merge requests, and branches on git.drupalcode.org — including Drupal's issue-fork workflow, work items API, and Conventional Commits format.
+description: >
+  Invoke for any task involving Drupal's GitLab instance at git.drupalcode.org: checking CI pipeline status on an MR, pushing branches to an issue fork, creating cross-project merge requests, listing or updating work items, squashing commits before merge, or navigating Drupal's issue-fork contribution workflow. This is the skill for Drupal contributor tasks — not generic GitLab.com or GitHub workflows.
 ---
 
 # Drupal GitLab (git.drupalcode.org)

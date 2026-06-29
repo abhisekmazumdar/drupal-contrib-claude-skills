@@ -1,12 +1,7 @@
 ---
 name: drupal-clone-contrib
 description: >
-  Clone a Drupal contributed module, theme, or recipe from git.drupalcode.org into
-  the correct local directory for contribution work (applying patches or working on
-  GitLab MRs). Use when the user asks to "clone a Drupal module", "set up a contrib
-  module locally", "clone a theme for contribution", "clone a recipe", "I need to
-  work on <project> locally", or any variant of pulling down a drupal.org project
-  for local development or contribution.
+  Use this skill whenever the user needs to git-clone a Drupal contributed module, theme, or recipe from drupal.org's git infrastructure (git.drupalcode.org / git.drupal.org) to work on it locally. The defining signal is direct git access to contrib source — to patch it, submit a merge request, fix a bug, test a patch, or work on an issue. Covers all phrasings: "clone", "grab", "fetch", "pull down", "set up locally", "get the source for". Works with any contrib project name (views, pathauto, search_api, ctools, token, etc.). Skip this skill for Composer installs, tarball downloads, or version updates — those don't involve cloning the git repo.
 argument-hint: <project-name> [--branch=<branch>] [--type=module|theme|recipe]
 ---
 

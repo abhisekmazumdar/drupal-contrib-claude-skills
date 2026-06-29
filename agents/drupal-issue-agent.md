@@ -1,12 +1,10 @@
 ---
 name: drupal-issue-agent
 description: >
-  Full-lifecycle Drupal.org issue and gitlab work items agent. Give it an issue link and it handles
-  everything: fetches all context and comments, reads inline MR reviewer threads,
-  runs a code review, perform manual testing steps if required and
-  either presents a full review report (existing MR) or drafts an implementation
-  plan and starts working (new issue). Invoke when the user says "work on issue
-  <nid>", "review issue <nid>", "start on <nid>", or just pastes a Drupal.org or gitlab work item link.
+  Internal agent delegated by drupal-issue-start after context is loaded. Do NOT invoke
+  directly from user phrases — always go through /drupal-issue-start first. Handles
+  full-lifecycle review (Path A) and implementation (Path B) once issue context, NID,
+  project, MR list, and issue record are already in hand.
 tools: Read, Glob, Grep, Write, Edit, Bash, TodoWrite, WebFetch, Agent
 skills:
   - drupal-issue-start

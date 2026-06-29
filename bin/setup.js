@@ -3,6 +3,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
 
@@ -134,13 +135,6 @@ async function main() {
   const phpVersion = await ask(rl, 'PHP version [8.4]: ') || '8.4';
   const mariadbVersion = await ask(rl, 'MariaDB version [11.8]: ') || '11.8';
 
-  // ── Step 3: Optional skills ────────────────────────────────────────────────
-  console.log('');
-  console.log('Playwright skills add browser automation support (playwright-cli + issue-record-screenshot).');
-  console.log('Requires: npm install -g @playwright/cli@latest');
-  const playwrightAnswer = await ask(rl, 'Install Playwright skills? [y/N]: ');
-  const installPlaywright = playwrightAnswer.toLowerCase() === 'y' || playwrightAnswer.toLowerCase() === 'yes';
-
   rl.close();
   console.log('');
 
@@ -158,15 +152,12 @@ async function main() {
 
   const log = { copied: [], identical: [] };
 
-  const PLAYWRIGHT_SKILLS = new Set(['playwright-cli', 'issue-record-screenshot']);
-
-  // Skills — render path vars; playwright skills are opt-in
+  // Skills — render path vars
   copyDirMerge(
     path.join(PACKAGE_ROOT, 'skills'),
     path.join(claudeDir, 'skills'),
     vars,
-    log,
-    installPlaywright ? new Set() : PLAYWRIGHT_SKILLS
+    log
   );
 
   // Agents — render {{...}} placeholders
@@ -191,44 +182,6 @@ async function main() {
     log
   );
 
-  // Playwright — patch agent and settings.json when opted in
-  if (installPlaywright) {
-    const agentPath = path.join(claudeDir, 'agents', 'drupal-issue-agent.md');
-    try {
-      let agentContent = fs.readFileSync(agentPath, 'utf8');
-      if (!agentContent.includes('  - playwright-cli')) {
-        agentContent = agentContent
-          .replace('  - drupal-issue-start\n  - issue-record-update\n', '  - drupal-issue-start\n  - issue-record-update\n  - issue-record-screenshot\n')
-          .replace('  - drupal-php-changes\n', '  - drupal-php-changes\n  - playwright-cli\n');
-        fs.writeFileSync(agentPath, agentContent);
-      }
-    } catch (e) {
-      console.warn('  ⚠️  Could not patch playwright skills into agent file:', e.message);
-    }
-
-    const settingsPath = path.join(claudeDir, 'settings.json');
-    try {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      const playwrightPerms = [
-        'mcp__plugin_playwright_playwright__*',
-        'Bash(playwright-cli *)',
-        'Skill(playwright-cli)',
-        'Skill(playwright-cli:*)',
-        'Skill(issue-record-screenshot)',
-        'Skill(issue-record-screenshot:*)',
-      ];
-      const allow = settings.permissions?.allow ?? [];
-      for (const p of playwrightPerms) {
-        if (!allow.includes(p)) allow.push(p);
-      }
-      if (!settings.permissions) settings.permissions = {};
-      settings.permissions.allow = allow;
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-    } catch (e) {
-      console.warn('  ⚠️  Could not patch playwright permissions into settings.json:', e.message);
-    }
-  }
-
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n── Summary ──────────────────────────────────────────────────');
 
@@ -242,11 +195,24 @@ async function main() {
     for (const f of log.identical) console.log(`  =  ${f}`);
   }
 
-  let doneMsg = '\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.';
-  if (installPlaywright) {
-    doneMsg += '\n\nPlaywright skills installed. To use them, make sure playwright-cli is available:\n  npm install -g @playwright/cli@latest';
+  // ── Playwright MCP check ───────────────────────────────────────────────────
+  const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+  let playwrightOk = false;
+  try {
+    const globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
+    playwrightOk = globalSettings?.enabledPlugins?.['playwright@claude-plugins-official'] === true;
+  } catch (_) {}
+
+  if (playwrightOk) {
+    console.log('\n✓  Playwright MCP plugin is installed and enabled.');
+  } else {
+    console.log('\n⚠️  Playwright MCP plugin not found in ~/.claude/settings.json.');
+    console.log('   Browser automation (screenshots, issue record) will not work.');
+    console.log('   Install it by running this in Claude Code:');
+    console.log('     /marketplace install playwright');
   }
-  console.log(doneMsg + '\n');
+
+  console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
 }
 
 main().catch(err => {

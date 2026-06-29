@@ -1,10 +1,7 @@
 ---
 name: drupal-issue-reroll
 description: >
-  Rebase (reroll) a Drupal issue branch on the latest upstream branch, run
-  PHPCS and PHPStan checks, and push the result. Use when an MR branch has
-  fallen behind origin, when CI fails due to merge conflicts, or when a
-  maintainer asks to reroll before review.
+  Rebase (reroll) a Drupal issue branch on the latest upstream branch, run PHPCS and PHPStan checks, and push the result. Use when an MR branch has fallen behind origin, when CI fails due to merge conflicts, or when a maintainer asks to reroll before review.
 argument-hint: "<nid> [project]"
 ---
 

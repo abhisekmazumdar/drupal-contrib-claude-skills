@@ -1,6 +1,7 @@
 ---
 name: ddev-expert
-description: DDEV local development expertise. Use when working with DDEV projects, containers, configuration, or troubleshooting DDEV environments.
+description: >
+  DDEV local development expertise. Use when working with DDEV projects, containers, configuration, or troubleshooting DDEV environments.
 ---
 
 # DDEV Development Expert

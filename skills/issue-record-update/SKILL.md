@@ -1,10 +1,7 @@
 ---
 name: issue-record-update
 description: >
-  Append a timestamped session log entry to issues/<nid>/README.md, recording what was
-  done in this session, human instructions given, decisions made, and any MRs or patches
-  created. Use when the user says "update the issue record", "log what we did", "record
-  this session", or at the end of any work session on a Drupal issue.
+  Append a timestamped session log entry to issues/<nid>/README.md, recording what was done in this session, human instructions given, decisions made, and any MRs or patches created. Use when the user says "update the issue record", "log what we did", "record this session", or at the end of any work session on a Drupal issue.
 argument-hint: <nid>
 ---
 

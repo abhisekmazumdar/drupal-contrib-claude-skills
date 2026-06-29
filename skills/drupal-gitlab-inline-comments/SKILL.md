@@ -1,14 +1,7 @@
 ---
 name: drupal-gitlab-inline-comments
 description: >
-  Use this skill whenever the user wants to fetch or display review comments from
-  git.drupalcode.org — either inline diff threads on a Merge Request, or top-level
-  comments on a migrated-queue Issue / Work Item. Triggers when the user pastes a
-  Drupal GitLab MR or work-item URL, says "show me the MR comments", "what are the
-  inline comments", "pull the review comments", "fetch the issue comments", or anything
-  about reading/displaying reviewer or commenter feedback. Always use this skill before
-  answering any question about what reviewers or commenters said on a Drupal MR or
-  migrated issue.
+  Use this skill whenever the user wants to fetch or display review comments from git.drupalcode.org — either inline diff threads on a Merge Request, or top-level comments on a migrated-queue Issue / Work Item. Triggers when the user pastes a Drupal GitLab MR or work-item URL, says "show me the MR comments", "what are the inline comments", "pull the review comments", "fetch the issue comments", or anything about reading/displaying reviewer or commenter feedback. Always use this skill before answering any question about what reviewers or commenters said on a Drupal MR or migrated issue.
 ---
 
 # GitLab Comments — Drupal (git.drupalcode.org)

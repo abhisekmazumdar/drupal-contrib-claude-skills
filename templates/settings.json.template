@@ -39,14 +39,15 @@
       "Skill(drupal-issue-start:*)",
       "Skill(issue-record-update)",
       "Skill(issue-record-update:*)",
+      "Skill(issue-record-screenshot)",
+      "Skill(issue-record-screenshot:*)",
+      "mcp__plugin_playwright_playwright__*",
       "Bash(mkdir -p issues/*)",
       "WebFetch(domain:www.drupal.org)",
       "WebFetch(domain:git.drupalcode.org)"
     ],
     "deny": [
-      "Bash(git commit*)",
       "Bash(git push*)",
-      "Bash(git add*)",
       "Bash(git reset*)",
       "Bash(git rebase*)",
       "Bash(git merge*)",

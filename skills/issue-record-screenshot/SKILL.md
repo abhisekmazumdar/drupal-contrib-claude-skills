@@ -1,10 +1,7 @@
 ---
 name: issue-record-screenshot
 description: >
-  Capture a Playwright screenshot of the current browser state and save it to
-  issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the
-  current state", "take a screenshot for the issue record", or when documenting
-  a visual state during issue work.
+  Capture a Playwright screenshot of the current browser state and save it to issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the current state", "take a screenshot for the issue record", or when documenting a visual state during issue work.
 argument-hint: <nid> [<label>]
 ---
 
@@ -41,7 +38,7 @@ Format: `YYYY-MM-DD-HHmmss-<label>.png`
 
 Use the Playwright MCP tool to capture a screenshot and save to `issues/<nid>/screenshots/<filename>`.
 
-If no browser session is open, tell the user: "No browser session is active. Use the playwright-cli skill to navigate to the page first, then run this skill again."
+If no browser session is open, tell the user: "No browser session is active. Open a browser with the Playwright MCP tools first, then run this skill again."
 
 ---
 
