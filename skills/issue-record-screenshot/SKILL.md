@@ -1,13 +1,13 @@
 ---
 name: issue-record-screenshot
 description: >
-  Capture a screenshot of the current browser state and save it to issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the current state", "take a screenshot for the issue record", or when documenting a visual state during issue work. Works with any active browser automation MCP (Playwright, Claude-in-Chrome, etc.).
+  Capture a screenshot of the current browser state and save it to issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the current state", "take a screenshot for the issue record", or when documenting a visual state during issue work. Requires the Claude-in-Chrome browser extension to be connected.
 argument-hint: <nid> [<label>]
 ---
 
 # /issue-record-screenshot
 
-**Purpose:** Capture a timestamped screenshot into the issue's screenshots directory using whatever browser automation MCP is currently active.
+**Purpose:** Capture a timestamped screenshot into the issue's screenshots directory using Claude-in-Chrome.
 
 **Usage:** `/issue-record-screenshot <nid> [<label>]`
 
@@ -34,30 +34,15 @@ Format: `YYYY-MM-DD-HHmmss-<label>.png`
 
 ---
 
-## Step 3 — Detect browser MCP (prefer Playwright, fall back to Claude-in-Chrome)
+## Step 3 — Check browser connection
 
-**Try Playwright first.** Check if `mcp__playwright__*` tools are available in the current session.
+Call `mcp__claude-in-chrome__tabs_context_mcp` to confirm a browser tab is connected.
 
-- If yes → use Playwright (step 4a)
-- If no → check if `mcp__claude-in-chrome__*` tools are available
-  - If yes → use Claude-in-Chrome (step 4b)
-  - If neither → tell the user: "No browser session is active. Start Playwright or open Chrome with the Claude-in-Chrome extension, then run this skill again." Stop here.
+If no tab is available, tell the user: "No browser session is active. Open Chrome with the Claude-in-Chrome extension enabled, then run this skill again." Stop here.
 
 ---
 
-## Step 4a — Screenshot via Playwright (preferred)
-
-Use `mcp__playwright__screenshot` and pass the full destination path:
-
-```
-savePath: issues/<nid>/screenshots/<filename>
-```
-
-Playwright saves the file directly — no base64 decoding needed.
-
----
-
-## Step 4b — Screenshot via Claude-in-Chrome (fallback)
+## Step 4 — Take the screenshot
 
 Use `mcp__claude-in-chrome__computer` with `action: screenshot`. It returns base64 image data. Save it with:
 
