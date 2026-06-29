@@ -41,8 +41,7 @@ Every issue worked on has a directory at `issues/<nid>/`. These directories surv
 issues/
 └── 3456789/
     ├── README.md         ← persistent record: summary, related issues, work log, human notes
-    ├── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
-    └── screenshots/      ← Playwright screenshots
+    └── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
 ```
 
 The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too.
@@ -52,8 +51,7 @@ The README is the **long-term memory** for each issue. It persists across sessio
 1. **Start every issue session with `/drupal-issue-start <url>`** — it loads the record, fetches live state, and presents a report before any work begins.
 2. After every session, **`/issue-record-update <nid>`** logs what was done (no confirmation prompt — writes directly).
 3. To catch up after time away, use **`/drupal-issue-catchup <nid>`** instead of re-running issue-start.
-4. Screenshots go in `issues/<nid>/screenshots/` via **`/issue-record-screenshot`**.
-5. Drafted comments are saved to `issues/<nid>/comments/` via the **`drupalorg-comment-format`** skill.
+4. Drafted comments are saved to `issues/<nid>/comments/` via the **`drupalorg-comment-format`** skill.
 
 ---
 
@@ -163,7 +161,6 @@ Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/
 ### Entry point skills
 - `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report, wait for direction
 - `issue-record-update` — append timestamped session log to `issues/<nid>/README.md` (writes directly, no confirmation)
-- `issue-record-screenshot` — capture Playwright screenshot into `issues/<nid>/screenshots/`
 - `drupalorg-comment-format` — draft and save comments to `issues/<nid>/comments/` (HTML for Drupal.org, GFM for GitLab)
 
 ### Other key skills
