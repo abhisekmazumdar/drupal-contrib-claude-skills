@@ -34,23 +34,32 @@ Format: `YYYY-MM-DD-HHmmss-<label>.png`
 
 ---
 
-## Step 3 — Check browser session
+## Step 3 — Detect browser MCP (prefer Playwright, fall back to Claude-in-Chrome)
 
-Determine which browser automation MCP is active:
+**Try Playwright first.** Check if `mcp__playwright__*` tools are available in the current session.
 
-- **Playwright MCP** — check if `mcp__playwright__*` tools are available
-- **Claude-in-Chrome** — check if `mcp__claude-in-chrome__*` tools are available
-
-If no browser MCP is active, tell the user: "No browser session is active. Start your browser automation tool (Playwright or Claude-in-Chrome), then run this skill again."
+- If yes → use Playwright (step 4a)
+- If no → check if `mcp__claude-in-chrome__*` tools are available
+  - If yes → use Claude-in-Chrome (step 4b)
+  - If neither → tell the user: "No browser session is active. Start Playwright or open Chrome with the Claude-in-Chrome extension, then run this skill again." Stop here.
 
 ---
 
-## Step 4 — Take the screenshot
+## Step 4a — Screenshot via Playwright (preferred)
 
-Use the screenshot action of whichever MCP is active:
+Use `mcp__playwright__screenshot` and pass the full destination path:
 
-- **Playwright:** `mcp__playwright__screenshot` — saves directly to a path; pass `issues/<nid>/screenshots/<filename>` as the save path
-- **Claude-in-Chrome:** `mcp__claude-in-chrome__computer` with `action: screenshot` — returns base64 image data; save it with:
+```
+savePath: issues/<nid>/screenshots/<filename>
+```
+
+Playwright saves the file directly — no base64 decoding needed.
+
+---
+
+## Step 4b — Screenshot via Claude-in-Chrome (fallback)
+
+Use `mcp__claude-in-chrome__computer` with `action: screenshot`. It returns base64 image data. Save it with:
 
 ```bash
 echo "<base64_data>" | base64 -d > issues/<nid>/screenshots/<filename>
