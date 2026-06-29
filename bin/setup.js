@@ -3,7 +3,6 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const readline = require('readline');
 
@@ -193,23 +192,6 @@ async function main() {
   if (log.identical.length) {
     console.log('\nAlready up to date:');
     for (const f of log.identical) console.log(`  =  ${f}`);
-  }
-
-  // ── Playwright MCP check ───────────────────────────────────────────────────
-  const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
-  let playwrightOk = false;
-  try {
-    const globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
-    playwrightOk = globalSettings?.enabledPlugins?.['playwright@claude-plugins-official'] === true;
-  } catch (_) {}
-
-  if (playwrightOk) {
-    console.log('\n✓  Playwright MCP plugin is installed and enabled.');
-  } else {
-    console.log('\n⚠️  Playwright MCP plugin not found in ~/.claude/settings.json.');
-    console.log('   Browser automation (screenshots, issue record) will not work.');
-    console.log('   Install it by running this in Claude Code:');
-    console.log('     /marketplace install playwright');
   }
 
   console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');

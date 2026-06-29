@@ -6,7 +6,7 @@ Claude Code skills and agents for Drupal open source contribution. Run once from
 
 ## What gets installed
 
-- **Skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, Playwright, and more
+- **Skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, and more
 - **Agents** in `.claude/agents/` — give the issue agent a Drupal.org or GitLab work-item URL and it handles the full issue lifecycle end-to-end
 - **CLAUDE.md** at your workspace root — pre-filled with your DDEV project name, site URL, stack details, and correct module paths
 - **`.claude/settings.json`** — pre-configured Claude Code permissions for all the tools the agents use
@@ -78,8 +78,6 @@ DDEV project name [my-drupal-project]:
 Site URL [https://my-drupal-project.ddev.site]:
 PHP version [8.4]:
 MariaDB version [11.8]:
-
-Install Playwright skills? [y/N]:
 ```
 
 - The Drupal project location is asked **first** so the DDEV project name can be auto-detected from `.ddev/config.yaml` in that directory.
@@ -94,14 +92,6 @@ Install Playwright skills? [y/N]:
 4. `CLAUDE.md` is generated at the workspace root with your project details and paths substituted in
 
 Re-running is always safe — files only in the destination (your own custom skills) are never touched. All package files are updated to the latest version.
-
-### Playwright skills (optional)
-
-Answer `y` to the Playwright question to also install:
-- `playwright-cli` — browser automation skill
-- `issue-record-screenshot` — capture screenshots into `issues/<nid>/screenshots/`
-
-Requires: `npm install -g @playwright/cli@latest`
 
 ## After installation
 
@@ -132,8 +122,7 @@ Every issue you work on gets a persistent record at `issues/<nid>/README.md`. Th
 ```
 issues/
 └── 3499692/
-    ├── README.md         ← summary, work log, notes
-    └── screenshots/      ← Playwright screenshots
+    └── README.md         ← summary, work log, notes
 ```
 
 ## Updating
