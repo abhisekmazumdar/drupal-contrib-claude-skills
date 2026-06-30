@@ -17,9 +17,9 @@ or directory, matching exactly what the Drupal CI pipeline runs.
 
 **Examples:**
 ```
-/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai_agents/modules/ai_agents_views/src
-/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai_agents
-/drupal-coding-standards {{DRUPAL_WEBROOT}}/modules/contrib/ai/src
+/drupal-coding-standards web/modules/contrib/ai_agents/modules/ai_agents_views/src
+/drupal-coding-standards web/modules/contrib/ai_agents
+/drupal-coding-standards web/modules/contrib/ai/src
 /drupal-coding-standards src/Plugin/MyPlugin.php
 ```
 

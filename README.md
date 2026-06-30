@@ -9,7 +9,8 @@ Claude Code skills and agents for Drupal open source contribution. Run once from
 - **Skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, and more
 - **Agents** in `.claude/agents/` — give the issue agent a Drupal.org or GitLab work-item URL and it handles the full issue lifecycle end-to-end
 - **CLAUDE.md** at your workspace root — pre-filled with your DDEV project name, site URL, stack details, and correct module paths
-- **`.claude/settings.json`** — pre-configured Claude Code permissions for all the tools the agents use
+- **`.claude/settings.json`** — pre-configured Claude Code permissions and MCP server definitions for drupalorg-cli and GitLab
+- **`.claude/claude-skills.lock.json`** — records your answers so re-runs are non-interactive
 
 ## Requirements
 
@@ -48,23 +49,23 @@ The script auto-detects which layout you have and asks if it can't tell.
 
 ## Installation
 
-Clone the repo once:
+Clone the repo to wherever you keep tools — the path you choose is the path you use:
 
 ```bash
-git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git ~/drupal-claude-skills
+git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git /path/to/drupal-claude-skills
 ```
 
-Then from your workspace root:
+Then from your workspace root, pass that same path to `npx`:
 
 ```bash
-node ~/drupal-claude-skills/bin/setup.js
+npx /path/to/drupal-claude-skills
 ```
 
-Add a shell alias to keep it short:
+Add a shell alias so you don't have to remember the path:
 
 ```bash
 # add to ~/.zshrc or ~/.bashrc
-alias drupal-claude-skills='node ~/drupal-claude-skills/bin/setup.js'
+alias drupal-claude-skills='npx /path/to/drupal-claude-skills'
 ```
 
 ---
@@ -83,15 +84,23 @@ MariaDB version [11.8]:
 - The Drupal project location is asked **first** so the DDEV project name can be auto-detected from `.ddev/config.yaml` in that directory.
 - If Drupal is at the workspace root, the location question is skipped entirely.
 - Press Enter to accept any default, or type a custom value.
+- Answers are saved to `.claude/claude-skills.lock.json` — re-runs pre-fill every question so updates are non-interactive.
 
 ### What happens
 
 1. `.claude/skills/` is created (or updated) with all package skills
 2. `.claude/agents/` is created (or updated) with all agents
-3. `.claude/settings.json` is written with pre-approved permissions
-4. `CLAUDE.md` is generated at the workspace root with your project details and paths substituted in
+3. `.claude/settings.json` is written with pre-approved permissions and MCP server definitions
+4. `CLAUDE.md` is generated at the workspace root with your project details substituted in
+5. `.claude/claude-skills.lock.json` is written with your answers for future re-runs
 
 Re-running is always safe — files only in the destination (your own custom skills) are never touched. All package files are updated to the latest version.
+
+### MCP servers
+
+The generated `settings.json` wires up the `drupalorg-cli` MCP server automatically, using the `drupalorg` binary detected on your PATH during setup.
+
+A native GitLab MCP server for `git.drupalcode.org` is being tracked in [drupal.org/project/infrastructure/issues/3557469](https://www.drupal.org/project/infrastructure/issues/3557469) — it requires GitLab Duo which is not yet available on the Drupal infrastructure. Until then, GitLab interaction uses `glab` CLI and the bundled Python scripts.
 
 ## After installation
 
@@ -127,11 +136,11 @@ issues/
 
 ## Updating
 
-Pull the latest changes and re-run the script:
+Pull the latest changes and re-run — the lockfile pre-fills all your answers:
 
 ```bash
-git -C ~/drupal-claude-skills pull
-node ~/drupal-claude-skills/bin/setup.js
+git -C /path/to/drupal-claude-skills pull
+npx /path/to/drupal-claude-skills
 ```
 
 All package files (skills, agents, CLAUDE.md, settings.json) are always updated to the latest version. Your own custom files in `.claude/skills/` are never touched.
@@ -141,15 +150,18 @@ All package files (skills, agents, CLAUDE.md, settings.json) are always updated 
 ```
 drupal-claude-skills/
   bin/
-    setup.js              # setup entry point
-  skills/                 # skill directories — copied to .claude/skills/
-  agents/                 # agent files — copied to .claude/agents/
+    setup.js              # setup entry point (run via: npx ~/drupal-claude-skills)
+  skills/                 # skill directories — copied as-is to .claude/skills/
+  agents/                 # agent files — copied as-is to .claude/agents/
   templates/
     CLAUDE.md.template    # rendered with project-specific vars at install time
-    settings.json.template
+    settings.json.template  # rendered with project-specific vars at install time
   package.json
   README.md
+  CLAUDE.md               # guidance for Claude Code when working on this repo
 ```
+
+Skills and agents are **never** rendered with template vars — they are copied verbatim and read project paths from the installed `CLAUDE.md` context at runtime. Only `templates/` files receive `{{VAR}}` substitution.
 
 ## License
 

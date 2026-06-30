@@ -1,0 +1,20 @@
+{
+  "version": "0.2",
+  "words": [
+    "drupalorg",
+    "drupalcode",
+    "modelcontextprotocol",
+    "ddev",
+    "phpcbf",
+    "phpcs",
+    "phpstan",
+    "phpunit",
+    "drush",
+    "glab",
+    "nid",
+    "webroot",
+    "worktree",
+    "reroll",
+    "rebase"
+  ]
+}

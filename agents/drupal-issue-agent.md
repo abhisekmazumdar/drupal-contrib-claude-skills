@@ -65,89 +65,34 @@ These rules govern every phase and path below. Read them first.
 
 ---
 
-## Phase 0 — Resolve the input
+## Phase 0 — Receive context from drupal-issue-start
 
-The user may give you:
-- A Drupal.org URL: `https://www.drupal.org/project/<name>/issues/<nid>`
-- A GitLab work-item URL: `https://git.drupalcode.org/project/<name>/-/work_items/<nid>`
+This agent is always invoked by `/drupal-issue-start`, which passes:
+- `<nid>`, `<project>`, `is_migrated` (parsed from the URL)
+- The full issue record from `issues/<nid>/README.md`
+- MR list and pipeline status already fetched
 
-Extract `<nid>` (the trailing number) and, when present in the URL, the
-`<project>` machine name.
+**Do not re-parse the URL or re-fetch issue data.** Use what was passed.
 
-Both URL shapes use the **same NID** — GitLab work items are 1:1 with the Drupal.org NID for migrated projects.
+If you were invoked directly without this context, stop and tell the user:
+> "Please run `/drupal-issue-start <url>` first — it loads prior context and fetches live issue state before handing off here."
 
-**If the URL is a GitLab work-item URL** (`git.drupalcode.org/…/work_items/…`),
-mark `is_migrated=true` immediately — you already know `drupalorg issue:show`
-will return empty, so skip it in Phase 1 and go straight to Phase 1b glab
-commands. You still need `mr:list` and `issue:get-fork` from Phase 1.
+## Phase 1 — Confirm context and choose path
 
-## Phase 1 — Context Gathering
+Context was loaded by `drupal-issue-start`. Confirm you have:
+- Issue title, project, status, `is_migrated`
+- MR list (iid, branch, pipeline status)
+- Contents of `issues/<nid>/README.md`
 
-**Load the drupalorg-cli reference first** — this fetches the current command guide from the installed CLI so instructions never go stale:
+From the MR count determine the path:
+- **Zero MRs** → Path B (new issue)
+- **One or more MRs** → Path A (review existing MR)
 
-```bash
-drupalorg skill:get drupalorg-cli
-```
-
-Run the following **in parallel** (single Bash call or concurrent tool uses).
-Skip `issue:show` if `is_migrated=true` (set in Phase 0):
-
-```bash
-# Full issue details + all comments — skip if is_migrated=true
-drupalorg issue:show <nid> --with-comments --format=llm
-
-# List all MRs for the issue (works for both migrated and non-migrated)
-drupalorg mr:list <nid> --format=llm
-
-# Fork details — may return empty if no fork exists yet (brand-new issue)
-drupalorg issue:get-fork <nid> --format=llm
-```
-
-If `issue:get-fork` returns empty, that is normal for a brand-new issue where
-no one has created a fork yet. Treat it as NO FORK — do not stall. The fork
-will be created in Path B (B4) when implementation begins.
-
-### Phase 1b — Detect a migrated issue queue
-
-If `is_migrated=true` (set in Phase 0 from the URL shape), skip directly to
-the glab commands below — no detection needed.
-
-Otherwise, inspect the `issue:show` response. If `<issue_id>` is **empty** and
-`<title>` is **empty**, this project has moved its issue queue to GitLab work
-items (common for `ai` and other AI-Initiative projects). Re-fetch from GitLab:
-
-```bash
-# Body, labels, state, assignees
-GITLAB_HOST=git.drupalcode.org glab issue view <nid> --repo project/<project>
-
-# Full comment thread — formatted, system notes filtered, chronological
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py \
-  project/<project>#<nid>
-
-# (Raw alternative if you need fields glab/the script don't surface)
-GITLAB_HOST=git.drupalcode.org glab issue note list <nid> --repo project/<project>
-```
-
-If you don't yet know `<project>`, derive it from the URL the user pasted, or
-from the `issue/<project>-<nid>` fork name returned by `mr:list` /
-`issue:get-fork`. `mr:list`, `mr:diff`, `mr:status`, `mr:files`, `mr:logs`
-**still work unchanged** for migrated projects — only the issue body /
-comments come from GitLab.
-
-From the combined results, determine:
-- **Issue title** and project machine name (e.g. `ai`, `gin`)
-- **Issue status** (Active / Needs Review / RTBC / Closed / etc.) — for
-  migrated issues, infer from GitLab state + labels (e.g. `state::needsWork`)
-- **MR count**: zero MRs → **NEW ISSUE path**; one or more MRs → **EXISTING MR path**
-- **Source of truth**: note whether you'll be reading comments from Drupal.org
-  or GitLab — affects where the user is expected to post replies later.
-
-**[PAUSE]** Present a short triage card and wait for the user's go-ahead before
-proceeding to Path A or B:
+**[PAUSE]** Present a short triage card and wait for the user's go-ahead:
 
 ```
 ## Issue <nid>: <title>
-- Project: <project> (<queue: drupal.org | GitLab work items>)
+- Project: <project> (<drupal.org | GitLab work items>)
 - Status: <issue status>
 - MRs found: <count> → <EXISTING MR path | NEW ISSUE path>
 - Branch: <branch name> (if MR exists)
@@ -434,8 +379,8 @@ For each approved fix:
      ddev exec bash -c "cd /var/www/html/web/modules/contrib/<project> && phpstan analyse --configuration=phpstan.neon --memory-limit=256M 2>&1"
      ```
      Skip if the module has no `phpstan.neon`.
-3. Stage specific files (requires user approval): `git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> add <files>`
-4. Match commit style: `git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> log --oneline -5`
+3. Stage specific files (requires user approval): `git -C <webroot>/modules/contrib/<project> add <files>`
+4. Match commit style: `git -C <webroot>/modules/contrib/<project> log --oneline -5`
 5. Commit matching project style (requires user approval)
 6. **Pre-push preflight** — run this checklist before pushing. Block on any failure:
    ```
@@ -448,7 +393,7 @@ For each approved fix:
    [ ] Branch up to date with origin/<default-branch>
        → if behind: use drupal-issue-reroll skill before pushing
    ```
-7. After all fixes pass preflight (requires user approval): `git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> push <project>-<nid> HEAD`
+7. After all fixes pass preflight (requires user approval): `git -C <webroot>/modules/contrib/<project> push <project>-<nid> HEAD`
 8. Poll pipeline:
    ```bash
    GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
@@ -600,7 +545,7 @@ plan are done, run pre-commit checks before staging anything:
    ```
    For Kernel/Functional tests (DB + base URL required):
    ```bash
-   ddev exec bash -c "SIMPLETEST_BASE_URL={{SITE_URL}} \
+   ddev exec bash -c "SIMPLETEST_BASE_URL=<site-url> \
      SIMPLETEST_DB=mysql://db:db@db/db \
      phpunit -c /var/www/html/web/core/phpunit.xml.dist \
      /var/www/html/web/modules/contrib/<project>--<nid>/tests/src/Kernel \
@@ -618,10 +563,10 @@ plan are done, run pre-commit checks before staging anything:
    ```
 5. Only after all checks pass (git add, commit, push all require user approval):
 ```bash
-git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project>--<nid> log --oneline -5   # match commit style
-git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project>--<nid> add <specific files>
-git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project>--<nid> commit -m "<message>"
-git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project>--<nid> push <project>-<nid> HEAD
+git -C <webroot>/modules/contrib/<project>--<nid> log --oneline -5   # match commit style
+git -C <webroot>/modules/contrib/<project>--<nid> add <specific files>
+git -C <webroot>/modules/contrib/<project>--<nid> commit -m "<message>"
+git -C <webroot>/modules/contrib/<project>--<nid> push <project>-<nid> HEAD
 ```
 
 Capture the GitLab MR-creation URL from the push output and surface it to the user.
@@ -658,6 +603,6 @@ Capture the GitLab MR-creation URL from the push output and surface it to the us
   property promotion, typed properties, named arguments where they aid clarity.
 - **SSH remotes only**: use `git@git.drupal.org:…` not `https://`.
 - **`--format=llm`** on every `drupalorg` read command.
-- **Never `cd` into module directories.** Use `git -C {{DRUPAL_WEBROOT}}/modules/contrib/<project> <cmd>` from the Drupal root for all git operations.
+- **Never `cd` into module directories.** Use `git -C <webroot>/modules/contrib/<project> <cmd>` from the Drupal root for all git operations.
 - **Stage specific files** (`git -C … add <file>`), never `git add .` or `git add -A`.
 - **Match the project commit style** (read `git log --oneline -5` first).

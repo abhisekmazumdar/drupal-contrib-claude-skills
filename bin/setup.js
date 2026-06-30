@@ -3,11 +3,14 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
+const { execSync } = require('child_process');
 
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const CWD = process.cwd();
+const LOCK_FILE = path.join(CWD, '.claude', 'claude-skills.lock.json');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,10 +100,25 @@ function ask(rl, question) {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
 }
 
+function readLock() {
+  try { return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8')).vars || {}; } catch (_) { return {}; }
+}
+
+function writeLock(vars) {
+  fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
+  fs.writeFileSync(LOCK_FILE, JSON.stringify({ lockedAt: new Date().toISOString(), vars }, null, 2));
+}
+
+function findBin(name) {
+  try { return execSync(`which ${name}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim(); } catch (_) { return null; }
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log('\n🎸 drupal-claude-skills setup\n');
+
+  const lock = readLock();
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -111,8 +129,8 @@ async function main() {
     console.log('Drupal project detected at current directory.\n');
   } else {
     const detected = findDrupalSubdir(CWD);
-    const defaultSubdir = detected || '.';
-    const hint = detected ? `${detected} (auto-detected)` : '.';
+    const defaultSubdir = lock.DRUPAL_SUBDIR || detected || '.';
+    const hint = detected ? `${detected} (auto-detected)` : defaultSubdir;
     const answer = await ask(rl, `Where is your Drupal project? [${hint}]: `);
     drupalSubdir = answer || defaultSubdir;
     console.log('');
@@ -128,14 +146,31 @@ async function main() {
 
   // ── Step 2: DDEV + site details ────────────────────────────────────────────
   const detectedProject = readDdevProjectName(drupalAbsDir) || path.basename(drupalAbsDir);
-  const projectName = await ask(rl, `DDEV project name [${detectedProject}]: `) || detectedProject;
-  const defaultUrl = `https://${projectName}.ddev.site`;
+  const defaultProject = lock.DDEV_PROJECT || detectedProject;
+  const projectName = await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
+  const defaultUrl = lock.SITE_URL || `https://${projectName}.ddev.site`;
   const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
-  const phpVersion = await ask(rl, 'PHP version [8.4]: ') || '8.4';
-  const mariadbVersion = await ask(rl, 'MariaDB version [11.8]: ') || '11.8';
+  const phpVersion = await ask(rl, `PHP version [${lock.PHP_VERSION || '8.4'}]: `) || lock.PHP_VERSION || '8.4';
+  const mariadbVersion = await ask(rl, `MariaDB version [${lock.MARIADB_VERSION || '11.8'}]: `) || lock.MARIADB_VERSION || '11.8';
+
+  // ── Humanizer skill ────────────────────────────────────────────────────────
+  const hasHumanizer = fs.existsSync(path.join(os.homedir(), '.claude', 'skills', 'humanizer', 'SKILL.md'));
+  if (!hasHumanizer) {
+    console.log('\n⚠  humanizer skill not found in ~/.claude/skills/humanizer/');
+    console.log('   drupalorg-comment-format uses it to strip AI writing patterns from comments.');
+    console.log('   Install it globally in ~/.claude/skills/ and re-run setup to pick it up.');
+    const ans = await ask(rl, '   Continue without humanizer? [Y/n]: ');
+    if (ans.toLowerCase() === 'n') {
+      rl.close();
+      console.log('\nSetup aborted. Install humanizer and re-run.\n');
+      process.exit(0);
+    }
+  }
 
   rl.close();
   console.log('');
+
+  const drupalorgBin = findBin('drupalorg') || '/path/to/drupalorg';
 
   const vars = {
     DDEV_PROJECT: projectName,
@@ -144,6 +179,8 @@ async function main() {
     MARIADB_VERSION: mariadbVersion,
     DRUPAL_PATH: drupalPath,
     DRUPAL_WEBROOT: drupalWebroot,
+    DRUPAL_SUBDIR: drupalSubdir,
+    DRUPAL_CLI_BIN: drupalorgBin,
   };
 
   const claudeDir = path.join(CWD, '.claude');
@@ -151,21 +188,22 @@ async function main() {
 
   const log = { copied: [], identical: [] };
 
-  // Skills — render path vars
+  // Skills — copied as-is; skills read project paths from CLAUDE.md context
   copyDirMerge(
     path.join(PACKAGE_ROOT, 'skills'),
     path.join(claudeDir, 'skills'),
-    vars,
+    null,
     log
   );
 
-  // Agents — render {{...}} placeholders
+  // Agents — copied as-is; project paths come from CLAUDE.md context
   copyDirMerge(
     path.join(PACKAGE_ROOT, 'agents'),
     path.join(claudeDir, 'agents'),
-    vars,
+    null,
     log
   );
+
 
   // settings.json
   copyFile(
@@ -194,6 +232,11 @@ async function main() {
     for (const f of log.identical) console.log(`  =  ${f}`);
   }
 
+  writeLock(vars);
+
+  if (drupalorgBin === '/path/to/drupalorg') {
+    console.log('\n⚠  drupalorg not found on PATH — install it and re-run setup to activate the drupalorg-cli MCP server.');
+  }
   console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
 }
 

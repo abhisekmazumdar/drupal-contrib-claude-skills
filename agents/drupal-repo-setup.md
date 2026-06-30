@@ -39,11 +39,11 @@ If the DDEV environment is not running or behaves unexpectedly during any step, 
 ## Step 1 — Locate the module directory
 
 ```bash
-find {{DRUPAL_WEBROOT}}/modules/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
-find {{DRUPAL_WEBROOT}}/themes/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
+find <webroot>/modules/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
+find <webroot>/themes/contrib -maxdepth 1 -name "<project>" -type d 2>/dev/null
 ```
 
-Set `<module_dir>` to the path found (e.g. `{{DRUPAL_WEBROOT}}/modules/contrib/<project>`).
+Set `<module_dir>` to the path found (e.g. `<webroot>/modules/contrib/<project>`).
 
 ---
 
@@ -69,7 +69,7 @@ The module `<project>` is not cloned in this project.
 
 Proposed action: invoke `/drupal-clone-contrib <project>`
 
-This will create files under {{DRUPAL_WEBROOT}}/modules/contrib/<project>.
+This will create files under <webroot>/modules/contrib/<project>.
 Shall I go ahead?
 ```
 

@@ -198,9 +198,9 @@ When drafting a **comment reply**:
 
 ## Output Format
 
-### Pre-output: humanizer pass
+### Pre-output: humanizer pass (if available)
 
-Before producing any output, run `/humanizer` on the drafted text to strip residual AI writing patterns. The Voice and Tone rules above are the guide; the humanizer is the automated catch for anything that slips through. Apply its suggestions, then proceed.
+If the `/humanizer` skill is present in this project, run it on the drafted text before output to strip residual AI writing patterns. It is the automated catch for anything the Voice and Tone rules above missed. If humanizer is not installed, apply those rules manually and proceed.
 
 ---
 

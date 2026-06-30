@@ -22,6 +22,8 @@ into the correct local directory for contribution work.
 /drupal-clone-contrib eca_starterkit --branch=1.0.x --type=recipe
 ```
 
+**Path references:** use the `Docroot` path from CLAUDE.md as `<webroot>` (e.g. `web` or `drupal/web`) and the Drupal project prefix as `<drupal-path>` (e.g. `` or `drupal/`).
+
 ---
 
 ## Arguments
@@ -41,9 +43,9 @@ Parse the arguments from the string above:
 
 **If `--type` was not provided**, check local dirs first:
 ```bash
-ls {{DRUPAL_WEBROOT}}/modules/contrib/<project-name> 2>/dev/null && echo "module"
-ls {{DRUPAL_WEBROOT}}/themes/contrib/<project-name> 2>/dev/null && echo "theme"
-ls {{DRUPAL_PATH}}recipes/<project-name> 2>/dev/null && echo "recipe"
+ls <webroot>/modules/contrib/<project-name> 2>/dev/null && echo "module"
+ls <webroot>/themes/contrib/<project-name> 2>/dev/null && echo "theme"
+ls <drupal-path>recipes/<project-name> 2>/dev/null && echo "recipe"
 ```
 
 If not found locally, fetch the project releases to infer the type:
@@ -71,9 +73,9 @@ ask the user which to use.
 
 | Type    | Target directory                  |
 |---------|-----------------------------------|
-| module  | `{{DRUPAL_WEBROOT}}/modules/contrib/<project>`   |
-| theme   | `{{DRUPAL_WEBROOT}}/themes/contrib/<project>`    |
-| recipe  | `{{DRUPAL_PATH}}recipes/<project>`           |
+| module  | `<webroot>/modules/contrib/<project>`   |
+| theme   | `<webroot>/themes/contrib/<project>`    |
+| recipe  | `<drupal-path>recipes/<project>`           |
 
 **Check for conflicts:**
 - If the target directory already exists and is a git repository (`ls <target>/.git`),
@@ -86,7 +88,7 @@ ask the user which to use.
 
 Ensure the parent directory exists:
 ```bash
-mkdir -p {{DRUPAL_WEBROOT}}/modules/contrib   # (or themes/contrib, recipes as appropriate)
+mkdir -p <webroot>/modules/contrib   # (or themes/contrib, recipes as appropriate)
 ```
 
 ---
@@ -101,17 +103,17 @@ git clone --branch '<branch>' git@git.drupal.org:project/<project-name>.git <tar
 
 Example for a module:
 ```bash
-git clone --branch '2.0.x' git@git.drupal.org:project/ai.git {{DRUPAL_WEBROOT}}/modules/contrib/ai
+git clone --branch '2.0.x' git@git.drupal.org:project/ai.git <webroot>/modules/contrib/ai
 ```
 
 Example for a theme:
 ```bash
-git clone --branch '6.x' git@git.drupal.org:project/gin.git {{DRUPAL_WEBROOT}}/themes/contrib/gin
+git clone --branch '6.x' git@git.drupal.org:project/gin.git <webroot>/themes/contrib/gin
 ```
 
 Example for a recipe:
 ```bash
-git clone --branch '1.0.x' git@git.drupal.org:project/eca_starterkit.git {{DRUPAL_PATH}}recipes/eca_starterkit
+git clone --branch '1.0.x' git@git.drupal.org:project/eca_starterkit.git <drupal-path>recipes/eca_starterkit
 ```
 
 ---
@@ -144,4 +146,4 @@ Report to the user:
   `drupalorg issue:setup-remote` and `drupalorg issue:checkout` for you.
 - If DDEV is in use, enable the module after cloning with `ddev drush en <project>`.
 - Recipes are not modules — do not enable with Drush. Apply with
-  `ddev drush recipe {{DRUPAL_PATH}}recipes/<project>`.
+  `ddev drush recipe <drupal-path>recipes/<project>`.

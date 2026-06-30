@@ -31,8 +31,8 @@
       "Bash(find *)",
       "Bash(ls *)",
       "Bash(wc *)",
-      "Skill(drupal-work-on-issue)",
-      "Skill(drupal-work-on-issue:*)",
+      "Skill(humanizer)",
+      "Skill(humanizer:*)",
       "Skill(drupalorg-comment-format)",
       "Skill(drupalorg-comment-format:*)",
       "Skill(drupal-issue-start)",
@@ -45,15 +45,25 @@
       "WebFetch(domain:www.drupal.org)",
       "WebFetch(domain:git.drupalcode.org)"
     ],
-    "deny": [
+    "ask": [
       "Bash(git push*)",
+      "Bash(git -C * push*)"
+    ],
+    "deny": [
       "Bash(git reset*)",
+      "Bash(git -C * reset*)",
       "Bash(git rebase*)",
+      "Bash(git -C * rebase*)",
       "Bash(git merge*)",
+      "Bash(git -C * merge*)",
       "Bash(git cherry-pick*)",
+      "Bash(git -C * cherry-pick*)",
       "Bash(git revert*)",
+      "Bash(git -C * revert*)",
       "Bash(git clean*)",
+      "Bash(git -C * clean*)",
       "Bash(git rm*)",
+      "Bash(git -C * rm*)",
       "Bash(GITLAB_HOST=git.drupalcode.org glab note*)",
       "Bash(GITLAB_HOST=git.drupalcode.org glab mr note*)",
       "Bash(GITLAB_HOST=git.drupalcode.org glab mr comment*)",
@@ -71,5 +81,11 @@
       "Bash(GITLAB_HOST=git.drupalcode.org glab ci run*)",
       "Bash(GITLAB_HOST=git.drupalcode.org glab api*)"
     ]
+  },
+  "mcpServers": {
+    "drupalorg-cli": {
+      "command": "php",
+      "args": ["{{DRUPAL_CLI_BIN}}", "mcp:serve"]
+    }
   }
 }
