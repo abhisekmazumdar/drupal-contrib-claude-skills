@@ -53,7 +53,7 @@ jobs:
           node -e "
           const fs = require('fs');
           const path = require('path');
-          const knownVars = new Set(['DDEV_PROJECT','SITE_URL','PHP_VERSION','MARIADB_VERSION','DRUPAL_PATH','DRUPAL_WEBROOT']);
+          const knownVars = new Set(['DDEV_PROJECT','SITE_URL','PHP_VERSION','MARIADB_VERSION','DRUPAL_PATH','DRUPAL_WEBROOT','DRUPAL_CLI_BIN']);
           function scanDir(dir) {
             const found = new Set();
             for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
