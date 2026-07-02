@@ -189,6 +189,13 @@ Once the sub-agent confirms the branch is checked out, read the full local diff:
 git -C <module_dir> diff origin/<default-branch>...HEAD
 ```
 
+Also capture how many commits the branch is behind upstream — this feeds into the A9 report:
+```bash
+git -C <module_dir> fetch origin
+git -C <module_dir> log HEAD..origin/<DEFAULT_BRANCH> --oneline | wc -l
+```
+Store the result as `COMMITS_BEHIND`.
+
 ### A3. Read changed files in full
 
 For each file touched by the diff, read the **complete file** (not just the diff
@@ -336,9 +343,15 @@ Do not begin any fix until the user replies with explicit approval.
 
 ### Summary
 - Pipeline: PASSING / FAILING / PENDING
+- Branch sync: up to date  |  ⚠ N commits behind origin/<DEFAULT_BRANCH>
 - PHPCS: X errors, Y warnings
 - PHPUnit: X passed, Y failed / not run
 - Review: X FAIL, Y PASS, Z SKIP
+
+> **⚠ Branch is N commits behind `origin/<DEFAULT_BRANCH>`.**  ← include only when COMMITS_BEHIND > 0
+> Any fixes made now will need a rebase + force-push afterward.
+> If you'd prefer a clean history, say **"reroll first"** and I will run
+> `/drupal-issue-reroll <nid>` before touching any code.
 
 ### Review Failures
 [numbered list — each item: N. file:line — description — suggested fix]
