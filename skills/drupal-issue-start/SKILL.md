@@ -18,7 +18,7 @@ argument-hint: <issue-url>
 - The issue record at `issues/<nid>/README.md` is **always** read (and created if absent) **before** any other action.
 - The structured report is **always** shown to the human **before** any work is proposed.
 - **Work never begins until the human gives explicit direction.**
-- After any session involving code or reviews, remind the human to run `/issue-record-update <nid>`.
+- After any session involving code or reviews, the delegated agent writes a full session report to `issues/<nid>/reports/` automatically (see `issue-record-update`) — this is not a human-triggered reminder.
 
 ---
 
@@ -82,7 +82,7 @@ Also note any **related issues** mentioned in comments or the issue body (e.g. "
 **If `issues/<nid>/README.md` does NOT exist:**
 
 ```bash
-mkdir -p issues/<nid>/screenshots issues/<nid>/comments
+mkdir -p issues/<nid>/screenshots issues/<nid>/comments issues/<nid>/reports
 ```
 
 Write `issues/<nid>/README.md`:
@@ -208,10 +208,8 @@ Pass `<nid>`, `<project>`, `is_migrated`, MR iids, and the full issue record con
 
 ## Phase 6 — After work
 
-After any session involving code changes, reviews, or pushes, remind the human:
+After any session involving code changes, reviews, or pushes, the delegated agent (`drupal-issue-agent` or `drupal-issue-catchup`) invokes the `issue-record-update` skill itself at end of session — writing a full report to `issues/<nid>/reports/` and a short index entry to the README. This is mandatory, not a reminder to the human.
 
-```
-Session complete. Run `/issue-record-update <nid>` to log what was done.
-```
+If the session ended without delegating to one of those agents (e.g. the human only said "just track it" or "add a note"), no report is needed — nothing was done that requires recording beyond the README update already made in Phase 3/5.
 
-Do not call `issue-record-update` automatically — the human triggers it so they can add their own context.
+The human can still run `/issue-record-update <nid>` manually at any time to add extra context to the most recent report.
