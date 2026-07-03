@@ -118,7 +118,7 @@ Categorise new activity:
 
 Compare new activity against the open items in the local record.
 
-If the record is **stale** (new activity exists that was not logged), update it now using the `issue-record-update` skill — write directly without confirmation, as this is a routine sync.
+If the record is **stale** (new activity exists that was not logged), update it now using the `issue-record-update` skill — write directly without confirmation, as this is a routine sync. This writes both a full report to `issues/<nid>/reports/` and a short indexing entry to the README.
 
 If the record is already **up to date** (nothing new since last session), note that and continue.
 
@@ -184,3 +184,11 @@ Once the user replies:
   - Repo not set up → use `drupal-repo-setup` agent
 
 Follow all approval gates from those agents — this agent does not bypass them.
+
+---
+
+## Session Logging — Mandatory
+
+If any work delegated in this step used `drupal-issue-agent`, that agent logs its own session — do not log it again here.
+
+If this agent did work directly (e.g. drafted or posted a comment, without delegating), invoke the `issue-record-update` skill yourself at the end of the session — do not just remind the human. It writes a full report to `issues/<nid>/reports/` and a short indexing entry to `issues/<nid>/README.md`. This is a tracking-directory write, not a code change, so it does not require an approval gate.

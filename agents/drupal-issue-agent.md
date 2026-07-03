@@ -40,13 +40,14 @@ If this agent is invoked directly without going through `drupal-issue-start`:
 
 ## Session Logging — Mandatory
 
-At the end of every session where code was reviewed, changed, or a push was attempted, remind the human:
+At the end of every session where code was reviewed, changed, or a push was attempted, invoke the `issue-record-update` skill yourself — do not just remind the human. It writes a full report to `issues/<nid>/reports/` (everything found and done this session) and a short indexing entry to `issues/<nid>/README.md`.
 
-```
-Session complete. Run /issue-record-update <nid> to log this session.
-```
+This is a tracking-directory write, not a code change or a Drupal.org post — it does not require an approval gate. The human can still run `/issue-record-update <nid>` manually afterward to add extra context.
 
-Do not call `issue-record-update` automatically — the human triggers it so they can add their own context to the log.
+Tell the human where the report was written:
+```
+Session logged: issues/<nid>/reports/<filename>
+```
 
 ---
 
