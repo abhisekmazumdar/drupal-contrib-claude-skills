@@ -126,12 +126,15 @@ https://git.drupalcode.org/project/ai/-/work_items/3499692
 
 ## Issue tracking
 
-Every issue you work on gets a persistent record at `issues/<nid>/README.md`. This is the long-term memory for contribution work — it survives across sessions and is read at the start of every session.
+Every issue you work on gets a persistent record at `issues/<nid>/README.md`. This is the long-term memory for contribution work — it survives across sessions and is read at the start of every session. At the end of each session, the agent writes a full standalone report to `issues/<nid>/reports/` and appends a short indexing entry to the README that links to it.
 
 ```
 issues/
 └── 3499692/
-    └── README.md         ← summary, work log, notes
+    ├── README.md         ← summary, work log (short session index), notes
+    ├── comments/         ← drafted Drupal.org / GitLab comments
+    ├── screenshots/      ← browser screenshots captured during issue work
+    └── reports/          ← full standalone session reports
 ```
 
 ## Updating
