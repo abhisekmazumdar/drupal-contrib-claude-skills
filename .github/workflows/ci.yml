@@ -23,29 +23,36 @@ jobs:
       - name: Syntax check
         run: node --check bin/setup.js
 
-      - name: Validate SKILL.md frontmatter
+      - name: Validate skill and agent frontmatter
         run: |
           node -e "
           const fs = require('fs');
           const path = require('path');
           let failed = false;
+          function fail(msg) { console.error(msg); failed = true; }
+          function checkFrontmatter(file, expectedName) {
+            const content = fs.readFileSync(file, 'utf8');
+            const block = content.match(/^---\n([\s\S]*?)\n---/);
+            if (!block) { fail(file + ': missing --- frontmatter block'); return; }
+            const fm = block[1];
+            const name = fm.match(/^name:\s*(\S+)\s*$/m);
+            if (!name) fail(file + ': missing name: field');
+            else if (name[1] !== expectedName) fail(file + ': name \'' + name[1] + '\' does not match \'' + expectedName + '\'');
+            if (!/^description:/m.test(fm)) fail(file + ': missing description: field');
+          }
           for (const skill of fs.readdirSync('skills')) {
             const skillDir = path.join('skills', skill);
             if (!fs.statSync(skillDir).isDirectory()) continue;
             const skillFile = fs.readdirSync(skillDir).find(f => f.toLowerCase() === 'skill.md');
-            if (!skillFile) {
-              console.error('Missing SKILL.md in skills/' + skill);
-              failed = true;
-              continue;
-            }
-            const content = fs.readFileSync(path.join(skillDir, skillFile), 'utf8');
-            if (!/^name:/m.test(content)) {
-              console.error('Missing name: field in skills/' + skill + '/' + skillFile);
-              failed = true;
-            }
+            if (!skillFile) { fail('Missing SKILL.md in ' + skillDir); continue; }
+            checkFrontmatter(path.join(skillDir, skillFile), skill);
+          }
+          for (const agent of fs.readdirSync('agents')) {
+            if (!agent.endsWith('.md')) continue;
+            checkFrontmatter(path.join('agents', agent), path.basename(agent, '.md'));
           }
           if (failed) process.exit(1);
-          console.log('All SKILL.md files OK');
+          console.log('All skill and agent frontmatter OK');
           "
 
       - name: Validate template variables

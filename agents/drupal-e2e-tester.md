@@ -64,7 +64,7 @@ do not invent scenarios that were never reviewed by the human.
    ```bash
    npx skills add microsoft/playwright-cli --skill playwright-cli
    ```
-   If the `playwright-cli` binary itself is not on PATH, use `npx -y @playwright/cli`
+   If the `playwright-cli` binary itself is not on PATH, use `npx @playwright/cli`
    in its place. A first run may need to download a browser — that always requires
    an explicit user go-ahead.
 3. **Site reachable?** `curl -skI <site-url> | head -1` — expect an HTTP response.

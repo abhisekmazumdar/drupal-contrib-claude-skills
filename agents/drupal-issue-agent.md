@@ -103,15 +103,22 @@ From the MR count determine the path:
 - **Zero MRs** → Path B (new issue)
 - **One or more MRs** → Path A (review existing MR)
 
+**Status guard — check before choosing a path.** If the issue status is **RTBC**
+or **Fixed**, do not enter the Path A fix loop or Path B implementation: code
+changes at this stage disrupt the queue. Limit the offer to review feedback or
+the test phase (Phase T), and say so in the triage card. Only proceed with code
+changes if the user explicitly overrides after this warning.
+
 **[PAUSE]** Present a short triage card and wait for the user's go-ahead:
 
 ```
 ## Issue <nid>: <title>
 - Project: <project> (<drupal.org | GitLab work items>)
-- Status: <issue status>
+- Status: <issue status>  <⚠ RTBC/Fixed — code changes not recommended, if applicable>
 - MRs found: <count> → <EXISTING MR path | NEW ISSUE path>
 - Branch: <branch name> (if MR exists)
 - Pipeline: <PASSING | FAILING | PENDING | n/a>
+- Recommendation: <continue existing MR | implement fresh | needs discussion | do not touch>
 ```
 
 Ask: **"Should I continue with a full review / implementation plan?"**

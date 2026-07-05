@@ -75,6 +75,7 @@
       "Bash(mkdir -p issues/*)",
       "Bash(playwright-cli *)",
       "Bash(npx @playwright/cli *)",
+      "Bash(npx -y @playwright/cli *)",
       "Skill(playwright-cli)",
       "Skill(playwright-cli:*)",
       "WebFetch(domain:www.drupal.org)",
