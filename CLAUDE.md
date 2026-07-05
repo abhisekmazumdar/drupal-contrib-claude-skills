@@ -36,6 +36,16 @@ Instead, skills reference project paths using angle-bracket placeholders (`<webr
 
 Each skill in `skills/<name>/SKILL.md` must work without knowing the specific Drupal project layout. Path detection belongs inside the skill (e.g. `find . -name "vendor/bin/phpcs"`), not baked in at install time.
 
+### External skills are pulled, not vendored
+
+The `playwright-cli` skill (used by `drupal-e2e-tester` for browser e2e) is **not** in this repo. `bin/setup.js` pulls it at install time with:
+
+```bash
+npx -y skills@latest add microsoft/playwright-cli --skill playwright-cli --agent claude-code --copy -y
+```
+
+Do not copy its contents into `skills/` — it is maintained upstream by Microsoft and updated via `npx skills update`. The pull is non-fatal: if it fails (offline), setup prints the manual install command and continues.
+
 ### Agent handoff pattern
 
 `drupal-issue-agent` is always invoked by `drupal-issue-start`. The agent's Phase 0 and Phase 1 are intentionally thin — they receive pre-parsed context from the skill rather than re-fetching it. Do not add URL parsing or issue-fetching logic back to the agent.
@@ -82,4 +92,5 @@ A native GitLab MCP for `git.drupalcode.org` is tracked at [drupal.org/project/i
 - Do not hardcode paths like `web/modules/contrib/` into skill files — use `<webroot>` and detect at runtime
 - Do not add duplicate URL parsing or issue-fetching logic to `drupal-issue-agent` — that belongs in `drupal-issue-start`
 - Do not add Edit tools or code-fixing steps to `drupal-e2e-tester` — it stays a report-only test runner; fixes go back through `drupal-issue-agent` with explicit approval
-- Do not add external npm dependencies to `bin/setup.js` — it uses only Node 18 built-ins
+- Do not add external npm dependencies to `bin/setup.js` — it uses only Node 18 built-ins (shelling out to `npx`/`which` via `execSync` is fine)
+- Do not vendor the `playwright-cli` skill (or other upstream-maintained skills) into `skills/` — setup pulls them via `npx skills add`

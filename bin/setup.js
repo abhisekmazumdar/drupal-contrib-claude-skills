@@ -204,6 +204,30 @@ async function main() {
     log
   );
 
+  // playwright-cli skill — pulled from microsoft/playwright-cli, never vendored
+  // in this repo. Used by the drupal-e2e-tester agent for browser e2e testing.
+  const playwrightSkill = path.join(claudeDir, 'skills', 'playwright-cli', 'SKILL.md');
+  if (fs.existsSync(playwrightSkill)) {
+    log.identical.push(path.relative(CWD, playwrightSkill) + ' (update with: npx skills update)');
+  } else {
+    console.log('Pulling playwright-cli skill from github.com/microsoft/playwright-cli …');
+    try {
+      execSync(
+        'npx -y skills@latest add microsoft/playwright-cli --skill playwright-cli --agent claude-code --copy -y',
+        { cwd: CWD, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
+      );
+      if (fs.existsSync(playwrightSkill)) {
+        log.copied.push(path.relative(CWD, playwrightSkill));
+      } else {
+        throw new Error('skill not found after install');
+      }
+    } catch (_) {
+      console.log('⚠  Could not pull the playwright-cli skill (offline or npx unavailable).');
+      console.log('   The drupal-e2e-tester agent needs it for browser e2e tests. Install later with:');
+      console.log('   npx skills add microsoft/playwright-cli --skill playwright-cli\n');
+    }
+  }
+
 
   // settings.json
   copyFile(
