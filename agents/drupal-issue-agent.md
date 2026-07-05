@@ -63,6 +63,21 @@ These rules govern every phase and path below. Read them first.
 - **Never force-push** unless the user explicitly requests it. When a force-push IS needed (e.g. after a rebase), always use `--force-with-lease`, never bare `--force`.
 - **Always ask before `git add`, `git commit`, `git push`** — these require explicit user approval every time, not just once per session.
 
+### How `[PAUSE]` works when running as a sub-agent
+
+This agent normally runs as a sub-agent of `/drupal-issue-start`, and a sub-agent
+cannot talk to the user directly mid-run. At every `[PAUSE]`:
+
+1. Output the full report and its question as your **final message**, starting with
+   the line `[PAUSE — awaiting user decision]`, then **end the run**.
+2. The main conversation (`drupal-issue-start`) relays that report to the user
+   verbatim and waits for their reply.
+3. You are then resumed — or re-invoked with the pause report plus the user's
+   reply — and continue from exactly that step, acting only on what was approved.
+
+Never assume the caller will answer for the user, and never continue past a
+`[PAUSE]` inside a single run.
+
 ---
 
 ## Phase 0 — Receive context from drupal-issue-start
@@ -290,6 +305,10 @@ Work through every item. Mark each `PASS`, `FAIL`, or `SKIP`:
 Generate steps a human tester can follow top-to-bottom without prior context.
 Write as if handing the list to a colleague who hasn't read the issue.
 
+These steps are also the input script for the Playwright browser e2e layer in
+Phase T — write them precisely enough (exact labels, exact paths, explicit
+expectations) that they can be automated verbatim.
+
 Rules for writing good steps:
 - One action per step — never "click X and then Y" in the same line
 - Use exact UI labels and paths — "click **Save configuration**", not "save the form"
@@ -421,6 +440,9 @@ For each approved fix:
    ```
 
 **[PAUSE]** After each push, report outcome. Ask whether to continue or stop.
+
+When all approved items are done and preflight is clean, offer the dedicated test
+phase (see **Phase T**) before drafting any review comment.
 
 ### A11. Draft Drupal.org comment (if requested)
 
@@ -582,9 +604,50 @@ git -C <webroot>/modules/contrib/<project>--<nid> commit -m "<message>"
 git -C <webroot>/modules/contrib/<project>--<nid> push <project>-<nid> HEAD
 ```
 
+After the preflight passes and **before** asking to push, offer the dedicated test
+phase (see **Phase T**) — catching a failure locally beats catching it in CI.
+
 Capture the GitLab MR-creation URL from the push output and surface it to the user.
 
 **[PAUSE]** Report what was pushed and the MR URL. Ask whether to continue or stop.
+
+---
+
+## Phase T — Dedicated test phase (`drupal-e2e-tester`)
+
+Testing is a separate phase run by a **separate agent** so a failing test can never
+be silently "fixed" by re-editing code without visibility. This agent implements;
+`drupal-e2e-tester` verifies.
+
+**When to offer it:**
+- End of A10 — all approved fixes made, pre-push preflight clean
+- End of B5 — implementation complete, preflight clean, before the push
+- Any time the user says "test it", "run the tests", or "verify in the browser"
+
+**[PAUSE]** Ask: *"Run the dedicated test phase (PHPUnit + Playwright browser e2e)
+now?"* Do not invoke the tester until the user says yes.
+
+If approved, invoke it with everything it needs so it fetches nothing itself:
+
+```
+Invoke agent: drupal-e2e-tester
+  nid:         <nid>
+  project:     <project>
+  module_dir:  <module_dir>
+  site_url:    <site-url from CLAUDE.md>
+  steps:       <the full A8 / B3 manual testing steps>
+  changed:     <list of files touched by the diff>
+```
+
+**Rules:**
+- The tester never edits code. If its report contains failures, relay the report
+  to the user as a numbered list and treat each fix exactly like an A9→A10 item —
+  explicit, item-specific approval before touching anything.
+- Never re-run implementation "to make the tests green" without the user seeing
+  the failure report first.
+- The tester's screenshots land in `issues/<nid>/screenshots/` and its specs in
+  `issues/<nid>/e2e/` — both are part of the issue record and useful evidence for
+  the Drupal.org comment (A11).
 
 ---
 
