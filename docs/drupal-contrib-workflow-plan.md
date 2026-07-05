@@ -74,18 +74,21 @@ User: paste Drupal.org / GitLab issue URL
   ("test it" / "verify in the browser") via the `drupal-issue-start` Phase 5 table.
 - **Layer 1 — PHPUnit** via `ddev exec phpunit` (Unit / Kernel / Functional),
   following the `drupal-automated-testing` skill.
-- **Layer 2 — Playwright** browser e2e: the A8/B3 manual testing steps are the
-  script; every `✓ Expect:` / `✗ Expect:` becomes an assertion; login via fresh
-  `ddev drush uli` links passed by env var (never hardcoded credentials);
-  `ignoreHTTPSErrors` for the DDEV self-signed cert; screenshots on every key
+- **Layer 2 — Playwright** browser e2e via the official **`playwright-cli` skill**
+  (`microsoft/playwright-cli`) — pulled by `setup.js` with `npx skills add` at
+  install time, never vendored in this repo. The A8/B3 manual testing steps are
+  the script; every `✓ Expect:` / `✗ Expect:` becomes a check; login via fresh
+  `ddev drush uli` links (never hardcoded credentials); screenshots on every key
   assertion saved to `issues/<nid>/screenshots/`.
 - Report contract: per-suite and per-scenario results, full failure output, a
   mandatory **Not covered** section, site cleanup notes, and a verdict. Fixes are
   never applied by the tester — failures route back to `drupal-issue-agent` as
   numbered items needing explicit approval.
-- Requirement (optional install): `npm i -D @playwright/test && npx playwright
-  install chromium`. `settings.json.template` allows `npx playwright test` and
-  asks before `npx playwright install`.
+- No local Playwright dependency in this repo: `setup.js` pulls the skill
+  (`npx -y skills@latest add microsoft/playwright-cli --skill playwright-cli
+  --agent claude-code --copy -y`), non-fatally warning with the manual command if
+  offline. `settings.json.template` allows `playwright-cli` usage and asks before
+  browser installs / `npx skills add`.
 
 ---
 

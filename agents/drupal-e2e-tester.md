@@ -11,6 +11,7 @@ tools: Read, Glob, Grep, Write, Bash, TodoWrite
 skills:
   - drupal-automated-testing
   - ddev-expert
+  - playwright-cli
 ---
 
 # drupal-e2e-tester
@@ -53,16 +54,19 @@ do not invent scenarios that were never reviewed by the human.
 
 1. **DDEV up?** `ddev describe` — if containers are not healthy, consult the
    `ddev-expert` skill before anything else.
-2. **Playwright available?**
+2. **playwright-cli skill available?** The `playwright-cli` skill is not part of
+   this package — `setup.js` pulls it from `microsoft/playwright-cli` at install
+   time. Check it exists:
    ```bash
-   npx playwright --version
+   ls .claude/skills/playwright-cli/SKILL.md
    ```
-   If missing, stop and report the install commands rather than installing silently:
+   If missing, stop and report the install command rather than installing silently:
    ```bash
-   npm i -D @playwright/test
-   npx playwright install chromium
+   npx skills add microsoft/playwright-cli --skill playwright-cli
    ```
-   Browser download is large — installation always requires an explicit user go-ahead.
+   If the `playwright-cli` binary itself is not on PATH, use `npx -y @playwright/cli`
+   in its place. A first run may need to download a browser — that always requires
+   an explicit user go-ahead.
 3. **Site reachable?** `curl -skI <site-url> | head -1` — expect an HTTP response.
 
 ---
@@ -92,74 +96,48 @@ output for anything that failed.
 
 ## Phase 3 — Playwright browser e2e layer
 
-Translate the **manual testing steps** into Playwright specs. Every `✓ Expect:`
-becomes an assertion; every `✗ Expect:` becomes a negative assertion (403 page,
-validation error visible, form not submitted).
+Execute the **manual testing steps** in a real browser using the `playwright-cli`
+skill — it covers all browser mechanics (open/goto/click/fill/snapshot, sessions,
+test generation). This section only adds the Drupal-specific glue. Every
+`✓ Expect:` from the steps becomes a check against the page; every `✗ Expect:`
+becomes a negative check (403 page shown, validation error visible, form not
+submitted).
 
-### Setup
+### Drupal-specific rules on top of the skill
 
-Write specs and config under `issues/<nid>/e2e/`:
-
-```
-issues/<nid>/e2e/
-  playwright.config.js
-  <scenario>.spec.js       # one spec per scenario group from the manual steps
-```
-
-`playwright.config.js` essentials — DDEV uses a self-signed certificate:
-
-```js
-// issues/<nid>/e2e/playwright.config.js
-module.exports = {
-  use: {
-    baseURL: process.env.SITE_URL,
-    ignoreHTTPSErrors: true,
-    screenshot: 'on',
-  },
-  outputDir: './results',
-  reporter: [['list']],
-};
-```
-
-### Authentication
-
-Never hardcode credentials. Generate a one-time login link per run and pass it in
-via environment variable — `uli` links are single-use, so mint a fresh one for every
-`npx playwright test` invocation:
+**Authentication — never hardcode credentials.** Mint a fresh one-time login link
+per session (`uli` links are single-use) and navigate to it as the first step:
 
 ```bash
-# Admin
-LOGIN_URL=$(ddev drush uli --uri=<site-url>) SITE_URL=<site-url> \
-  npx playwright test --config issues/<nid>/e2e/playwright.config.js
+# Admin session
+playwright-cli open "$(ddev drush uli --uri=<site-url>)"
 
 # Specific role (create the user first if the steps require it)
 ddev drush user:create e2e_editor --password="$(openssl rand -hex 12)"
 ddev drush user:role:add editor e2e_editor
-LOGIN_URL=$(ddev drush uli --name=e2e_editor --uri=<site-url>) SITE_URL=<site-url> \
-  npx playwright test --config issues/<nid>/e2e/playwright.config.js
+playwright-cli open "$(ddev drush uli --name=e2e_editor --uri=<site-url>)"
 ```
 
-In the spec, log in by visiting the link before the scenario:
+Use one browser session per role. For anonymous-access scenarios (403 checks),
+open a fresh session without visiting any login link.
 
-```js
-test.beforeEach(async ({ page }) => {
-  await page.goto(process.env.LOGIN_URL);
-});
-```
+**Self-signed certificate.** DDEV sites use a self-signed cert — if navigation
+fails on TLS, consult the skill's session/config options for ignoring HTTPS
+errors before doing anything else.
 
-For anonymous-access scenarios (403 checks), use a test with no `beforeEach` login.
-
-### Writing good specs
-
-- One `test()` per scenario from the manual steps; keep the step comments from the
-  manual list inline so the spec reads like the checklist it automates.
-- Prefer role/label locators (`getByRole('button', { name: 'Save configuration' })`)
-  over CSS selectors — they match the exact UI labels the manual steps use.
-- After every key assertion, capture evidence:
-  ```js
-  await page.screenshot({ path: `issues/<nid>/screenshots/e2e-<scenario>-<step>.png`, fullPage: true });
+**Scenario discipline.**
+- Work through the manual steps one scenario at a time, in order — use `snapshot`
+  after each action to verify the expectation before moving on.
+- Match elements by their exact UI labels from the manual steps ("Save
+  configuration", not a CSS guess).
+- After every `✓ Expect:` / `✗ Expect:` check, capture evidence:
+  ```bash
+  playwright-cli screenshot --filename issues/<nid>/screenshots/e2e-<scenario>-<step>.png
   ```
-- AJAX/dynamic UI: `await expect(locator).toBeVisible()` — never fixed `waitForTimeout` sleeps.
+- If a step cannot be automated (email, external service, drag-precision UI),
+  mark it NOT COVERED in the report — do not fake a pass.
+- Optionally persist the session as a generated spec (see the skill's
+  test-generation reference) into `issues/<nid>/e2e/` so the run is repeatable.
 
 ### Cleanup
 
