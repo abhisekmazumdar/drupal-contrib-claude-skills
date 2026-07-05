@@ -1,7 +1,7 @@
 {
   "name": "drupal-claude-skills",
   "version": "1.0.0",
-  "description": "Claude Code skills and agent for Drupal open source contribution",
+  "description": "Claude Code skills and agents for Drupal open source contribution",
   "bin": {
     "drupal-claude-skills": "./bin/setup.js"
   },

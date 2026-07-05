@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `{{DRUPAL_WEBROOT}}/modules/contrib/`.
 
-The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for direction. From there it delegates to `drupal-issue-agent` for review and implementation work, or `drupal-issue-catchup` to sync after time away.
+The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for direction. From there it delegates to `drupal-issue-agent` for review and implementation work, `drupal-e2e-tester` for the dedicated test phase (PHPUnit + Playwright browser e2e), or `drupal-issue-catchup` to sync after time away.
 
 ---
 
@@ -42,7 +42,8 @@ issues/
 └── 3456789/
     ├── README.md         ← persistent record: summary, related issues, work log, human notes
     ├── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
-    └── screenshots/      ← browser screenshots captured during issue work
+    ├── screenshots/      ← browser screenshots captured during issue work and e2e test runs
+    └── e2e/              ← generated Playwright artifacts from the drupal-e2e-tester phase
 ```
 
 The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too.
@@ -157,6 +158,7 @@ Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/
 
 ### Agents
 - `drupal-issue-agent` — full lifecycle: MR review (Path A) and new issue implementation (Path B)
+- `drupal-e2e-tester` — dedicated test phase: PHPUnit via ddev + Playwright browser e2e; report-only, never edits code
 - `drupal-issue-catchup` — sync after time away: fetches new comments/threads, updates record, briefs human
 - `drupal-repo-setup` — sub-agent for git/module setup: clone, remote, checkout, worktree
 
@@ -172,3 +174,5 @@ Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/
 - `drupal-coding-standards` — PHPCS/PHPCBF via ddev with automatic module config detection
 - `drupalorg-cli` — reference stub; run `drupalorg skill:get drupalorg-cli` before using any `drupalorg` command
 - `ddev-expert` — ddev environment management, troubleshooting, container commands
+- `drupal-automated-testing` — writing/modifying PHPUnit tests: test type selection, attributes, DDEV env vars
+- `playwright-cli` — browser automation for the e2e test phase; pulled from `microsoft/playwright-cli` at setup time (not part of this package — update with `npx skills update`)

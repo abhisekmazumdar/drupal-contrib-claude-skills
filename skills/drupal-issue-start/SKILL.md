@@ -169,6 +169,21 @@ Present this in full. Do not skip sections.
 
 ---
 
+### Recommendation
+
+**<exactly one of the four below, in bold, with 1-2 sentences of justification>**
+
+- **Continue existing MR** — an open MR exists and the discussion supports finishing it
+- **Implement fresh** — no MR exists, or the existing work is stale/abandoned per the comments
+- **Needs discussion — do not implement yet** — requirements are contested or ambiguous in the thread
+- **Do not touch** — status is RTBC or Fixed; code changes now would disrupt the queue. Only review or testing feedback is appropriate unless the human explicitly overrides.
+
+Base this on status, MR state, and the comment thread. Never assume an MR's
+contents from its title alone — if the recommendation hinges on what the MR
+actually changes, say so; the full diff is only fetched in the review phase.
+
+---
+
 ### Suggested next steps
 
 <2-5 concrete numbered options specific to the current state>
