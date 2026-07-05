@@ -195,6 +195,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 | Human says | Action |
 |---|---|
 | "review the MR" / "do a code review" / "work on it" / "implement" / "fix it" | Invoke `drupal-issue-agent` with `<nid>` and the loaded context |
+| "test it" / "run the tests" / "verify in the browser" | Invoke `drupal-e2e-tester` with `<nid>`, `<project>`, the module dir, the site URL, and the manual testing steps (from the issue record or a prior `drupal-issue-agent` run) |
 | "catch me up" / "what's new" / "what happened" | Invoke `drupal-issue-catchup` with `<nid>` |
 | "continue" / "pick up where we left off" | Re-read the Work Log, brief human on last session, ask what to do next |
 | "just track it" / "come back later" | Confirm record is saved, no further action |
@@ -203,6 +204,23 @@ Once the human replies, delegate to the appropriate agent or skill:
 | Specific instructions | Follow them, using the appropriate skills |
 
 Pass `<nid>`, `<project>`, `is_migrated`, MR iids, and the full issue record content to any delegated agent so it does not have to re-fetch everything.
+
+### Relaying agent pauses
+
+Delegated agents run as sub-agents and **cannot talk to the user directly mid-run**.
+When a delegated agent's run ends with a report starting with
+`[PAUSE — awaiting user decision]`:
+
+1. Relay the report to the user **verbatim** — do not summarize it, do not answer
+   its question yourself.
+2. Wait for the user's reply.
+3. Resume the same agent with the user's reply — or, if the agent cannot be
+   resumed, re-invoke it passing the pause report, the user's decision, and the
+   issue record so it continues from that exact step.
+
+Never proceed past an agent's pause on the user's behalf, and never treat a pause
+report as the end of the work — the loop is only finished when the agent's final
+message is not a pause.
 
 ---
 

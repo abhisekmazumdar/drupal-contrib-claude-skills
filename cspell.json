@@ -15,6 +15,10 @@
     "webroot",
     "worktree",
     "reroll",
-    "rebase"
+    "rebase",
+    "playwright",
+    "chromium",
+    "testdox",
+    "headless"
   ]
 }

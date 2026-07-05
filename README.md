@@ -20,6 +20,10 @@ Claude Code skills and agents for Drupal open source contribution. Run once from
 - The following CLI tools installed and on PATH:
   - [`drupalorg-cli`](https://github.com/mglaman/drupalorg-cli) (`drupalorg`)
   - [GitLab CLI](https://gitlab.com/gitlab-org/cli) (`glab`) — authenticated against `git.drupalcode.org`
+- Optional: [Playwright](https://playwright.dev) for the browser-based e2e test phase (`drupal-e2e-tester`):
+  ```bash
+  npm i -D @playwright/test && npx playwright install chromium
+  ```
 
 ## Supported project layouts
 
@@ -116,7 +120,7 @@ Or run the entry point skill directly:
 /drupal-issue-start https://www.drupal.org/project/ai/issues/3499692
 ```
 
-The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state, and presents a structured report before doing anything. From there it delegates to the `drupal-issue-agent` for review, implementation, or drafting a Drupal.org comment.
+The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state, and presents a structured report before doing anything. From there it delegates to the `drupal-issue-agent` for review, implementation, or drafting a Drupal.org comment, and to the `drupal-e2e-tester` agent for the dedicated test phase (PHPUnit via DDEV plus Playwright browser e2e). Agents pause at every approval gate — the skill relays each pause report back to you and nothing is written, committed, or posted without your explicit go-ahead.
 
 GitLab work-item URLs are also supported:
 
