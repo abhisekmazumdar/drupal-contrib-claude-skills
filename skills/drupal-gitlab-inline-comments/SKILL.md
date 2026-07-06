@@ -10,7 +10,7 @@ Two scripts live here; pick by what the URL points at:
 
 | Input | Script | Endpoint | Output |
 |---|---|---|---|
-| `…/-/merge_requests/<iid>` | `fetch.py` | `/discussions` | Inline diff threads, grouped by file/line, open vs resolved |
+| `…/-/merge_requests/<iid>` | `fetch.py` | `/discussions` | Inline diff threads (grouped by file/line, open vs resolved) plus general MR comments |
 | `…/-/work_items/<iid>` or `…/-/issues/<iid>` | `fetch_issue_notes.py` | `/notes` | Chronological top-level comments on a migrated issue queue |
 
 Both share the same auth resolution (env → glab → keychain → anonymous) and use the
@@ -20,40 +20,20 @@ GitLab REST API directly so the output is stable and parseable.
 
 ## MR inline review comments
 
-Run for any Drupal GitLab MR URL:
-
-```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py <MR_URL>
-```
-
-Example:
-
 ```bash
 python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
   https://git.drupalcode.org/project/ai/-/merge_requests/899
 ```
 
-The script handles everything: token auth, URL parsing, pagination, filtering, and
-formatted output (open threads first, then resolved, sorted by file and line).
+The script handles token auth, URL parsing, pagination, filtering, and formatted
+output (open threads first, then resolved, sorted by file and line).
 
 ---
 
 ## Issue / Work Item comments (migrated queues)
 
-For Drupal.org projects whose issue queue has moved to GitLab work items
-(e.g. `project/ai`), use the notes fetcher:
-
-```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py <URL_OR_REF>
-```
-
-Accepts:
-
-- `https://git.drupalcode.org/project/<name>/-/work_items/<nid>`
-- `https://git.drupalcode.org/project/<name>/-/issues/<nid>`
-- Shorthand: `project/<name>#<nid>` (e.g. `project/ai#3577170`)
-
-Example:
+Also accepts the shorthand `project/<name>#<nid>` (e.g. `project/ai#3577170`)
+in place of a full URL.
 
 ```bash
 python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py \
@@ -79,7 +59,7 @@ authentication details, see the **`drupal-gitlab`** skill.
 ## Output format
 
 ```
-X open threads, Y resolved — Z files affected
+X open threads, Y resolved, N general comments — Z files affected
 
 [OPEN] #<note_id> @<author>
   File: <path>:<line>
@@ -90,10 +70,20 @@ X open threads, Y resolved — Z files affected
 
 [RESOLVED] #<note_id> @<author>
   ...
+
+--- GENERAL COMMENTS ---
+
+[OPEN] #<note_id> @<author>
+  General MR comment
+  Comment: <body>
 ```
 
-- Open threads are listed first, sorted by file then line number.
-- Resolved threads follow under a separator.
+- Open inline threads are listed first, sorted by file then line number.
+- Resolved inline threads follow under a separator.
+- **General MR comments** — posted on the MR overview/discussion tab rather than
+  anchored to a diff line — are listed last in their own section, sorted oldest
+  to newest. They are a distinct category from inline threads, not a subset:
+  reviewers use both interchangeably, so always check this section too.
 - System-generated notes (commit pushes, "changed this line") are filtered out automatically.
 - Pagination is handled automatically (fetches all pages if >100 discussions).
 
@@ -106,5 +96,3 @@ X open threads, Y resolved — Z files affected
   clicks "Resolve thread". Threads where a maintainer replied "changed this line in version X"
   will still show `[OPEN]`. Treat threads with a maintainer reply as functionally addressed
   even if not formally resolved.
-- **Why `/discussions` over `/notes`:** The flat `/notes` endpoint lacks thread grouping and
-  doesn't reliably exclude system notes. `/discussions` gives both.

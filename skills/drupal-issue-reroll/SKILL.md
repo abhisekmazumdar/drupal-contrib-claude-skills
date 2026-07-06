@@ -7,19 +7,14 @@ argument-hint: "<nid> [project]"
 
 # /drupal-issue-reroll
 
-**Purpose:** Rebase a Drupal issue branch on the latest upstream, verify it
-passes local checks, and push. Equivalent to a manual `git rebase` + checks +
-force-push but with conflict guidance and automatic quality gates.
-
 **Usage:**
 ```
 /drupal-issue-reroll <nid>
 /drupal-issue-reroll <nid> <project>
 ```
 
-**Examples:**
+**Example:**
 ```
-/drupal-issue-reroll 3478123
 /drupal-issue-reroll 3478123 ai
 ```
 
@@ -65,7 +60,7 @@ git branch name (`<nid>-*`) or ask the user.
    ```
    Store as `FORK_REMOTE` (e.g. `ai-3584951`). If not found, report:
    > "No fork remote named `<project>-<nid>` found. Available remotes:" (list them)
-   > "Please run `/drupal-work-on-issue <nid>` to set up the fork remote first."
+   > "Please run `/drupal-issue-start <url>` to set up the fork remote first."
    and stop.
 
 5. Confirm the working tree is clean before rebasing:

@@ -120,6 +120,17 @@ Two CLI tools are required and both are installed:
 
 **`glab` must always be prefixed with `GITLAB_HOST=git.drupalcode.org`** when targeting the Drupal GitLab instance. It is authenticated — no token setup needed.
 
+`drupalorg-cli` also runs as an MCP server (configured in `settings.json`) exposing
+read-only tools like `issue_show`, `mr_list`, `mr_diff`, `mr_status`,
+`gitlab_issue_show`. These work for classic (non-migrated) Drupal.org issues.
+For **migrated** issues (GitLab work items), any tool that resolves a project
+from `nid` alone (`mr_list`, `mr_status`, `mr_files`, `issue_get_fork`,
+`issue_show`) errors or returns empty/garbage data — the classic Drupal.org
+REST lookup can't map a migrated nid to its project. Only `gitlab_issue_show`
+(pass the full work-item URL) works correctly there. Prefer the Bash `drupalorg`
+and `glab` commands documented above for migrated-issue workflows until this is
+fixed upstream.
+
 ---
 
 ## Issue queue types
@@ -172,7 +183,7 @@ Custom Claude Code skills live in `.claude/skills/`. The main agent is `.claude/
 - `drupal-issue-reroll` — rebase a branch on latest upstream, run checks, force-push
 - `drupal-gitlab-inline-comments` — fetch MR inline threads and issue notes
 - `drupal-coding-standards` — PHPCS/PHPCBF via ddev with automatic module config detection
-- `drupalorg-cli` — reference stub; run `drupalorg skill:get drupalorg-cli` before using any `drupalorg` command
+- `drupalorg-cli` — reference stub; run `drupalorg skill:get drupalorg-cli` before using any `drupalorg` command; pulled from `mglaman/drupalorg-cli` at setup time (not part of this package — update with `npx skills update`)
 - `ddev-expert` — ddev environment management, troubleshooting, container commands
 - `drupal-automated-testing` — writing/modifying PHPUnit tests: test type selection, attributes, DDEV env vars
 - `playwright-cli` — browser automation for the e2e test phase; pulled from `microsoft/playwright-cli` at setup time (not part of this package — update with `npx skills update`)

@@ -17,9 +17,7 @@ or directory, matching exactly what the Drupal CI pipeline runs.
 
 **Examples:**
 ```
-/drupal-coding-standards web/modules/contrib/ai_agents/modules/ai_agents_views/src
 /drupal-coding-standards web/modules/contrib/ai_agents
-/drupal-coding-standards web/modules/contrib/ai/src
 /drupal-coding-standards src/Plugin/MyPlugin.php
 ```
 
@@ -162,23 +160,9 @@ Summarise:
 
 ---
 
-## Key Drupal standards (most common violations)
-
-| Violation | Fix |
-|-----------|-----|
-| `Drupal.Files.LineLength.TooLong` | Shorten docblock text or break code across lines |
-| `Drupal.Commenting.DocComment` | Ensure docblock has short description, proper tags |
-| `Drupal.Commenting.FunctionComment` | Add `@param` and `@return` tags |
-| PHPUnit PHP attributes | Replace with docblock annotations |
-
----
-
 ## Notes
 
 - Never use `--standard=PEAR`, `--standard=PSR2`, or no standard — produces false errors.
-- Do NOT hardcode `--standard=Drupal` without checking for a `phpcs.xml` first. Many modules (e.g. `ai`) include `DrupalPractice` in their config; missing it means missing violations the CI will catch.
-- Always run via `ddev exec php vendor/bin/phpcs` — the container PHP version matches CI; host PHP may not.
-- PHPCBF exit code 1 = "files were fixed" (not an error). Only 2+ is a real failure.
 - If PHPCS keeps looping on the same error after a fix attempt, stop and show the user
   the remaining violations rather than retrying indefinitely.
 - Warnings about `version`, `project`, and `datestamp` keys in `.info.yml` files are injected by the drupal.org packaging script and are not real violations. They will always appear on local Composer-managed installs and can be ignored — CI does not fail on them.

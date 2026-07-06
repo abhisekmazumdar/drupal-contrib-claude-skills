@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Fetch and display inline review comments from a Drupal GitLab MR.
+Fetch and display review comments from a Drupal GitLab MR — both inline diff
+threads and general (non-inline) comments posted on the MR overview tab.
 
 Usage:
     python3 fetch.py <MR_URL>
@@ -126,7 +127,7 @@ def fetch_all_discussions(project, mr_iid):
 
 
 def extract_threads(discussions):
-    """Filter to inline diff threads only, skipping system notes."""
+    """Extract inline diff threads and general (non-inline) MR comments, skipping system notes."""
     threads = []
     for d in discussions:
         notes = d.get("notes", [])
@@ -136,15 +137,21 @@ def extract_threads(discussions):
         if root.get("system"):
             continue
         pos = root.get("position")
-        if not pos:
-            continue  # general MR comment, not inline
-        file_path = pos.get("new_path") or pos.get("old_path", "")
-        line = pos.get("new_line") or pos.get("old_line") or "?"
+        if pos:
+            file_path = pos.get("new_path") or pos.get("old_path", "")
+            line = pos.get("new_line") or pos.get("old_line") or "?"
+            general = False
+        else:
+            # General MR comment (overview/discussion tab) — not anchored to a diff line.
+            file_path = None
+            line = None
+            general = True
         resolved = d.get("resolved", False)
         replies = notes[1:]
         last_reply = replies[-1] if replies else None
         threads.append({
             "resolved": resolved,
+            "general": general,
             "id": root["id"],
             "author": root["author"]["username"],
             "created_at": root.get("created_at", ""),
@@ -164,11 +171,18 @@ def sort_key(t):
     return (t["file"], line)
 
 
+def general_sort_key(t):
+    return t["created_at"]
+
+
 def print_thread(t):
     status = "RESOLVED" if t["resolved"] else "OPEN"
     created = t["created_at"][:10] if t["created_at"] else "?"
     print(f"[{status}] #{t['id']} @{t['author']} ({created})")
-    print(f"  File: {t['file']}:{t['line']}")
+    if t["general"]:
+        print("  General MR comment")
+    else:
+        print(f"  File: {t['file']}:{t['line']}")
     # Print body, indenting continuation lines
     body_lines = t["body"].splitlines()
     print(f"  Comment: {body_lines[0]}")
@@ -190,11 +204,18 @@ def main():
     discussions = fetch_all_discussions(project, mr_iid)
     threads = extract_threads(discussions)
 
-    open_threads = sorted([t for t in threads if not t["resolved"]], key=sort_key)
-    resolved_threads = sorted([t for t in threads if t["resolved"]], key=sort_key)
-    files_affected = len(set(t["file"] for t in threads))
+    inline = [t for t in threads if not t["general"]]
+    general = [t for t in threads if t["general"]]
 
-    print(f"{len(open_threads)} open threads, {len(resolved_threads)} resolved — {files_affected} files affected\n")
+    open_threads = sorted([t for t in inline if not t["resolved"]], key=sort_key)
+    resolved_threads = sorted([t for t in inline if t["resolved"]], key=sort_key)
+    general_threads = sorted(general, key=general_sort_key)
+    files_affected = len(set(t["file"] for t in inline))
+
+    print(
+        f"{len(open_threads)} open threads, {len(resolved_threads)} resolved, "
+        f"{len(general_threads)} general comments — {files_affected} files affected\n"
+    )
 
     for t in open_threads:
         print_thread(t)
@@ -202,6 +223,11 @@ def main():
     if resolved_threads:
         print("--- RESOLVED ---\n")
         for t in resolved_threads:
+            print_thread(t)
+
+    if general_threads:
+        print("--- GENERAL COMMENTS ---\n")
+        for t in general_threads:
             print_thread(t)
 
 

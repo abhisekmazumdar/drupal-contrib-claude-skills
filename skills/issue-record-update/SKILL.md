@@ -68,11 +68,8 @@ Build this block:
 ```
 
 Rules:
-- Be concrete — name files changed, tests fixed, PHPCS errors resolved, functions reviewed
-- Never write vague phrases like "worked on the issue" or "made some changes"
-- Human instructions must reflect what was actually said — do not reinterpret or sanitize
-- If the session was purely analysis, say so explicitly
-- Date is today's date in YYYY-MM-DD
+- Be concrete — name files changed, tests fixed, PHPCS errors resolved, functions reviewed. Never write vague phrases like "worked on the issue."
+- Human instructions must reflect what was actually said — do not reinterpret or sanitize.
 
 ---
 

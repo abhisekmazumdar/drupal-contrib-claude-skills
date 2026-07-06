@@ -101,19 +101,9 @@ Always clone over **SSH**:
 git clone --branch '<branch>' git@git.drupal.org:project/<project-name>.git <target-directory>
 ```
 
-Example for a module:
+Example:
 ```bash
 git clone --branch '2.0.x' git@git.drupal.org:project/ai.git <webroot>/modules/contrib/ai
-```
-
-Example for a theme:
-```bash
-git clone --branch '6.x' git@git.drupal.org:project/gin.git <webroot>/themes/contrib/gin
-```
-
-Example for a recipe:
-```bash
-git clone --branch '1.0.x' git@git.drupal.org:project/eca_starterkit.git <drupal-path>recipes/eca_starterkit
 ```
 
 ---
@@ -130,20 +120,17 @@ Report to the user:
 - Full path of the cloned directory
 - Active branch
 - Last 3 commits (to confirm the correct branch was checked out)
-- Reminder: "Run `/drupal-work-on-issue <nid>` to set up the issue fork remote and start
+- Reminder: "Run `/drupal-issue-start <url>` to set up the issue fork remote and start
   contribution work."
 
 ---
 
 ## Notes
 
-- Always clone over SSH (`git@git.drupal.org:project/<project>.git`). HTTPS works for
-  read-only but SSH is required for pushing and is consistent with contribution workflow.
-- The `--branch` flag is always passed explicitly to avoid checking out the wrong default branch.
-- For contribution work, prefer `x.x-dev` branches — that is where MRs are opened.
 - This skill only clones the upstream project. To add an issue fork remote for pushing
-  patches or MRs, use `/drupal-work-on-issue <nid>` afterward — it calls
-  `drupalorg issue:setup-remote` and `drupalorg issue:checkout` for you.
+  patches or MRs, use `/drupal-issue-start <url>` afterward — it delegates to the
+  `drupal-repo-setup` agent, which runs `drupalorg issue:setup-remote` and
+  `drupalorg issue:checkout` for you.
 - If DDEV is in use, enable the module after cloning with `ddev drush en <project>`.
 - Recipes are not modules — do not enable with Drush. Apply with
   `ddev drush recipe <drupal-path>recipes/<project>`.

@@ -204,27 +204,43 @@ async function main() {
     log
   );
 
-  // playwright-cli skill — pulled from microsoft/playwright-cli, never vendored
-  // in this repo. Used by the drupal-e2e-tester agent for browser e2e testing.
-  const playwrightSkill = path.join(claudeDir, 'skills', 'playwright-cli', 'SKILL.md');
-  if (fs.existsSync(playwrightSkill)) {
-    log.identical.push(path.relative(CWD, playwrightSkill) + ' (update with: npx skills update)');
-  } else {
-    console.log('Pulling playwright-cli skill from github.com/microsoft/playwright-cli …');
+  // Externally-maintained skills — pulled at install time, never vendored in
+  // this repo. Each pull is non-fatal: offline/npx failures print a manual
+  // install command and setup continues.
+  const externalSkills = [
+    {
+      name: 'playwright-cli',
+      repo: 'microsoft/playwright-cli',
+      usedBy: 'The drupal-e2e-tester agent needs it for browser e2e tests.',
+    },
+    {
+      name: 'drupalorg-cli',
+      repo: 'mglaman/drupalorg-cli',
+      usedBy: 'drupal-issue-start and other skills need it for Drupal.org issue/MR data.',
+    },
+  ];
+
+  for (const { name, repo, usedBy } of externalSkills) {
+    const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
+    if (fs.existsSync(skillFile)) {
+      log.identical.push(path.relative(CWD, skillFile) + ' (update with: npx skills update)');
+      continue;
+    }
+    console.log(`Pulling ${name} skill from github.com/${repo} …`);
     try {
       execSync(
-        'npx -y skills@latest add microsoft/playwright-cli --skill playwright-cli --agent claude-code --copy -y',
+        `npx -y skills@latest add ${repo} --skill ${name} --agent claude-code --copy -y`,
         { cwd: CWD, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
       );
-      if (fs.existsSync(playwrightSkill)) {
-        log.copied.push(path.relative(CWD, playwrightSkill));
+      if (fs.existsSync(skillFile)) {
+        log.copied.push(path.relative(CWD, skillFile));
       } else {
         throw new Error('skill not found after install');
       }
     } catch (_) {
-      console.log('⚠  Could not pull the playwright-cli skill (offline or npx unavailable).');
-      console.log('   The drupal-e2e-tester agent needs it for browser e2e tests. Install later with:');
-      console.log('   npx skills add microsoft/playwright-cli --skill playwright-cli\n');
+      console.log(`⚠  Could not pull the ${name} skill (offline or npx unavailable).`);
+      console.log(`   ${usedBy} Install later with:`);
+      console.log(`   npx skills add ${repo} --skill ${name}\n`);
     }
   }
 

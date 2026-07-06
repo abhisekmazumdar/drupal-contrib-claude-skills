@@ -25,14 +25,16 @@ compatibility, fibers, OOP hooks, database driver changes, and key deprecations.
 ## PHP Version Requirements for Drupal 11
 
 - **Minimum:** PHP 8.3
-- **Supported:** PHP 8.3, PHP 8.4
-- Drupal 12 will raise the minimum further; contrib modules targeting both D11 and D12
-  must not use PHP features unavailable in 8.3.
+- **Supported:** PHP 8.3, PHP 8.4 (PHP 8.4 is the recommended version as of 11.3.x+)
+- **Drupal 12** (scheduled/unreleased, targeted for the week of 2026-12-07) will raise the
+  minimum to **PHP 8.5**; contrib modules targeting both D11 and D12 must not use PHP
+  features unavailable in 8.3 until they're ready to drop D11 support.
 
 When reviewing a patch or MR, check that:
 - No PHP 8.4-only syntax is used unless the change record explicitly targets 8.4+
 - PHP 8.3 typed properties, readonly classes, and named arguments are acceptable
-- `trigger_error(E_USER_ERROR)` is **deprecated** as of 11.1.x — use exceptions instead
+- PHP 8.4 deprecates `trigger_error(E_USER_ERROR)`; Drupal core adapted accordingly
+  (E_USER_WARNING/exceptions) as of 11.1.x — use exceptions instead
 - PHP sessions use strict mode by default as of 11.2.x — do not pass a non-empty session ID to `session_id()` before `session_start()`
 
 ---
@@ -129,11 +131,11 @@ Relevant only for core render pipeline or async work. If you encounter fiber sus
 | 11.2.x  | PHP sessions now use **strict mode** by default (`session.use_strict_mode = 1`) |
 | 11.3.x  | Use specific PDO driver classes instead of `PDOConnection` on PHP 8.4+ |
 | 11.4.x  | Password hashing algorithm and options are now configurable via **kernel parameters** |
-| 12.0.x  | Default password hashing algorithm changed to **argon2id** (was bcrypt-based); can be reverted via kernel parameters if argon2 is unavailable |
+| 12.0.x _(scheduled, unreleased — targeted 2026-12-07)_ | Default password hashing algorithm changes to **argon2id** (was bcrypt-based), enabled by PHP 8.5's native argon2 support; can be reverted via kernel parameters if argon2 is unavailable |
 
 PHP 8.4 deprecates implicit `PDOConnection` usage — replace `new \PDO(...)` or `\PDOConnection` references with the Drupal database driver API. This is low-level database driver work; most contrib modules won't touch it directly.
 
-The argon2id switch in Drupal 12 is transparent to users (existing hashes still verify), but contrib code that reads/writes password hashes directly must not assume a fixed algorithm.
+The argon2id switch in Drupal 12 is planned to be transparent to users (existing hashes still verify), but contrib code that reads/writes password hashes directly must not assume a fixed algorithm. Drupal 12 is not yet released as of 2026-07-06 — treat this row as forward-looking, not current behavior.
 
 ---
 

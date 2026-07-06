@@ -109,16 +109,9 @@ See [references/issues.md](references/issues.md) for full detail.
 
 Work items are the current standard. URLs use `/-/work_items/<id>` (not `/-/issues/<id>`).
 
-Issue state is tracked via **scoped labels**, not a status widget:
-
-| State | Label |
-|-------|-------|
-| In progress | *(no label — MR open and assigned)* |
-| Changes requested | `state::needsWork` |
-| Awaiting review | `state::needsReview` |
-| Ready to merge | `state::rtbc` |
-
-Apply labels via `/do:label ~state::rtbc` comment or the GitLab label UI.
+Issue state is tracked via **scoped labels**, not a status widget: `state::needsWork`,
+`state::needsReview`, `state::rtbc` (no label means in progress). Apply via
+`/do:label ~state::rtbc` comment or the GitLab label UI.
 
 ```bash
 GITLAB_HOST=git.drupalcode.org glab issue list   -R project/<repo>
@@ -208,14 +201,11 @@ These comment commands are unique to git.drupalcode.org:
 
 ## Gotchas
 
-- **Two hostnames**: `git.drupalcode.org` for HTTP/API, `git.drupal.org` for SSH — mixing them causes silent failures or 404s
-- **`glab mr create` cannot create cross-project MRs** — always use `glab api` for MRs on Drupal's issue-fork setup
-- **Check for an existing MR before creating one** — GitLab may auto-create one when you push a branch
-- **The fork must be provisioned via `/do:fork` or the Drupal.org UI before pushing** — pushing to a non-existent fork returns 404
-- **`glab ci run` is blocked** — pipeline triggers are disabled on git.drupalcode.org; re-run CI by pushing
+Beyond the hostname, cross-project MR, existing-MR check, fork provisioning, and
+`glab ci run` caveats already noted above:
+
 - **`glab issue comment` requires `-m`, not `--body`** — `note` is an alias for `comment`; do not add `create` as a subcommand
 - **`By:` lines require Drupal.org usernames**, not GitLab usernames or email addresses
-- **Issue state is via scoped labels**, not the work item status widget — use `/do:label ~state::rtbc` or the label UI
 - **Not all projects have GitLab work items** — some still use the legacy Drupal.org issue queue; continue without a work item if none is found
 - **The auto-posted comment contains a contribution attribution link** — remind the user to fill it in at `new.drupal.org/contribution-record?source_link=...`
 - **Merging requires the GitLab web UI** — `glab mr merge` and API merges are blocked on git.drupalcode.org

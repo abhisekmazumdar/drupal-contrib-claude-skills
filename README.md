@@ -20,10 +20,11 @@ Claude Code skills and agents for Drupal open source contribution. Run once from
 - The following CLI tools installed and on PATH:
   - [`drupalorg-cli`](https://github.com/mglaman/drupalorg-cli) (`drupalorg`)
   - [GitLab CLI](https://gitlab.com/gitlab-org/cli) (`glab`) — authenticated against `git.drupalcode.org`
-The browser-based e2e test phase (`drupal-e2e-tester`) uses the official
-[playwright-cli skill](https://github.com/microsoft/playwright-cli) — the setup
-script pulls it automatically (needs network access on first run). It is never
-bundled in this repo; update it later with `npx skills update`.
+Two skills are pulled from their upstream repos automatically at install time
+(needs network access on first run) rather than bundled in this repo — update
+either later with `npx skills update`:
+- The [playwright-cli skill](https://github.com/microsoft/playwright-cli), used by the browser-based e2e test phase (`drupal-e2e-tester`)
+- The [drupalorg-cli skill](https://github.com/mglaman/drupalorg-cli), used by `drupal-issue-start` and others for Drupal.org issue/MR data
 
 ## Supported project layouts
 
@@ -93,7 +94,7 @@ MariaDB version [11.8]:
 ### What happens
 
 1. `.claude/skills/` is created (or updated) with all package skills
-2. `.claude/agents/` is created (or updated) with all agents; the external `playwright-cli` skill is pulled from `microsoft/playwright-cli` via `npx skills` if not already installed
+2. `.claude/agents/` is created (or updated) with all agents; the external `playwright-cli` and `drupalorg-cli` skills are pulled from their upstream repos via `npx skills` if not already installed
 3. `.claude/settings.json` is written with pre-approved permissions and MCP server definitions
 4. `CLAUDE.md` is generated at the workspace root with your project details substituted in
 5. `.claude/claude-skills.lock.json` is written with your answers for future re-runs

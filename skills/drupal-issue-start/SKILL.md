@@ -66,6 +66,12 @@ drupalorg mr:list <nid> --format=llm
 drupalorg issue:get-fork <nid> --format=llm
 ```
 
+`drupalorg mr:list` and `issue:get-fork` are unreliable for migrated issues (empty project segment in the API URL causes 404s or malformed output such as `remote_name: -<nid>`). If either errors or returns no usable MR/fork info, fall back to:
+```bash
+GITLAB_HOST=git.drupalcode.org glab mr list --repo project/<project> --search "<nid>"
+```
+This reliably returns the MR iid, branch, and target for migrated issues. Prefer its result over a malformed `drupalorg` output when the two disagree.
+
 For any issue with existing MRs, also fetch pipeline status for the latest MR branch:
 ```bash
 GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>

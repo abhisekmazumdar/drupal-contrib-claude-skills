@@ -21,14 +21,6 @@ You are an expert in DDEV, the Docker-based local development environment for PH
 - All Drupal projects live under `/Users/horus/Code/drupal-projects/`
 - Always `cd` to the project root before running DDEV commands.
 
-## Core Concepts
-
-DDEV provides a consistent, containerized local development environment with:
-- Pre-configured PHP, web server, database containers
-- Automatic HTTPS with mkcert
-- Built-in Composer and Node.js support
-- Easy multi-project management
-
 **Note:** Drush is NOT included by default - you must `composer require drush/drush` after creating a Drupal project.
 
 ## Essential Commands
@@ -102,9 +94,6 @@ upload_max_filesize = 64M
 post_max_size = 64M
 ```
 
-**Nginx config** (.ddev/nginx_full/nginx-site.conf):
-Custom nginx configuration for special routing needs.
-
 ## Drupal-Specific Setup
 
 ### New Drupal 11 Project
@@ -119,7 +108,7 @@ ddev launch
 ```
 
 **Important notes:**
-- `ddev composer create-project` requires a clean directory - move any existing files (like `.claude/`) out first, then move them back after
+- `ddev composer create-project` requires a clean directory — see Troubleshooting below if it fails with "not allowed to be present"
 - Drush is NOT included in Drupal 11's recommended-project - always install it separately
 - Use `--project-type=drupal` (auto-detects version) or explicitly `drupal11`
 
@@ -188,33 +177,6 @@ ddev xdebug off          # Disable (faster performance)
 ddev xdebug status       # Check current state
 ```
 
-### IDE Configuration
-
-**VS Code** (with PHP Debug extension):
-```json
-// .vscode/launch.json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Listen for Xdebug",
-      "type": "php",
-      "request": "launch",
-      "port": 9003,
-      "pathMappings": {
-        "/var/www/html": "${workspaceFolder}"
-      }
-    }
-  ]
-}
-```
-
-**PHPStorm**:
-1. Settings → PHP → Servers
-2. Add server: name matches DDEV project name
-3. Host: `<project>.ddev.site`, Port: 443, HTTPS
-4. Path mappings: project root → `/var/www/html`
-
 ### Xdebug Modes
 ```bash
 # .ddev/php/xdebug.ini
@@ -223,15 +185,3 @@ xdebug.mode=debug,develop,coverage
 ```
 
 Modes: `debug` (step debugging), `develop` (enhanced errors), `coverage` (code coverage), `profile` (profiling)
-
-
-## Best Practices
-
-1. **Commit .ddev folder** (except .ddev/db_snapshots, .ddev/.gitignore handles this)
-2. **Use .ddev/config.local.yaml** for personal overrides (gitignored)
-3. **Document custom services** in project README
-4. **Use snapshots** before risky database operations
-5. **Keep DDEV updated**: `ddev self-upgrade`
-6. **Use Mutagen on macOS/Windows** for better performance
-7. **Create custom commands** for repetitive tasks
-8. **Test DDEV config in CI** to catch issues early

@@ -59,16 +59,8 @@ Activate whenever the user asks you to:
 - Do NOT use Markdown fenced code blocks (triple backticks) — they are not rendered on Drupal.org.
 
 ### Text emphasis and structure
-| Goal | Tag |
-|------|-----|
-| Bold | `<strong>text</strong>` |
-| Italic | `<em>text</em>` |
-| Strikethrough | `<del>text</del>` or `<s>text</s>` |
-| Underline | `<u>text</u>` |
-| Headings | `<h2>` ... `<h6>` (no `<h1>`) |
-| Blockquote | `<blockquote>text</blockquote>` |
-| Superscript | `<sup>text</sup>` |
-| Subscript | `<sub>text</sub>` |
+Standard HTML tags render: `<strong>`, `<em>`, `<del>`/`<s>`, `<u>`, `<blockquote>`, `<sup>`, `<sub>`.
+Headings are `<h2>` through `<h6>` — no `<h1>`.
 
 ### Lists
 ```html
@@ -102,13 +94,6 @@ Use standard HTML table markup: `<table>`, `<tr>`, `<th>`, `<td>`.
 ### Images
 - Only images hosted on drupal.org may be embedded with `<img>` tags.
 - External image URLs are replaced with an error icon — never suggest them.
-
-### Special characters
-Use HTML entities where needed:
-- `&amp;` for &
-- `&lt;` for <
-- `&gt;` for >
-- `&quot;` for "
 
 ---
 
@@ -155,30 +140,12 @@ None. / Describe schema/data changes if any.
 
 ## Voice and Tone
 
-> **Canonical source:** The voice rules below are the technical register subset of the global `write-like-abhisek` skill. If the two ever diverge, `write-like-abhisek` is authoritative — update both together.
+All Drupal.org content must follow the `write-like-abhisek` skill's technical
+register — that skill is the canonical source; apply it here rather than
+restating its rules. Two constraints specific to issue-queue content:
 
-All Drupal.org content must follow Abhisek Mazumdar's technical writing voice:
-
-**Register**
-- No greeting, no opener. Start with the fact, status, or problem.
-- Short declarative sentences — one thought per sentence.
-  - ✅ "This is open for review now."
-  - ❌ "I wanted to let you know that the patch is now ready for review."
-- State completed work with "I have..." — active voice, past tense: "I have added a new field." "I have created a new MR for 2.0.x and closed the old one."
-- Ask for specific help precisely: "Please help me find any remaining corner cases I might have missed." Never vague.
-- Bug reports: show the error inline, name what's missing, stop. No narrative around it.
+- No greeting, no opener — start with the fact, status, or problem.
 - Status updates are one line: "The MR functions correctly. I'm marking this as RTBC."
-
-**Vocabulary to never use**
-- Transition padding: "Additionally," "Furthermore," "Moreover," "In conclusion," "It is worth noting that"
-- Significance inflation: "pivotal," "crucial," "underscores," "testament," "highlights," "reflects broader," "stands as," "serves as a reminder"
-- AI tells: "delve," "intricate," "tapestry," "garner," "align with," "bolstered," "fostering," "showcasing," "nuanced"
-- Elaborate copulatives: replace "serves as" / "stands as" / "functions as" with "is"
-
-**Never write**
-- "As you can see..."
-- "I hope this helps!"
-- "Please let me know if you'd like me to expand on any of these points."
 
 ---
 
@@ -244,13 +211,9 @@ After saving the file, produce two additional blocks in chat:
 
 ---
 
-Rules for the preview:
-- `<strong>` → `**bold**`, `<em>` → `*italic*`, `<code>` → backtick code
-- `<h2>`/`<h3>` → `##`/`###` headings
-- `<ul>`/`<ol>`/`<li>` → Markdown list syntax
-- `<pre><code>` → triple-backtick fenced block
-- `<blockquote>` → `>` blockquote
-- Keep `[#1234]` issue references as-is
+Convert the HTML tags above to their standard Markdown equivalents (bold, italic,
+code, headings, lists, fenced blocks, blockquotes). Keep `[#1234]` issue
+references as-is.
 
 **2. HTML snippet** — for direct copy-paste into Drupal.org:
 

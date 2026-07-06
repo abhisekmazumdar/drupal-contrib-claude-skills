@@ -70,8 +70,7 @@ triggers AJAX, wait for the expected element, then assert.
 functions with no Drupal container dependencies. They are uncommon in Drupal.
 
 **Build tests** (`\Drupal\BuildTests\Framework\BuildTestBase`) test codebase
-layout scenarios such as Composer dependency resolution. They are advanced and
-uncommon.
+layout scenarios such as Composer dependency resolution.
 
 ### Required class attributes
 
@@ -115,22 +114,6 @@ If you have multiple similar test cases, use `setUp()`, data providers, or the
 
 ## What not to do
 
-Do not reach for Unit tests first. Most Drupal code depends on the container
-and unit-testing it requires extensive mocking that breaks on any refactor.
-
-Do not skip `waitForElement` assertions in FunctionalJavascript tests. A bare
-`waitForElement` call without asserting the return value produces a test that
-always passes, even when the element never appears.
-
-Do not assume Kernel tests install config or create database tables. You must
-call `installEntitySchema()`, `installConfig()`, and `installSchema()` in setUp.
-
-Do not assume state set in your Functional test code is visible to the web
-server process. The dual-container architecture means they have separate memory.
-
-Do not submit tests without `SIMPLETEST_BASE_URL` and `SIMPLETEST_DB` set.
-PHPUnit will either fail or silently skip your tests.
-
 Do not write Nightwatch tests. They are JavaScript-based, prone to flakiness,
 and the Drupal community is moving toward Playwright as a replacement.
 
@@ -140,4 +123,3 @@ and the Drupal community is moving toward Playwright as a replacement.
 - [PHPUnit in Drupal](https://www.drupal.org/docs/develop/automated-testing/phpunit-in-drupal)
 - [KernelTestBase API](https://api.drupal.org/api/drupal/core%21tests%21Drupal%21KernelTests%21KernelTestBase.php/class/KernelTestBase/11.x)
 - [BrowserTestBase API](https://api.drupal.org/api/drupal/core%21tests%21Drupal%21Tests%21BrowserTestBase.php/class/BrowserTestBase/11.x)
-- Source material: phenaproxima (Drupal core committer), issue #3581672
