@@ -142,10 +142,12 @@ None. / Describe schema/data changes if any.
 
 All Drupal.org content must follow the `write-like-abhisek` skill's technical
 register — that skill is the canonical source; apply it here rather than
-restating its rules. Two constraints specific to issue-queue content:
+restating its rules. Constraints specific to issue-queue content:
 
 - No greeting, no opener — start with the fact, status, or problem.
 - Status updates are one line: "The MR functions correctly. I'm marking this as RTBC."
+- When responding to reviewer feedback: be candid about position changes. If the reviewer was right, say so plainly. "You are right. I removed it." beats hedged corporate acknowledgement every time.
+- A light, honest self-awareness is fine in informal review threads. "After a long back-and-forth with Claude on it, we both came around to agreeing with you" reads as human and direct — don't sanitize it into bland acceptance.
 
 ---
 
