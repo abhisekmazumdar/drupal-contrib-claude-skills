@@ -9,8 +9,8 @@ MRs on Drupal GitLab flow **from the issue fork to the upstream project** (cross
 GitLab may auto-create an MR when you push a branch. Always check first:
 
 ```bash
-GITLAB_HOST=git.drupalcode.org glab mr list -R project/<repo>
-GITLAB_HOST=git.drupalcode.org glab mr view <mr-iid> -R project/<repo>
+glab mr list -R project/<repo>
+glab mr view <mr-iid> -R project/<repo>
 ```
 
 ---
@@ -59,6 +59,7 @@ glab api --hostname git.drupalcode.org \
 - Target branch: confirm with the user if not `main`
 - Always append the AI disclosure line
 - Always include `Closes #{issue-id}` in the description
+- **Default to an issue fork even with maintainer push access** — it keeps the workflow consistent for other contributors; only push straight to origin when the user explicitly confirms a direct maintainer push
 
 ---
 

@@ -10,15 +10,15 @@ Issue URLs use `/-/work_items/<id>` (not `/-/issues/<id>`). The iid (last URL se
 
 ```bash
 # List issues
-GITLAB_HOST=git.drupalcode.org glab issue list -R project/<repo>
+glab issue list -R project/<repo>
 
 # View an issue
-GITLAB_HOST=git.drupalcode.org glab issue view <id> -R project/<repo>
+glab issue view <id> -R project/<repo>
 
 # Post a comment (-m is required; --body is not valid)
-GITLAB_HOST=git.drupalcode.org glab issue comment <id> -m "Message" -R project/<repo>
+glab issue comment <id> -m "Message" -R project/<repo>
 # note is an alias for comment — both accept the same flags
-GITLAB_HOST=git.drupalcode.org glab issue note <id> -m "Message" -R project/<repo>
+glab issue note <id> -m "Message" -R project/<repo>
 ```
 
 **Do not add `create` as a subcommand to `glab issue note` or `glab issue comment`** — the correct form is `glab issue comment <id>`, not `glab issue comment create <id>`.
@@ -29,7 +29,7 @@ GITLAB_HOST=git.drupalcode.org glab issue note <id> -m "Message" -R project/<rep
 
 Check available labels before creating:
 ```bash
-GITLAB_HOST=git.drupalcode.org glab label list -R project/<repo>
+glab label list -R project/<repo>
 ```
 
 Look up issue templates:
@@ -40,7 +40,7 @@ cat ".gitlab/issue_templates/<TemplateName>.md"
 
 Create:
 ```bash
-GITLAB_HOST=git.drupalcode.org glab issue create \
+glab issue create \
   --title "Short descriptive title" \
   --description "$(cat /tmp/issue_body.md)" \
   --label "<label1>,<label2>" \
@@ -62,24 +62,50 @@ Issue workflow state is tracked via **scoped labels**, not a built-in status wid
 
 ```bash
 # Apply via comment command
-GITLAB_HOST=git.drupalcode.org glab issue comment <id> \
+glab issue comment <id> \
   -m "/do:label ~state::rtbc" -R project/<repo>
 ```
 
-**Work item status cannot be set via labels alone for the status widget** — the scoped label approach above is the standard contributor method. If the project uses the GitLab status widget instead of labels, it requires a GraphQL mutation and maintainer permissions; inform the user and let them set it manually in the UI.
+**Work item status widget is separate from scoped labels.** Issue status ("To do" / "In progress" / "Done") is a work item widget, not the scoped-label state above. It requires a GraphQL query/mutation:
+
+```bash
+# Read current status
+glab api graphql --hostname git.drupalcode.org -f query='
+{
+  project(fullPath: "<namespace>/<repo>") {
+    workItems(iid: "<issue-iid>") {
+      nodes {
+        id
+        widgets {
+          ... on WorkItemWidgetStatus {
+            type
+            status { id name iconName }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
+System-defined status GIDs follow the pattern `gid://gitlab/WorkItems::Statuses::SystemDefined::Status/<n>` — query the current status first to confirm available IDs before attempting an update via the `workItemUpdate` mutation. If permissions are insufficient, inform the user and let them set status manually in the UI.
 
 ---
 
 ## `/do:` commands
 
-These comment commands are unique to git.drupalcode.org:
+These comment commands are unique to git.drupalcode.org (full reference: `https://new.drupal.org/drupalorg/gitlab-custom-commands`):
 
 | Command | Effect |
 |---------|--------|
 | `/do:fork` | Provisions the issue fork and initial branch |
 | `/do:access` | Grants your account push access to an existing fork |
-| `/do:label ~<label>` | Applies a label to the work item |
-| `/do:assign @username` | Assigns the issue |
+| `/do:label ~label1 ~label2` | Adds labels to the work item |
+| `/do:unlabel ~label1` | Removes a label |
+| `/do:relabel ~label1 ~label2` | Replaces all labels |
+| `/do:assign @username` | Adds an assignee |
+| `/do:unassign @username` | Removes an assignee |
+| `/do:reassign @username` | Replaces all assignees |
 
 Post these as comments on the work item — they are processed by the Drupal.org GitLab integration.
 

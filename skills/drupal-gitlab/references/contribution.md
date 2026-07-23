@@ -10,11 +10,11 @@ Complete path for submitting a change to a Drupal project via GitLab.
 
 - **Migrated:** issues at `git.drupalcode.org/project/<repo>/-/work_items/<id>` — use `glab`
 - **Legacy:** issues at `www.drupal.org/project/<repo>/issues` — use the Drupal.org web UI
-- Check by running `GITLAB_HOST=git.drupalcode.org glab issue list -R project/<repo>`
+- Check by running `glab issue list -R project/<repo>`
 
 **2. Do you need an issue fork?**
 
-- **Maintainers** (push access to origin): push directly to origin
+- **Maintainers** (push access to origin): can push directly to origin, but should still default to an issue fork to keep the workflow consistent for other contributors — only push straight to origin when the user explicitly confirms that's what they want
 - **Contributors** (no push access): provision an issue fork first
 
 ---
@@ -24,11 +24,11 @@ Complete path for submitting a change to a Drupal project via GitLab.
 ### Step 1 — Find or create a work item
 
 ```bash
-GITLAB_HOST=git.drupalcode.org glab issue list -R project/<repo>
-GITLAB_HOST=git.drupalcode.org glab issue view <id> -R project/<repo>
+glab issue list -R project/<repo>
+glab issue view <id> -R project/<repo>
 
 # Create a new work item if none exists
-GITLAB_HOST=git.drupalcode.org glab issue create \
+glab issue create \
   --title "Short descriptive title" \
   --description "$(cat /tmp/issue_body.md)" \
   --label "state::needsWork" \

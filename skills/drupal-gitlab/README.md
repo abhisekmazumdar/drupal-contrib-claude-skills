@@ -36,7 +36,7 @@ glab auth login --hostname git.drupalcode.org
 Verify the configuration:
 
 ```bash
-GITLAB_HOST=git.drupalcode.org glab auth status --hostname git.drupalcode.org
+glab auth status --hostname git.drupalcode.org
 ```
 
 Work Items and Legacy Issues

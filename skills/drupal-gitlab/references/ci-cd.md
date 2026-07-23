@@ -1,9 +1,9 @@
 # CI/CD
 
 ```bash
-GITLAB_HOST=git.drupalcode.org glab ci status          # pipeline status for current branch
-GITLAB_HOST=git.drupalcode.org glab ci view            # interactive pipeline view
-GITLAB_HOST=git.drupalcode.org glab ci trace <job>     # stream full log of a specific job
+glab ci status          # pipeline status for current branch
+glab ci view            # interactive pipeline view
+glab ci trace <job>     # stream full log of a specific job
 ```
 
 Use `glab ci trace <job-name>` as the **primary tool for debugging pipeline failures** — it streams the full job log. Fetching the GitLab job page directly won't work (requires JavaScript rendering).
