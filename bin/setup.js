@@ -218,11 +218,6 @@ async function main() {
       repo: 'mglaman/drupalorg-cli',
       usedBy: 'drupal-issue-start and other skills need it for Drupal.org issue/MR data.',
     },
-    {
-      name: 'drupalorg-issue-search',
-      repo: 'mglaman/drupalorg-cli',
-      usedBy: 'Searching Drupal.org issues by keyword across the API, issue-queue scrape, and web search.',
-    },
   ];
 
   for (const { name, repo, usedBy } of externalSkills) {
