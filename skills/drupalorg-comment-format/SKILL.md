@@ -173,9 +173,11 @@ If the `/humanizer` skill is present in this project, run it on the drafted text
 
 ---
 
-### Always: save to file
+### Always: save to file, no chat preview
 
-Regardless of issue type, write the comment to a file in the issue directory:
+Regardless of issue type, write the comment to a file in the issue directory —
+do not also print a preview, rendered version, or HTML snippet in chat. The
+file is the deliverable.
 
 ```
 issues/<nid>/comments/YYYY-MM-DD-HHmmss-<label>.md
@@ -184,47 +186,26 @@ issues/<nid>/comments/YYYY-MM-DD-HHmmss-<label>.md
 - Create the directory if it does not exist: `mkdir -p issues/<nid>/comments`
 - `<label>` — 2–4 word slug derived from the comment purpose, e.g. `review-feedback`, `reroll-note`, `rtbc`
 - File always uses `.md` extension
+- GitLab (migrated) queues: file content is GitLab Flavored Markdown, pasted as-is.
+- Drupal.org (non-migrated) queues: file content is the HTML source, pasted as-is.
 
 ---
 
-### GitLab (migrated queue)
+### After saving: open in the editor
 
-The file content is **GitLab Flavored Markdown** — this is exactly what gets pasted into the work item comment field. No further output is needed in chat beyond:
+After the file is written, try to open it in the user's editor so they can
+review/paste from it directly:
 
+1. If running inside VS Code (or a VS Code-family editor: Cursor, Windsurf) —
+   detected via `TERM_PROGRAM=vscode` or the `code` CLI being on `PATH` — run
+   `code <path-to-file>`.
+2. Otherwise, if a `.git` editor or `$EDITOR`/`$VISUAL` env var is set and
+   resolves to a GUI editor with a CLI launcher (e.g. `subl`, `idea`, `zed`),
+   use that command instead.
+3. If no supported editor can be detected, skip silently — do not print an
+   error, just report the file path.
+
+Then tell the user only:
 ```
 Comment saved to issues/<nid>/comments/<filename>.md
-Paste the file contents into the GitLab work item comment field.
-```
-
----
-
-### Drupal.org (non-migrated queue)
-
-The file content is the **HTML source** ready to paste into the Drupal.org text field.
-
-After saving the file, produce two additional blocks in chat:
-
-**1. Rendered preview** — so the user can read the comment naturally without parsing raw HTML:
-
----
-**Preview:**
-
-> ...rendered content using Markdown equivalents...
-
----
-
-Convert the HTML tags above to their standard Markdown equivalents (bold, italic,
-code, headings, lists, fenced blocks, blockquotes). Keep `[#1234]` issue
-references as-is.
-
-**2. HTML snippet** — for direct copy-paste into Drupal.org:
-
-```html
-<!-- HTML content here -->
-```
-
-Then tell the user:
-```
-Comment saved to issues/<nid>/comments/<filename>.md
-Copy the HTML block above and paste it into the Drupal.org comment field.
 ```
