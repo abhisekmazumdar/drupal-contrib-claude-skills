@@ -13,6 +13,7 @@ skills:
   - drupalorg-cli
   - drupal-gitlab
   - drupal-gitlab-inline-comments
+  - drupal-related-issues
   - issue-record-update
   - drupalorg-comment-format
 ---
@@ -97,6 +98,12 @@ GITLAB_HOST=git.drupalcode.org glab ci status \
   -b <branch> -R project/<project>
 ```
 
+**d) Backlink scan** — other local issue records that mention this one but
+that this issue's own record doesn't yet list:
+```bash
+python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
+```
+
 ---
 
 ## Step 3 — Identify what is new
@@ -114,7 +121,7 @@ Categorise new activity:
 | **Thread resolutions** | Threads that were open last session and are now resolved |
 | **Pipeline changes** | Status changed (passing/failing) since last session |
 | **Issue status change** | Label or state changes (e.g. moved to `state::rtbc`) |
-| **New related issues** | Any newly mentioned cross-references in comments not yet in `## Related Issues` |
+| **New related issues** | Any newly mentioned cross-references in comments, or found by the backlink scan, not yet in `## Related Issues` |
 
 ---
 
@@ -123,6 +130,13 @@ Categorise new activity:
 Compare new activity against the open items in the local record.
 
 If the record is **stale** (new activity exists that was not logged), update it now using the `issue-record-update` skill — write directly without confirmation, as this is a routine sync.
+
+Append any new backlink-scan matches to `## Related Issues` the same way
+(append only, never remove existing entries), labeled as coming from the
+scan:
+```
+- #<other-nid> <other-title> — found via backlink scan: referenced by #<other-nid>'s own record: "<matched line>"
+```
 
 If the record is already **up to date** (nothing new since last session), note that and continue.
 
@@ -150,7 +164,7 @@ If the record is already **up to date** (nothing new since last session), note t
 [Any label or status change — e.g. moved to Needs Review, RTBC applied]
 
 **Related issues**
-[Any cross-references from the README or newly found in comments — with a one-liner on the relationship. Omit if none.]
+[Any cross-references from the README, newly found in comments, or found by the backlink scan — label backlink-scan finds explicitly (e.g. "found via backlink scan"), with a one-liner on the relationship. Omit if none.]
 
 ---
 

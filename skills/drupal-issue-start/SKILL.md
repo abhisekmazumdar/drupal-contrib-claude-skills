@@ -81,6 +81,15 @@ Extract: title, project, current status, all MRs (iid + branch + pipeline status
 
 Also note any **related issues** mentioned in comments or the issue body (e.g. "depends on #X", "follow-up to #X", "duplicate of #X", "blocks #X"). These will be written to the `## Related Issues` section.
 
+**Also check for backlinks from other local issue records** — this catches
+relationships the live comment thread doesn't mention (e.g. another issue's
+own notes already reference this one):
+```bash
+python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
+```
+Note every referencing issue and the matched line — these feed into Phase 3
+and Phase 4 alongside the comment-derived related issues.
+
 ---
 
 ## Phase 3 — Create or update the issue record
@@ -123,7 +132,13 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
 - Add any newly discovered related issues to the `## Related Issues` section (append only — never remove existing entries).
 - Never touch the Work Log or Notes sections.
 
-Also check: if related issues were found and they have their own record at `issues/<related-nid>/README.md`, read those too and surface any relevant context in the report.
+Add an entry to `## Related Issues` for every issue the backlink scan found
+that isn't already listed, whether the record is new or existing:
+```
+- #<other-nid> <other-title> — referenced by #<other-nid>'s own record: "<matched line, trimmed>"
+```
+
+Also check: if related issues were found (from comments or the backlink scan) and they have their own record at `issues/<related-nid>/README.md`, read those too and surface any relevant context in the report.
 
 ---
 
@@ -160,6 +175,18 @@ Present this in full. Do not skip sections.
 
 **Issue comment activity:** <N> total comments, last comment: <date>
 <1-2 sentences summarising the latest discussion thread.>
+
+---
+
+### Related Issues
+
+<List every entry now in the `## Related Issues` section, both the ones
+found in comments and the ones found by the backlink scan — label the
+backlink-scan ones explicitly so it's clear where they came from:>
+- #<nid> <title> — <relationship, from comments>
+- #<nid> <title> — found via backlink scan: referenced by #<nid>'s own record: "<matched line>"
+
+<If neither source found anything: "No related issues found — neither in the comment thread nor in other local issue records.">
 
 ---
 

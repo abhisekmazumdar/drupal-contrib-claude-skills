@@ -218,7 +218,7 @@ Invoke agent: drupal-repo-setup
   branch:  <branch>
 ```
 
-The sub-agent handles detecting the module directory, cloning if needed (with user approval), setting up the remote, and checking out the branch (with user approval). It returns the resolved `<module_dir>` and confirms the branch is ready.
+The sub-agent handles detecting the module directory, cloning if needed (with user approval), checking and installing any missing dependencies via Composer (with user approval), setting up the remote, and checking out the branch (with user approval). It returns the resolved `<module_dir>` and confirms the branch is ready.
 
 **Do not read files, run analysis, or make any changes until the sub-agent reports back and the full A1–A8 gathering is complete.**
 
@@ -513,7 +513,7 @@ Invoke agent: drupal-repo-setup
   mode:    probe
 ```
 
-The sub-agent locates the module directory and clones it if needed (with user approval). It returns `<module_dir>`.
+The sub-agent locates the module directory, clones it if needed (with user approval), and checks/installs any missing dependencies via Composer (with user approval). It returns `<module_dir>`.
 
 Once the sub-agent reports the module is ready, read:
 - `<module>.info.yml` — dependencies, version

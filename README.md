@@ -121,7 +121,16 @@ Or run the entry point skill directly:
 /drupal-issue-start https://www.drupal.org/project/ai/issues/3499692
 ```
 
-The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state, and presents a structured report before doing anything. From there it delegates to the `drupal-issue-agent` for review, implementation, or drafting a Drupal.org comment, and to the `drupal-e2e-tester` agent for the dedicated test phase (PHPUnit via DDEV plus Playwright browser e2e). Agents pause at every approval gate — the skill relays each pause report back to you and nothing is written, committed, or posted without your explicit go-ahead.
+The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state, cross-checks other local issue records for backlinks to this one, and presents a structured report before doing anything. From there it delegates to whichever agent the job needs:
+
+| Agent | What it does |
+|---|---|
+| `drupal-issue-agent` | Full review, implementation, and fix loop — the only one that edits module code |
+| `drupal-repo-setup` | Locates/clones the module, installs any missing dependencies via Composer, checks out the MR branch or creates a worktree |
+| `drupal-e2e-tester` | Dedicated test phase — PHPUnit via DDEV plus Playwright browser e2e — report-only, never edits code |
+| `drupal-issue-catchup` | Re-briefs you on an issue after time away, diffing new activity against the local record |
+
+Agents pause at every approval gate — the skill relays each pause report back to you and nothing is written, cloned, `composer require`'d, committed, or posted without your explicit go-ahead.
 
 GitLab work-item URLs are also supported:
 

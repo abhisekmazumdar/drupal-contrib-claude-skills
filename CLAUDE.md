@@ -22,6 +22,30 @@ templates/
 
 ---
 
+## Common commands
+
+There's no build step, no test suite, and no `npm run` scripts — `package.json` only declares the `bin` entry. CI (`.github/workflows/ci.yml`) runs these checks directly against the repo; run them the same way after editing `bin/setup.js`, `skills/`, `agents/`, or `templates/`:
+
+```bash
+# Syntax-check the setup script
+node --check bin/setup.js
+
+# Every skills/<name>/SKILL.md and agents/*.md must have a --- frontmatter
+# block with a name: matching its directory/filename, plus a description:
+# (exact check lives in .github/workflows/ci.yml under "Validate skill and agent frontmatter")
+
+# {{VAR}} placeholders may only appear in templates/, and only from the known set
+# (DDEV_PROJECT, SITE_URL, PHP_VERSION, MARIADB_VERSION, DRUPAL_PATH, DRUPAL_WEBROOT, DRUPAL_CLI_BIN)
+grep -rn "{{" skills/ agents/   # must be empty
+
+# templates/settings.json.template must still be valid JSON once vars are substituted
+node -e "JSON.parse(require('fs').readFileSync('templates/settings.json.template','utf8').replace(/\{\{[A-Z_]+\}\}/g,'placeholder'))"
+```
+
+See "Testing setup changes" below for exercising `bin/setup.js` end-to-end against a real workspace.
+
+---
+
 ## Key conventions — read before editing anything
 
 ### Template vars belong only in `templates/`
@@ -53,11 +77,30 @@ Do not copy either's contents into `skills/` — they are maintained upstream an
 
 ### Agent handoff pattern
 
+Four agents in `agents/`, each with a persona name as a body-level identity
+(first line after frontmatter) — the persona name is cosmetic only; the
+frontmatter `name:` field (matching the filename) is what every invocation
+and cross-reference actually uses. Never invoke an agent by its persona
+name, and never change a frontmatter `name:` to match the persona.
+
+| File | Frontmatter `name:` | Persona | Role |
+|---|---|---|---|
+| `drupal-issue-agent.md` | `drupal-issue-agent` | Nora | Full review/implement/fix loop — the only agent that edits module code |
+| `drupal-e2e-tester.md` | `drupal-e2e-tester` | Milo | Dedicated test phase (PHPUnit + Playwright) — report-only, never edits code |
+| `drupal-repo-setup.md` | `drupal-repo-setup` | Wren | Git/repo plumbing — locate, clone, install missing dependencies via Composer, checkout/worktree — all behind per-write approval gates |
+| `drupal-issue-catchup.md` | `drupal-issue-catchup` | Sage | Re-briefs on an issue after time away — diffs new activity against the local record |
+
 `drupal-issue-agent` is always invoked by `drupal-issue-start`. The agent's Phase 0 and Phase 1 are intentionally thin — they receive pre-parsed context from the skill rather than re-fetching it. Do not add URL parsing or issue-fetching logic back to the agent.
 
 Sub-agents cannot talk to the user mid-run, so approval gates use a **pause-relay protocol**: the agent ends its run with a `[PAUSE — awaiting user decision]` report, `drupal-issue-start` relays it verbatim, and the agent is resumed/re-invoked with the user's reply. Keep this protocol intact — do not add gates that assume the agent can converse directly.
 
 `drupal-e2e-tester` is the dedicated test phase (PHPUnit + Playwright browser e2e), invoked by `drupal-issue-agent` at Phase T or directly by the user. It is deliberately **report-only** — the implementing agent must never be the one verifying its own work.
+
+`drupal-repo-setup` is invoked by `drupal-issue-agent` (and can be invoked directly by `drupal-issue-start`) whenever a local module directory needs preparing — locating, cloning, installing missing Composer dependencies, and checking out a branch or creating a worktree. Every write it performs (clone, `composer require`, checkout, worktree) sits behind its own `[PAUSE]`.
+
+`drupal-issue-catchup` is invoked directly by the user ("catch me up on issue N") or from `drupal-issue-start`'s Phase 5 routing table. It never edits code — it diffs new activity against `issues/<nid>/README.md` and briefs, waiting for direction like every other agent here.
+
+The `drupal-related-issues` skill (`find_related_issues.py`) is used by both `drupal-issue-start` and `drupal-issue-catchup` to catch cross-references that only exist in *other* local issue records — a one-directional read of the current issue's own comments misses these. Results are merged into `## Related Issues`, append-only, labeled by source (comment thread vs. backlink scan).
 
 ---
 
