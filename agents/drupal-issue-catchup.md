@@ -59,6 +59,10 @@ Extract from the record:
 - **What was done** in the last session
 - **Open items** from the last session
 - **MR iid(s)** if any
+- **Prior review verdict** from `## Review Status` — this is a snapshot, not
+  history, so it only tells you where things stood as of that section's `As
+  of:` date; compare it against fresh activity in Step 3 to see if it's still
+  accurate
 - **Related issues** from the `## Related Issues` section — if any have their own record at `issues/<related-nid>/README.md`, read those too and note any context relevant to the current issue
 
 ---
@@ -121,6 +125,7 @@ Categorise new activity:
 | **Thread resolutions** | Threads that were open last session and are now resolved |
 | **Pipeline changes** | Status changed (passing/failing) since last session |
 | **Issue status change** | Label or state changes (e.g. moved to `state::rtbc`) |
+| **Review verdict change** | Anything since the last session that would change the `## Review Status` verdict — a fix pushed, a thread resolved, a pipeline flip |
 | **New related issues** | Any newly mentioned cross-references in comments, or found by the backlink scan, not yet in `## Related Issues` |
 
 ---
@@ -137,6 +142,13 @@ scan:
 ```
 - #<other-nid> <other-title> — found via backlink scan: referenced by #<other-nid>'s own record: "<matched line>"
 ```
+
+If activity since the last session would change the `## Review Status`
+verdict (fix pushed, thread resolved, pipeline flipped), re-derive it using
+the same rule `drupal-issue-start` Phase 2.5 uses — a judgment call naming
+the specific gap, not an exhaustive checklist — and overwrite the section in
+place (it's a snapshot, never append-only). Note in the Work Log entry that
+the verdict changed and from what to what.
 
 If the record is already **up to date** (nothing new since last session), note that and continue.
 
@@ -162,6 +174,10 @@ If the record is already **up to date** (nothing new since last session), note t
 
 **Issue state**
 [Any label or status change — e.g. moved to Needs Review, RTBC applied]
+
+**Review verdict**
+[Prior verdict from the record → current verdict, if it changed. If
+unchanged, say so plainly: "Still <verdict> — same gap as last session."]
 
 **Related issues**
 [Any cross-references from the README, newly found in comments, or found by the backlink scan — label backlink-scan finds explicitly (e.g. "found via backlink scan"), with a one-liner on the relationship. Omit if none.]

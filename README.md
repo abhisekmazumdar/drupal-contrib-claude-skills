@@ -121,7 +121,7 @@ Or run the entry point skill directly:
 /drupal-issue-start https://www.drupal.org/project/ai/issues/3499692
 ```
 
-The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state, cross-checks other local issue records for backlinks to this one, and presents a structured report before doing anything. From there it delegates to whichever agent the job needs:
+The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue state (every open MR, all inline and top-level comments), cross-checks other local issue records for backlinks to this one, then automatically checks out the most relevant MR locally and gives it a light preliminary read — no approval needed for the checkout itself, since it's local and reversible. If more than one MR is open, it picks the most active one and lists the rest so you can redirect. The resulting report leads with a verdict (RTBC-ready, close with a named gap, needs work with a named gap, or needs discussion) plus anything you need to know before trusting it — missing fork access, no push access, DDEV not running — and only *then* asks what you want to do. From there it delegates to whichever agent the job needs:
 
 | Agent | What it does |
 |---|---|
@@ -130,7 +130,7 @@ The skill loads any prior work from `issues/<nid>/README.md`, fetches live issue
 | `drupal-e2e-tester` | Dedicated test phase — PHPUnit via DDEV plus Playwright browser e2e — report-only, never edits code |
 | `drupal-issue-catchup` | Re-briefs you on an issue after time away, diffing new activity against the local record |
 
-Agents pause at every approval gate — the skill relays each pause report back to you and nothing is written, cloned, `composer require`'d, committed, or posted without your explicit go-ahead.
+Beyond that automatic recon checkout, agents pause at every approval gate — the skill relays each pause report back to you and nothing is written, edited, `composer require`'d, committed, or posted without your explicit go-ahead.
 
 GitLab work-item URLs are also supported:
 

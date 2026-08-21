@@ -75,6 +75,18 @@ npx -y skills@latest add <owner/repo> --skill <name> --agent claude-code --copy 
 
 Do not copy either's contents into `skills/` — they are maintained upstream and updated via `npx skills update`. Each pull is non-fatal: if it fails (offline), setup prints the manual install command and continues. To add another externally-maintained skill, append to the `externalSkills` array in `bin/setup.js` rather than writing a new bespoke block.
 
+### Guiding philosophy — move issues toward RTBC, don't just find things
+
+Every review this package produces — the light preliminary one in
+`drupal-issue-start` Phase 2.5 and the full one in `drupal-issue-agent`'s A9 —
+ends with a **judgment call**: RTBC-ready, close with a named gap, needs
+work with a named gap, or needs discussion. The goal is a mergeable,
+community-acceptable contribution, not an exhaustively long findings list.
+Cosmetic nitpicks that don't block correctness, security, or standards get
+mentioned once and set aside — they are not blocking findings and reviews
+should not be padded with them to look thorough. Both review layers share
+this framing; if you change one, check whether the other needs to match.
+
 ### Agent handoff pattern
 
 Four agents in `agents/`, each with a persona name as a body-level identity
@@ -87,7 +99,7 @@ name, and never change a frontmatter `name:` to match the persona.
 |---|---|---|---|
 | `drupal-issue-agent.md` | `drupal-issue-agent` | Nora | Full review/implement/fix loop — the only agent that edits module code |
 | `drupal-e2e-tester.md` | `drupal-e2e-tester` | Milo | Dedicated test phase (PHPUnit + Playwright) — report-only, never edits code |
-| `drupal-repo-setup.md` | `drupal-repo-setup` | Wren | Git/repo plumbing — locate, clone, install missing dependencies via Composer, checkout/worktree — all behind per-write approval gates |
+| `drupal-repo-setup.md` | `drupal-repo-setup` | Wren | Git/repo plumbing — locate, clone, install missing dependencies via Composer, checkout/worktree. `recon` mode (clone+checkout+fork-remote) runs unpaused; Composer install always pauses |
 | `drupal-issue-catchup.md` | `drupal-issue-catchup` | Sage | Re-briefs on an issue after time away — diffs new activity against the local record |
 
 `drupal-issue-agent` is always invoked by `drupal-issue-start`. The agent's Phase 0 and Phase 1 are intentionally thin — they receive pre-parsed context from the skill rather than re-fetching it. Do not add URL parsing or issue-fetching logic back to the agent.
@@ -96,11 +108,23 @@ Sub-agents cannot talk to the user mid-run, so approval gates use a **pause-rela
 
 `drupal-e2e-tester` is the dedicated test phase (PHPUnit + Playwright browser e2e), invoked by `drupal-issue-agent` at Phase T or directly by the user. It is deliberately **report-only** — the implementing agent must never be the one verifying its own work.
 
-`drupal-repo-setup` is invoked by `drupal-issue-agent` (and can be invoked directly by `drupal-issue-start`) whenever a local module directory needs preparing — locating, cloning, installing missing Composer dependencies, and checking out a branch or creating a worktree. Every write it performs (clone, `composer require`, checkout, worktree) sits behind its own `[PAUSE]`.
+`drupal-repo-setup` is invoked by `drupal-issue-agent` (and can be invoked directly by `drupal-issue-start`) whenever a local module directory needs preparing — locating, cloning, installing missing Composer dependencies, and checking out a branch or creating a worktree. Its `probe`/`checkout`/`worktree` modes keep every write (clone, `composer require`, checkout, worktree) behind its own `[PAUSE]`, unchanged from before.
 
-`drupal-issue-catchup` is invoked directly by the user ("catch me up on issue N") or from `drupal-issue-start`'s Phase 5 routing table. It never edits code — it diffs new activity against `issues/<nid>/README.md` and briefs, waiting for direction like every other agent here.
+`drupal-repo-setup` also has a **`recon` mode**, used only by `drupal-issue-start`'s Phase 2.5, before its report: clone, branch checkout, and fork-remote setup all run **automatically, no pause** — they're local-only and reversible. Composer install still pauses in every mode, since it's the one step that mutates `composer.lock`. `recon` surfaces access/setup problems (no fork, no push access, DDEV down) in a `## Setup issues` block instead of pausing on them — `drupal-issue-start` relays that block verbatim into its report. When `drupal-issue-agent` receives an already-recon'd `<module_dir>`/`<branch>` from `drupal-issue-start`, it confirms the checkout still matches instead of re-invoking `drupal-repo-setup`.
+
+`drupal-issue-catchup` is invoked directly by the user ("catch me up on issue N") or from `drupal-issue-start`'s Phase 5 routing table. It never edits code — it diffs new activity against `issues/<nid>/README.md` and briefs, waiting for direction like every other agent here. It also re-derives the `## Review Status` verdict when new activity would change it.
 
 The `drupal-related-issues` skill (`find_related_issues.py`) is used by both `drupal-issue-start` and `drupal-issue-catchup` to catch cross-references that only exist in *other* local issue records — a one-directional read of the current issue's own comments misses these. Results are merged into `## Related Issues`, append-only, labeled by source (comment thread vs. backlink scan).
+
+### `issues/<nid>/README.md` format
+
+Written/updated by `drupal-issue-start` (Phase 3) and appended to by
+`issue-record-update`. One section works differently from the rest: `##
+Review Status` (verdict + `As of: MR !<iid> @ <sha> (<date>)`) is a
+**snapshot, overwritten in place** every time it's re-derived — never
+append-only like `## Work Log` and `## Related Issues`. If you add another
+section, decide explicitly which behavior it needs and say so in the
+template comment, the way `## Review Status` and `## Notes` already do.
 
 ---
 

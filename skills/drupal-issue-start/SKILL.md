@@ -77,7 +77,15 @@ For any issue with existing MRs, also fetch pipeline status for the latest MR br
 GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
 ```
 
-Extract: title, project, current status, all MRs (iid + branch + pipeline status), comment count + date of last comment, whether a fork exists.
+Extract: title, project, current status, **every** open MR (iid + branch + pipeline status — not just the first one returned), comment count + date of last comment, whether a fork exists.
+
+Also fetch every inline reviewer thread and top-level comment on each open MR, not just the issue's own comment thread:
+```bash
+python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
+  https://git.drupalcode.org/project/<project>/-/merge_requests/<mr-iid>
+GITLAB_HOST=git.drupalcode.org glab mr note list <mr-iid> --repo project/<project>
+```
+Run this for every open MR found, not only the one you expect to review — the multi-MR selection in Phase 2.5 depends on knowing each one's actual activity, not just its existence.
 
 Also note any **related issues** mentioned in comments or the issue body (e.g. "depends on #X", "follow-up to #X", "duplicate of #X", "blocks #X"). These will be written to the `## Related Issues` section.
 
@@ -89,6 +97,76 @@ python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
 ```
 Note every referencing issue and the matched line — these feed into Phase 3
 and Phase 4 alongside the comment-derived related issues.
+
+---
+
+## Phase 2.5 — Recon: automatic checkout and preliminary review
+
+**Goal of this phase and everything downstream in this skill: help the human
+move the issue toward a mergeable, RTBC-ready state — not to accumulate an
+exhaustive list of findings.** Every review this skill produces ends with a
+judgment call (RTBC-ready / close, with the specific gap / needs work, with
+the specific gap / needs discussion), not an open-ended checklist. Cosmetic
+observations get mentioned once, not treated as blockers.
+
+**If zero open MRs exist:** nothing to check out or review. Invoke
+`drupal-repo-setup` in `recon` mode with no `<branch>` (clone-only, to confirm
+the module is available for whoever implements next) and skip straight to the
+"no review" case in Phase 4.
+
+**If exactly one open MR exists:** that is the review target.
+
+**If more than one open MR exists:** pick the most active one automatically
+— prefer a passing pipeline over failing/pending, and break remaining ties by
+most recent activity (latest commit or comment timestamp). Do not pause to
+ask which one. Record the picked MR's reasoning and list the others by
+iid/branch/status — these go in the Phase 4 report so the human can redirect
+to a different MR if the auto-pick guessed wrong.
+
+**Check out the picked MR automatically:**
+
+```
+Invoke agent: drupal-repo-setup
+  project: <project>
+  nid:     <nid>
+  mode:    recon
+  branch:  <picked MR's branch>
+```
+
+This runs without a pause for clone/checkout/fork-remote — only a missing
+Composer dependency would pause it (per `drupal-repo-setup`'s own gates).
+Capture its `## Setup issues` block verbatim — fork access, push access,
+missing remote, DDEV not running, anything the human needs to know before
+trusting the rest of this report goes here, unfiltered.
+
+**Preliminary review (light — not the full correctness audit).** Once the
+sub-agent confirms the branch is checked out:
+
+```bash
+git -C <module_dir> diff origin/<default-branch>...HEAD --stat
+git -C <module_dir> diff origin/<default-branch>...HEAD
+```
+
+Read the diff and produce:
+- **What it changes** — 2-4 sentences, plain language, what the code
+  actually does (not a restatement of the issue title).
+- **Verdict** — exactly one of:
+  - `RTBC-ready` — pipeline passing, no open reviewer threads, diff matches
+    the issue's resolution, tests present where the change warrants them
+  - `Close — <named gap>` — e.g. "close — missing a test for the empty-input
+    case" or "close — one open reviewer thread on line 42 unaddressed"
+  - `Needs work — <named gap>` — e.g. "needs work — pipeline failing on
+    PHPStan" or "needs work — diff doesn't address the reported bug"
+  - `Needs discussion — <what's contested>` — the approach itself is
+    disputed in the thread, not a code-quality question
+- This is a **judgment call to orient the human**, not the exhaustive A7
+  checklist `drupal-issue-agent` runs after approval — do not run PHPStan/PHPUnit
+  here, do not enumerate every style nitpick. If something looks wrong,
+  name it once; don't pad the verdict with a list.
+
+If the diff is large enough that a light read genuinely can't support a
+verdict, say so plainly ("diff too large for a preliminary read — verdict
+deferred to full review") rather than guessing.
 
 ---
 
@@ -114,6 +192,13 @@ Write `issues/<nid>/README.md`:
 <3-5 sentences: what is broken or missing, why it matters, current state of discussion,
 what kind of fix is being proposed. Concrete and factual — no vague filler.>
 
+## Review Status
+<!-- Reflects the CURRENT state only — overwritten in place each session,
+     never appended to. issue-record-update logs the fact that it changed
+     in that session's Work Log entry; this section itself stays a snapshot. -->
+- **Verdict:** <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic> | No MR yet>
+- **As of:** <MR !<iid> @ <short-sha> | "no MR"> (<today YYYY-MM-DD>)
+
 ## Related Issues
 <!-- Cross-references to issues that touch the same code, depend on this fix, or are
      otherwise connected. Updated by AI when discovered; also human-editable.
@@ -131,6 +216,10 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
 - Update the `**Status:**` line in the header if the status has changed.
 - Add any newly discovered related issues to the `## Related Issues` section (append only — never remove existing entries).
 - Never touch the Work Log or Notes sections.
+
+**Always overwrite `## Review Status` in place** with the verdict from Phase
+2.5 (or "No MR yet" if there's nothing to review) — this section is a
+snapshot of *now*, not a history; that's what the Work Log is for.
 
 Add an entry to `## Related Issues` for every issue the backlink scan found
 that isn't already listed, whether the record is new or existing:
@@ -172,9 +261,34 @@ Present this in full. Do not skip sections.
 <For each MR:>
 - MR !<iid>: branch `<branch>`, pipeline <PASSING|FAILING|PENDING|n/a>
   <If FAILING: "Pipeline is FAILING — likely needs attention before review.">
+  <Mark exactly one as "— checked out and reviewed below" when count > 1; the rest get "not checked out — say the word to switch to this one instead.">
 
 **Issue comment activity:** <N> total comments, last comment: <date>
 <1-2 sentences summarising the latest discussion thread.>
+
+---
+
+### Setup issues
+
+<Verbatim from `drupal-repo-setup`'s `## Setup issues` block in Phase 2.5 —
+fork/push access, missing remote, DDEV not running, clone failures. This is
+what the human needs to know before trusting anything below. If it reported
+"None": "None — clone, dependencies, and fork remote all set up cleanly.">
+
+---
+
+### Preliminary review
+
+<If no MR exists: "No MR yet — nothing to review. See Recommendation below.">
+
+<If an MR was checked out in Phase 2.5:>
+**Verdict: <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic>>**
+
+<2-4 sentence plain-language description of what the diff actually does.>
+
+<If the verdict names a gap, state it again here as the single concrete
+thing standing between this MR and RTBC — not a list of everything that
+could theoretically be improved.>
 
 ---
 
@@ -196,9 +310,15 @@ backlink-scan ones explicitly so it's clear where they came from:>
 
 ---
 
-### What still needs to be done
+### What still needs to be done — path to RTBC
 
-<3-8 bullet points based on status + comment analysis>
+<If verdict is RTBC-ready: "Nothing — this looks ready. Consider marking it
+RTBC on Drupal.org (I'll only do this if you tell me to; it's a queue-state
+change like any other write here).">
+
+<Otherwise: the named gap from the verdict above, restated as a concrete
+action — e.g. "Add a Kernel test covering the empty-input case" not "improve
+test coverage." 1-3 items, not a general audit.>
 
 ---
 
@@ -211,19 +331,23 @@ backlink-scan ones explicitly so it's clear where they came from:>
 - **Needs discussion — do not implement yet** — requirements are contested or ambiguous in the thread
 - **Do not touch** — status is RTBC or Fixed; code changes now would disrupt the queue. Only review or testing feedback is appropriate unless the human explicitly overrides.
 
-Base this on status, MR state, and the comment thread. Never assume an MR's
-contents from its title alone — if the recommendation hinges on what the MR
-actually changes, say so; the full diff is only fetched in the review phase.
+Base this on status, MR state, the comment thread, and the Phase 2.5
+preliminary verdict — the diff itself was already read in Phase 2.5, so this
+recommendation should reflect what's actually in the MR, not just its title
+or metadata. The full A1-A9 correctness audit still only happens in
+`drupal-issue-agent` after the human approves proceeding.
 
 ---
 
 ### Suggested next steps
 
-<2-5 concrete numbered options specific to the current state>
-1. Review the existing MR !<iid> — pipeline is <status>
+<2-5 concrete numbered options specific to the current state, aimed at
+reaching RTBC as directly as possible — not a menu of every theoretically
+possible action>
+1. Fix the named gap in the existing MR !<iid> — <gap from verdict>
 2. Implement the fix — no MR exists yet
 3. Re-roll against the latest branch — branch is behind
-4. Post a review comment — analysis is complete
+4. Post a review comment endorsing RTBC — verdict is RTBC-ready
 5. Track this issue for later — no action needed now
 
 ---
@@ -251,7 +375,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 | "this is related to #X" | Add the cross-reference to the `## Related Issues` section |
 | Specific instructions | Follow them, using the appropriate skills |
 
-Pass `<nid>`, `<project>`, `is_migrated`, MR iids, and the full issue record content to any delegated agent so it does not have to re-fetch everything.
+Pass `<nid>`, `<project>`, `is_migrated`, MR iids, the full issue record content, and — if Phase 2.5 ran a recon checkout — the resolved `<module_dir>` and `<branch>` it already set up, plus the diff already read, so `drupal-issue-agent` does not have to re-fetch or re-checkout anything.
 
 ### Relaying agent pauses
 

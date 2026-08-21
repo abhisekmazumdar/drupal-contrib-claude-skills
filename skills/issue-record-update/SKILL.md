@@ -34,12 +34,13 @@ From the current conversation, collect:
 - Current pipeline status if a push happened
 - What is still unresolved, blocked, or deferred to next session
 - Any related issues discovered this session (e.g. referenced in comments, or the fix touched code owned by another issue)
+- Whether this session's work changes the RTBC-readiness verdict (a fix landed, a thread got resolved, a pipeline flipped) — and if so, what the new verdict is
 
 ---
 
 ## Step 3 — Read the current README
 
-Read `issues/<nid>/README.md` to find the position of `## Work Log` and `## Notes` headings.
+Read `issues/<nid>/README.md` to find the position of `## Review Status`, `## Work Log`, and `## Notes` headings.
 
 ---
 
@@ -83,6 +84,13 @@ If any related issues were discovered this session, append them to the `## Relat
 ```
 - #<nid> <title> — <one line on the relationship>
 ```
+
+If the RTBC-readiness verdict changed this session, **overwrite** `## Review
+Status` in place with the new verdict and today's date — this section is
+always a snapshot of *now*, never append-only (unlike Work Log and Related
+Issues). The fact that it changed still belongs in this session's log entry
+above (e.g. under "What was done": "Verdict moved from Needs work — missing
+test to RTBC-ready after adding the Kernel test").
 
 ---
 
