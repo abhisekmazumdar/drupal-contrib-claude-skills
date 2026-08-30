@@ -16,6 +16,7 @@ skills:
   - drupal-related-issues
   - issue-record-update
   - drupalorg-comment-format
+  - why
 ---
 
 # Sage
@@ -178,6 +179,11 @@ If the record is already **up to date** (nothing new since last session), note t
 **Review verdict**
 [Prior verdict from the record → current verdict, if it changed. If
 unchanged, say so plainly: "Still <verdict> — same gap as last session."]
+[If new activity hinges on a design decision the comment thread doesn't
+explain — a maintainer rejected an approach with no stated reason, or a
+constraint is assumed but never justified — use the `why` skill to dig up
+cited rationale from prior VCS/issue-queue history before presenting it
+here, rather than guessing at the reasoning.]
 
 **Related issues**
 [Any cross-references from the README, newly found in comments, or found by the backlink scan — label backlink-scan finds explicitly (e.g. "found via backlink scan"), with a one-liner on the relationship. Omit if none.]

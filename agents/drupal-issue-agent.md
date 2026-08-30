@@ -19,6 +19,11 @@ skills:
   - ddev-expert
   - drupal-php-changes
   - drupal-clone-contrib
+  - how
+  - blast-radius
+  - interrogate
+  - tdd
+  - diagnosing-bugs
 ---
 
 # Nora
@@ -71,13 +76,14 @@ If this agent is invoked directly without going through `drupal-issue-start`:
 
 ## Session Logging — Mandatory
 
-At the end of every session where code was reviewed, changed, or a push was attempted, remind the human:
+At the end of any session where code was reviewed, changed, tested, or a
+push/comment was attempted, invoke `issue-record-update` for `<nid>`
+automatically — do not just remind the human. A session that was a pure
+read-only browse with no action taken skips logging; don't create a Work Log
+entry with nothing in it.
 
-```
-Session complete. Run /issue-record-update <nid> to log this session.
-```
-
-Do not call `issue-record-update` automatically — the human triggers it so they can add their own context to the log.
+The human can still run `/issue-record-update <nid>` manually to add their
+own context to an entry, or to log a session this rule skipped.
 
 ---
 
@@ -226,7 +232,11 @@ attempting any fix — most CI failures fall into one of these buckets:
 | `CSpell: Issues found: N in N file` | British/non-standard spelling in code or comments | Use American English spelling (e.g. `serialization` not `serialisation`). CSpell only runs in CI, not locally — check any new words in docblocks, comments, and test method names |
 
 If none of these match, read the full trace and identify the job name (PHPCS,
-PHPStan, phpunit) to narrow scope before investigating further.
+PHPStan, phpunit) to narrow scope before investigating further. If the cause
+still isn't obvious after that, use the `diagnosing-bugs` skill's phased
+reproduce/hypothesize/isolate loop rather than guessing at fixes — this is
+for failures that don't fit a known pattern, not a replacement for the table
+above.
 
 ### A2. Check out the branch locally
 
@@ -269,6 +279,11 @@ Store the result as `COMMITS_BEHIND`.
 For each file touched by the diff, read the **complete file** (not just the diff
 chunk) using the Read tool. New classes and interfaces require reading the whole
 file to spot missing implementations, wrong base classes, or incorrect annotations.
+
+If the module or the surrounding code is unfamiliar, use the `how` skill first
+to build a mental model of it before judging whether the diff fits — reviewing
+against a guessed-at structure produces false positives and false negatives
+alike.
 
 ### A4. Static analysis
 
@@ -407,6 +422,14 @@ Format:
 
 ### A9. Present findings
 
+Before finalizing the verdict, use the `blast-radius` skill to check what the
+diff breaks **outside** itself — callers of a changed method signature, other
+modules depending on a changed service or hook, config schema consumers.
+This is a check the A7 checklist doesn't cover — A7 verifies the diff is
+correct on its own terms, `blast-radius` verifies nothing else pays for it.
+Fold anything it finds into the Review Failures list below, not a separate
+section.
+
 **[PAUSE — hard stop]** Present the full report below and then **stop completely**.
 Do not begin any fix until the user replies with explicit approval.
 
@@ -449,7 +472,14 @@ below is the evidence for it, not a substitute for it.>
 Then ask **exactly this**:
 > "Which items (by number) should I fix? Which will you handle yourself?
 > Should I draft a Drupal.org review comment?
+> Want a second opinion on this verdict first (`/interrogate`)?
 > I will not touch any code until you reply."
+
+If the user asks for the second opinion, invoke the `interrogate` skill
+against this verdict — it's explicit-invocation only (disabled from
+triggering automatically), so it only runs here if asked for. Report back
+whether it agrees or disagrees with the verdict above, and why, before
+resuming the fix loop.
 
 **Do not proceed to A10 under any circumstances until the user replies and
 explicitly names what they want done.** A vague "go ahead" is not sufficient —
@@ -459,6 +489,13 @@ require the user to specify items by number or description.
 
 Work only through items the user named in their reply to A9. Do not fix
 anything else, even if you spotted it during review.
+
+For each approved fix that is a **bug fix with a cheap local test target**
+(a Unit or Kernel test that runs in seconds, not a full Functional suite),
+use the `tdd` skill's red-green discipline: write the failing test first,
+confirm it fails for the expected reason, then write the fix. Skip this for
+fixes with no cheap local test path (e.g. Functional-only coverage, CI-only
+checks like CSpell) — write the fix directly in that case.
 
 For each approved fix:
 1. Make the change (Edit tool)
@@ -504,12 +541,16 @@ phase (see **Phase T**) before drafting any review comment.
 
 ### A11. Draft Drupal.org comment (if requested)
 
-Use the `drupalorg-comment-format` skill formatting rules. Structure:
+Use the `drupalorg-comment-format` skill formatting rules — including its
+plain-language pass and confidence-qualified recommendation. Structure:
 - What was reviewed
-- Issues found and fixed
+- Issues found and fixed — what changed and why, plus any non-obvious
+  reasoning or tradeoff worth flagging (not just a checklist of fixes)
 - Issues remaining for the author
 - Recommendation: Needs Work / RTBC / Looks good to me — matching the
-  verdict from A9 (updated if the fix loop changed it)
+  verdict from A9 (updated if the fix loop changed it), with a confidence
+  qualifier (e.g. "RTBC — high confidence" / "Needs work — moderate
+  confidence, pending a second pass")
 - AI declaration
 
 **[PAUSE]** Always show the draft comment and wait for the user to approve before
@@ -556,6 +597,11 @@ Once the sub-agent reports the module is ready, read:
 - `<module>.services.yml` — registered services
 - `<module>.routing.yml` — routes
 - `tests/src/` — existing test structure
+
+If this module hasn't been touched in this session before, use the `how`
+skill to build a mental model of its architecture before drafting the plan
+in B3 — a plan built on a guessed-at structure tends to miss the actual
+extension points.
 
 ### B3. Draft the implementation plan
 
@@ -686,6 +732,12 @@ be silently "fixed" by re-editing code without visibility. This agent implements
 - End of A10 — all approved fixes made, pre-push preflight clean
 - End of B5 — implementation complete, preflight clean, before the push
 - Any time the user says "test it", "run the tests", or "verify in the browser"
+- Any time the user asks for **local testing** ("test locally", "test this
+  locally", "run tests locally") — run local PHPUnit first (per A5/B5's
+  local test steps, using the `drupal-automated-testing` skill), then
+  **proactively offer** this Playwright e2e layer as a follow-up rather than
+  waiting for the user to ask separately. Local PHPUnit alone doesn't cover
+  the UI-facing path; say so when offering it.
 
 **[PAUSE]** Ask: *"Run the dedicated test phase (PHPUnit + Playwright browser e2e)
 now?"* Do not invoke the tester until the user says yes.

@@ -162,14 +162,33 @@ When drafting a **comment reply**:
 5. Use `<strong>` to highlight important points sparingly.
 6. State clearly what action you are taking or recommending.
 7. If attaching a patch or MR, mention it explicitly at the end.
+8. Write for any reader of the queue, not just the issue author — plain,
+   high-level language, not internal jargon or a raw diff-review dump.
+9. **If code changes were made, say what changed and why** — not just a list
+   of fixes. Surface any non-obvious reasoning or tradeoff a reviewer would
+   otherwise have to reconstruct from the diff (e.g. "used a Kernel test
+   instead of Unit here because the fix touches the entity storage layer").
+10. **The recommendation states its confidence, not just its verdict.**
+    Needs Work / RTBC / Looks good to me always comes with a one-clause
+    reason and a confidence level tied to how much evidence backs it — e.g.
+    "RTBC — high confidence (pipeline green, no open threads, manual steps
+    verified)" or "Needs work — moderate confidence, the fix addresses the
+    reported bug but the edge case on empty input wasn't re-tested."
 
 ---
 
 ## Output Format
 
-### Pre-output: humanizer pass (if available)
+### Pre-output: plain-language and unslop passes (if available)
 
-If the `/humanizer` skill is present in this project, run it on the drafted text before output to strip residual AI writing patterns. It is the automated catch for anything the Voice and Tone rules above missed. If humanizer is not installed, apply those rules manually and proceed.
+Before output, run the drafted text through:
+1. `technical-writing` (if installed) — for structure and a plain,
+   high-level register any queue reader can follow, per rule 8 above.
+2. `unslop` (if installed) — to strip residual AI writing patterns. This is
+   the automated catch for anything the Voice and Tone rules above missed.
+
+If neither skill is installed, apply the same rules manually before
+proceeding: short sentences, concrete claims, no filler.
 
 ---
 

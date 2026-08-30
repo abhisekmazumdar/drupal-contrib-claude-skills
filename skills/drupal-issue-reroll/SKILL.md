@@ -3,6 +3,7 @@ name: drupal-issue-reroll
 description: >
   Rebase (reroll) a Drupal issue branch on the latest upstream branch, run PHPCS and PHPStan checks, and push the result. Use when an MR branch has fallen behind origin, when CI fails due to merge conflicts, or when a maintainer asks to reroll before review.
 argument-hint: "<nid> [project]"
+disable-model-invocation: true
 ---
 
 # /drupal-issue-reroll
@@ -114,7 +115,12 @@ git -C <MODULE_PATH> rebase origin/<DEFAULT_BRANCH>
    git -C <MODULE_PATH> diff --name-only --diff-filter=U
    ```
 
-2. Read each conflicted file in full. For every conflict — trivial or not — prepare a proposed resolution but **do not apply it yet**.
+2. Read each conflicted file in full. Before proposing a resolution, use the
+   `resolving-merge-conflicts` skill to read the originating issue/MR behind
+   **each side** of the conflict (the incoming upstream commit and the local
+   branch's own commit) — a conflict that looks like a trivial line clash can
+   hide two intentional, incompatible changes. For every conflict — trivial
+   or not — prepare a proposed resolution but **do not apply it yet**.
 
 3. **[PAUSE]** Present the full conflict report and wait for approval before editing any file:
 

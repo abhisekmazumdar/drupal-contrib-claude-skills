@@ -62,24 +62,28 @@ Instead, skills reference project paths using angle-bracket placeholders (`<webr
 
 Each skill in `skills/<name>/SKILL.md` must work without knowing the specific Drupal project layout. Path detection belongs inside the skill (e.g. `find . -name "vendor/bin/phpcs"`), not baked in at install time.
 
+### `disable-model-invocation` — only for skills that mutate with no gate of their own
+
+Two of this repo's own skills set `disable-model-invocation: true`: `drupal-clone-contrib` (runs `git clone` immediately, no internal confirmation) and `drupal-issue-reroll` (runs `git rebase` in Step 3 unprompted — only the later push is gated). Both are otherwise only ever invoked from behind another skill's own `[PAUSE]` (`drupal-repo-setup` gates every `drupal-clone-contrib` call it makes); triggering them straight from a passing natural-language mention would skip that gate entirely. Every other skill in `skills/` is either read-only, writes only to `issues/<nid>/` (low-risk, local, append-only), or already asks for confirmation internally before writing anywhere else — those stay on the default (auto-triggerable). If you add a skill that performs an unprompted git/disk mutation with no pause of its own, set this field; otherwise leave it off.
+
 ### External skills are pulled, not vendored
 
 None of these skills live in this repo — `bin/setup.js` pulls all of them at install time via the same `externalSkills` loop:
 
-| Skill | Upstream repo | Used by |
+| Skill | Upstream repo | Wired in at |
 |---|---|---|
-| `playwright-cli` | `microsoft/playwright-cli` | `drupal-e2e-tester` for browser e2e |
+| `playwright-cli` | `microsoft/playwright-cli` | `drupal-e2e-tester` Phase 3, for browser e2e |
 | `drupalorg-cli` | `mglaman/drupalorg-cli` | `drupal-issue-start` and others, for Drupal.org issue/MR data |
-| `how` | `cursor/plugins` | Mental model of unfamiliar contrib code before `drupal-issue-agent` edits it |
-| `blast-radius` | `cursor/plugins` | Checks what a change breaks outside the diff before the A9 RTBC verdict |
-| `unslop` | `cursor/plugins` | Strips AI writing tells from issue comments/commit messages, alongside `drupalorg-comment-format` |
-| `technical-writing` | `cursor/plugins` | Layered writing standard for issue summaries, MR descriptions, commit messages |
-| `interrogate` | `cursor/plugins` | Adversarial multi-model second opinion on a review verdict — report-only, like `drupal-e2e-tester` |
-| `why` | `cursor/plugins` | Cited design-rationale digging across VCS/issue-queue evidence, complementing `drupal-issue-catchup` |
-| `tdd` | `cursor/plugins` | Red-green discipline for bug fixes with a cheap local test target; skips when the test path is expensive |
-| `diagnosing-bugs` | `mattpocock/skills` | Phased reproduce/hypothesize/isolate loop for hard bugs before `drupal-issue-agent` implements a fix |
-| `resolving-merge-conflicts` | `mattpocock/skills` | Reads each side's originating issue/MR before resolving conflicts `drupal-issue-reroll` surfaces |
-| `wizard` | `mattpocock/skills` | Turns `drupal-repo-setup` recon's `## Setup issues` block into a runnable fix-it script for the human |
+| `how` | `cursor/plugins` | `drupal-issue-agent` A3 (Path A, unfamiliar code before reviewing the diff) and B2 (Path B, before drafting the plan) |
+| `blast-radius` | `cursor/plugins` | `drupal-issue-agent` A9, before finalizing the RTBC verdict — checks what the diff breaks outside itself |
+| `unslop` | `cursor/plugins` | `drupalorg-comment-format` and `drupal-issue-start` Phase 3, pre-output writing pass |
+| `technical-writing` | `cursor/plugins` | Same pre-output pass, for structure (issue summaries, MR descriptions, commit messages) |
+| `interrogate` | `cursor/plugins` | `drupal-issue-agent` A9, offered explicitly ("want a second opinion?") — explicit-invocation only, never automatic |
+| `why` | `cursor/plugins` | `drupal-issue-catchup` Step 5, when new activity hinges on a design decision the comment thread doesn't explain |
+| `tdd` | `cursor/plugins` | `drupal-issue-agent` A10, for bug fixes with a cheap local test target; skipped when the test path is expensive |
+| `diagnosing-bugs` | `mattpocock/skills` | `drupal-issue-agent` A1, fallback when a CI failure doesn't match the known-pattern table |
+| `resolving-merge-conflicts` | `mattpocock/skills` | `drupal-issue-reroll` Step 3, before proposing a resolution for each conflicted file |
+| `wizard` | `mattpocock/skills` | `drupal-repo-setup` Step 7, turning a non-empty `## Setup issues` block into a runnable fix-it script |
 
 ```bash
 npx -y skills@latest add <owner/repo> --skill <name> --agent claude-code --copy -y
@@ -141,12 +145,24 @@ The `drupal-related-issues` skill (`find_related_issues.py`) is used by both `dr
 ### `issues/<nid>/README.md` format
 
 Written/updated by `drupal-issue-start` (Phase 3) and appended to by
-`issue-record-update`. One section works differently from the rest: `##
-Review Status` (verdict + `As of: MR !<iid> @ <sha> (<date>)`) is a
-**snapshot, overwritten in place** every time it's re-derived — never
-append-only like `## Work Log` and `## Related Issues`. If you add another
-section, decide explicitly which behavior it needs and say so in the
-template comment, the way `## Review Status` and `## Notes` already do.
+`issue-record-update`. Two sections work differently from the rest: `##
+Review Status` (verdict + `As of: MR !<iid> @ <sha> (<date>)`) and `## Key
+Context` (MRs, setup issues, latest discussion — the persisted version of
+the Phase 4 chat report) are both **snapshots, overwritten in place** every
+time they're re-derived — never append-only like `## Work Log` and `##
+Related Issues`. Both are written as short bullet points via the
+`technical-writing`/`unslop` skills when installed (see "Writing the
+record" in `drupal-issue-start`), so a future session doesn't have to
+re-fetch live state to get oriented. If you add another section, decide
+explicitly which behavior it needs and say so in the template comment, the
+way `## Review Status`, `## Key Context`, and `## Notes` already do.
+
+`issue-record-update` is invoked **automatically** at the end of any session
+in `drupal-issue-start`/`drupal-issue-agent` that did something — code
+reviewed, changed, tested, or a comment/push attempted. A pure read-only
+catchup or browse with nothing done skips it, so the Work Log doesn't fill
+up with empty "reviewed the issue" entries. The human can still trigger it
+manually any time, e.g. to add their own context to an entry.
 
 ---
 

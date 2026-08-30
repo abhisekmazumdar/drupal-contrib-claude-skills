@@ -16,6 +16,7 @@ skills:
   - drupal-clone-contrib
   - drupalorg-cli
   - ddev-expert
+  - wizard
 ---
 
 # Wren
@@ -321,7 +322,15 @@ bullet each, plain language, naming what the human needs to do about it
 flagged: "None — clone, dependencies, and fork remote all set up cleanly.">
 ```
 
+**If `## Setup issues` is non-empty**, use the `wizard` skill to turn it into
+a runnable fix-it script for the human (e.g. commands to request fork
+access, add an SSH key, start DDEV) and include that script in this report,
+right after the `## Setup issues` list. If `wizard` isn't installed, list
+the issues as-is — plain language is still enough for the human to act on
+manually.
+
 The calling agent can now proceed with reading files or making changes. In
-`recon` mode specifically, relay `## Setup issues` into the human-facing
-report verbatim — this is exactly the kind of thing the human needs to know
-before trusting the rest of the report.
+`recon` mode specifically, relay `## Setup issues` (and any `wizard`
+fix-it script) into the human-facing report verbatim — this is exactly the
+kind of thing the human needs to know before trusting the rest of the
+report.

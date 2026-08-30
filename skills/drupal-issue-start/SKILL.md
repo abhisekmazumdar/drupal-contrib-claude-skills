@@ -192,6 +192,16 @@ Write `issues/<nid>/README.md`:
 <3-5 sentences: what is broken or missing, why it matters, current state of discussion,
 what kind of fix is being proposed. Concrete and factual — no vague filler.>
 
+## Key Context
+<!-- Overwritten in place each session, like Review Status — a snapshot of
+     what a human needs to know right now, not a history. This is the
+     persisted version of the Phase 4 chat report, so a future session (or
+     drupal-issue-catchup) doesn't have to re-fetch live state to reconstruct
+     it. Bullet points, plain language — see "Writing the record" below. -->
+- **MRs:** <iid, branch, pipeline status — one bullet per open MR>
+- **Setup issues:** <verbatim from drupal-repo-setup's recon block, or "None">
+- **Latest discussion:** <1-2 sentences on the most recent comment thread>
+
 ## Review Status
 <!-- Reflects the CURRENT state only — overwritten in place each session,
      never appended to. issue-record-update logs the fact that it changed
@@ -220,6 +230,19 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
 **Always overwrite `## Review Status` in place** with the verdict from Phase
 2.5 (or "No MR yet" if there's nothing to review) — this section is a
 snapshot of *now*, not a history; that's what the Work Log is for.
+
+**Always overwrite `## Key Context` in place** the same way, with the MR
+list, setup issues, and latest-discussion summary gathered in Phase 2.
+
+### Writing the record
+
+Write `## Issue Summary` and `## Key Context` as short, clean bullet points a
+human can skim in a few seconds — not paragraphs. If the `technical-writing`
+skill is installed, use it to structure these sections; then run an `unslop`
+pass (same pattern `drupalorg-comment-format` uses) before writing the file,
+to strip AI-writing tells. If either skill isn't installed,
+apply the same discipline manually: short sentences, concrete nouns, no
+filler ("leverages", "robust", "comprehensive").
 
 Add an entry to `## Related Issues` for every issue the backlink scan found
 that isn't already listed, whether the record is new or existing:
@@ -367,7 +390,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 | Human says | Action |
 |---|---|
 | "review the MR" / "do a code review" / "work on it" / "implement" / "fix it" | Invoke `drupal-issue-agent` with `<nid>` and the loaded context |
-| "test it" / "run the tests" / "verify in the browser" | Invoke `drupal-e2e-tester` with `<nid>`, `<project>`, the module dir, the site URL, and the manual testing steps (from the issue record or a prior `drupal-issue-agent` run) |
+| "test it" / "run the tests" / "verify in the browser" / "test locally" / "test this locally" / "run tests locally" | Invoke `drupal-issue-agent`'s Phase T flow: run local PHPUnit first (per the trigger's own local-testing intent), then proactively offer the `drupal-e2e-tester` browser e2e layer as a follow-up rather than waiting for a separate ask |
 | "catch me up" / "what's new" / "what happened" | Invoke `drupal-issue-catchup` with `<nid>` |
 | "continue" / "pick up where we left off" | Re-read the Work Log, brief human on last session, ask what to do next |
 | "just track it" / "come back later" | Confirm record is saved, no further action |
@@ -398,10 +421,21 @@ message is not a pause.
 
 ## Phase 6 — After work
 
-After any session involving code changes, reviews, or pushes, remind the human:
+**If the session did something** — code was reviewed, changed, or pushed; a
+comment was drafted; tests were run — invoke `/issue-record-update <nid>`
+automatically at the end of the session. It appends the log entry (Steps 1-6
+of that skill), then confirms:
 
 ```
-Session complete. Run `/issue-record-update <nid>` to log what was done.
+Session logged in issues/<nid>/README.md.
 ```
 
-Do not call `issue-record-update` automatically — the human triggers it so they can add their own context.
+**If the session was a pure catchup or read-only browse** — nothing was
+changed, tested, drafted, or pushed — skip logging. Do not create a log
+entry that just says "reviewed the issue" with nothing else in it; that adds
+noise, not signal, to the Work Log.
+
+The human can still run `/issue-record-update <nid>` manually any time
+(e.g. to add their own context to an entry already logged, or to log a
+session this rule skipped) — automatic logging replaces the reminder, not
+the human's ability to trigger or annotate it themselves.

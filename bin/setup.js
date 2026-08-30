@@ -3,7 +3,6 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
@@ -152,20 +151,6 @@ async function main() {
   const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
   const phpVersion = await ask(rl, `PHP version [${lock.PHP_VERSION || '8.4'}]: `) || lock.PHP_VERSION || '8.4';
   const mariadbVersion = await ask(rl, `MariaDB version [${lock.MARIADB_VERSION || '11.8'}]: `) || lock.MARIADB_VERSION || '11.8';
-
-  // ── Humanizer skill ────────────────────────────────────────────────────────
-  const hasHumanizer = fs.existsSync(path.join(os.homedir(), '.claude', 'skills', 'humanizer', 'SKILL.md'));
-  if (!hasHumanizer) {
-    console.log('\n⚠  humanizer skill not found in ~/.claude/skills/humanizer/');
-    console.log('   drupalorg-comment-format uses it to strip AI writing patterns from comments.');
-    console.log('   Install it globally in ~/.claude/skills/ and re-run setup to pick it up.');
-    const ans = await ask(rl, '   Continue without humanizer? [Y/n]: ');
-    if (ans.toLowerCase() === 'n') {
-      rl.close();
-      console.log('\nSetup aborted. Install humanizer and re-run.\n');
-      process.exit(0);
-    }
-  }
 
   rl.close();
   console.log('');

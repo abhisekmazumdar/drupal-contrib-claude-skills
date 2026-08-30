@@ -9,7 +9,12 @@ argument-hint: <nid>
 
 **Purpose:** Append a session log entry to the issue's persistent record.
 
-**Usage:** `/issue-record-update <nid>`
+**Usage:** `/issue-record-update <nid>` (also invoked automatically by
+`drupal-issue-start` and `drupal-issue-agent` at the end of any session that
+did something — code reviewed, changed, tested, or a comment/push attempted.
+A pure read-only catchup with no action taken skips this; run it manually if
+you want one logged anyway, or to add your own context to an entry already
+logged.)
 
 ---
 
