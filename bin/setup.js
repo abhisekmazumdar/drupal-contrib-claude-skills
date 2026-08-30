@@ -218,29 +218,97 @@ async function main() {
       repo: 'mglaman/drupalorg-cli',
       usedBy: 'drupal-issue-start and other skills need it for Drupal.org issue/MR data.',
     },
+    {
+      name: 'how',
+      repo: 'cursor/plugins',
+      usedBy: 'Builds a mental model of unfamiliar contrib code before drupal-issue-agent edits it.',
+    },
+    {
+      name: 'blast-radius',
+      repo: 'cursor/plugins',
+      usedBy: 'Checks what a change breaks outside the diff before the A9 RTBC verdict.',
+    },
+    {
+      name: 'unslop',
+      repo: 'cursor/plugins',
+      usedBy: 'Strips AI writing tells from issue comments and commit messages, alongside drupalorg-comment-format.',
+    },
+    {
+      name: 'technical-writing',
+      repo: 'cursor/plugins',
+      usedBy: 'Layered writing standard for issue summaries, MR descriptions, and commit messages.',
+    },
+    {
+      name: 'interrogate',
+      repo: 'cursor/plugins',
+      usedBy: 'Adversarial multi-model second opinion on a review verdict, report-only like drupal-e2e-tester.',
+    },
+    {
+      name: 'why',
+      repo: 'cursor/plugins',
+      usedBy: 'Cited design-rationale digging across VCS/issue-queue evidence, complementing drupal-issue-catchup.',
+    },
+    {
+      name: 'tdd',
+      repo: 'cursor/plugins',
+      usedBy: 'Red-green discipline for bug fixes with a cheap local test target; skips when the test path is expensive.',
+    },
+    {
+      name: 'diagnosing-bugs',
+      repo: 'mattpocock/skills',
+      usedBy: 'Phased reproduce/hypothesize/isolate loop for hard bugs before drupal-issue-agent implements a fix.',
+    },
+    {
+      name: 'resolving-merge-conflicts',
+      repo: 'mattpocock/skills',
+      usedBy: 'Reads each side\'s originating issue/MR before resolving conflicts drupal-issue-reroll surfaces.',
+    },
+    {
+      name: 'wizard',
+      repo: 'mattpocock/skills',
+      usedBy: 'Turns drupal-repo-setup recon\'s "## Setup issues" block into a runnable fix-it script for the human.',
+    },
   ];
 
-  for (const { name, repo, usedBy } of externalSkills) {
-    const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
-    if (fs.existsSync(skillFile)) {
-      log.identical.push(path.relative(CWD, skillFile) + ' (update with: npx skills update)');
-      continue;
-    }
-    console.log(`Pulling ${name} skill from github.com/${repo} …`);
+  // Group by repo so skills sharing an upstream (e.g. cursor/plugins,
+  // mattpocock/skills) are pulled with one clone via repeated --skill flags,
+  // instead of one clone per skill.
+  const skillsByRepo = new Map();
+  for (const entry of externalSkills) {
+    if (!skillsByRepo.has(entry.repo)) skillsByRepo.set(entry.repo, []);
+    skillsByRepo.get(entry.repo).push(entry);
+  }
+
+  for (const [repo, entries] of skillsByRepo) {
+    const pending = entries.filter(({ name }) => {
+      const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
+      const exists = fs.existsSync(skillFile);
+      if (exists) log.identical.push(path.relative(CWD, skillFile) + ' (update with: npx skills update)');
+      return !exists;
+    });
+    if (!pending.length) continue;
+
+    console.log(`Pulling ${pending.map(e => e.name).join(', ')} from github.com/${repo} …`);
+    const skillFlags = pending.map(({ name }) => `--skill ${name}`).join(' ');
     try {
       execSync(
-        `npx -y skills@latest add ${repo} --skill ${name} --agent claude-code --copy -y`,
+        `npx -y skills@latest add ${repo} ${skillFlags} --agent claude-code --copy -y`,
         { cwd: CWD, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
       );
+    } catch (_) {
+      // Non-fatal — fall through to the per-skill check below, which reports
+      // whatever did or didn't land (a partial batch failure may still have
+      // installed some skills before failing).
+    }
+    for (const { name, usedBy } of pending) {
+      const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
       if (fs.existsSync(skillFile)) {
         log.copied.push(path.relative(CWD, skillFile));
       } else {
-        throw new Error('skill not found after install');
+        console.log(`⚠  Could not pull the ${name} skill (offline or npx unavailable).`);
+        console.log(`   ${usedBy} Install later with:`);
+        console.log(`   npx skills add ${repo} --skill ${name}\n`);
       }
-    } catch (_) {
-      console.log(`⚠  Could not pull the ${name} skill (offline or npx unavailable).`);
-      console.log(`   ${usedBy} Install later with:`);
-      console.log(`   npx skills add ${repo} --skill ${name}\n`);
     }
   }
 
@@ -251,6 +319,18 @@ async function main() {
     path.join(claudeDir, 'settings.json'),
     log
   );
+
+  // Git guardrail hook — blocks locally-destructive git commands (reset
+  // --hard, clean -f/-fd, branch -D, checkout ./restore .) regardless of the
+  // permissions allow-list above. git push is deliberately not blocked here;
+  // drupal-issue-reroll relies on --force-with-lease pushes to issue forks.
+  const hookDestPath = path.join(claudeDir, 'hooks', 'block-dangerous-git.sh');
+  copyFile(
+    fs.readFileSync(path.join(PACKAGE_ROOT, 'templates', 'hooks', 'block-dangerous-git.sh'), 'utf8'),
+    hookDestPath,
+    log
+  );
+  fs.chmodSync(hookDestPath, 0o755);
 
   // CLAUDE.md
   copyFile(

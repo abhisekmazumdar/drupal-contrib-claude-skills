@@ -1,0 +1,5 @@
+# Dev-only Claude Code skills installed locally for maintaining this repo
+# (e.g. writing-for-agents, principle-* — see CLAUDE.md). Never shipped by
+# bin/setup.js, which only copies from skills/ and agents/ at the repo root.
+.claude/
+skills-lock.json

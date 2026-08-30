@@ -18,6 +18,8 @@ agents/                 # agent markdown files
 templates/
   CLAUDE.md.template    # rendered at install time with {{VAR}} substitution
   settings.json.template  # rendered at install time with {{VAR}} substitution
+  hooks/
+    block-dangerous-git.sh  # copied verbatim (no {{VAR}}) to .claude/hooks/, chmod +x'd
 ```
 
 ---
@@ -62,18 +64,38 @@ Each skill in `skills/<name>/SKILL.md` must work without knowing the specific Dr
 
 ### External skills are pulled, not vendored
 
-Two skills are **not** in this repo — `bin/setup.js` pulls both at install time via the same `externalSkills` loop:
+None of these skills live in this repo — `bin/setup.js` pulls all of them at install time via the same `externalSkills` loop:
 
 | Skill | Upstream repo | Used by |
 |---|---|---|
 | `playwright-cli` | `microsoft/playwright-cli` | `drupal-e2e-tester` for browser e2e |
 | `drupalorg-cli` | `mglaman/drupalorg-cli` | `drupal-issue-start` and others, for Drupal.org issue/MR data |
+| `how` | `cursor/plugins` | Mental model of unfamiliar contrib code before `drupal-issue-agent` edits it |
+| `blast-radius` | `cursor/plugins` | Checks what a change breaks outside the diff before the A9 RTBC verdict |
+| `unslop` | `cursor/plugins` | Strips AI writing tells from issue comments/commit messages, alongside `drupalorg-comment-format` |
+| `technical-writing` | `cursor/plugins` | Layered writing standard for issue summaries, MR descriptions, commit messages |
+| `interrogate` | `cursor/plugins` | Adversarial multi-model second opinion on a review verdict — report-only, like `drupal-e2e-tester` |
+| `why` | `cursor/plugins` | Cited design-rationale digging across VCS/issue-queue evidence, complementing `drupal-issue-catchup` |
+| `tdd` | `cursor/plugins` | Red-green discipline for bug fixes with a cheap local test target; skips when the test path is expensive |
+| `diagnosing-bugs` | `mattpocock/skills` | Phased reproduce/hypothesize/isolate loop for hard bugs before `drupal-issue-agent` implements a fix |
+| `resolving-merge-conflicts` | `mattpocock/skills` | Reads each side's originating issue/MR before resolving conflicts `drupal-issue-reroll` surfaces |
+| `wizard` | `mattpocock/skills` | Turns `drupal-repo-setup` recon's `## Setup issues` block into a runnable fix-it script for the human |
 
 ```bash
 npx -y skills@latest add <owner/repo> --skill <name> --agent claude-code --copy -y
 ```
 
-Do not copy either's contents into `skills/` — they are maintained upstream and updated via `npx skills update`. Each pull is non-fatal: if it fails (offline), setup prints the manual install command and continues. To add another externally-maintained skill, append to the `externalSkills` array in `bin/setup.js` rather than writing a new bespoke block.
+Do not copy any of their contents into `skills/` — they are maintained upstream and updated via `npx skills update`. Each pull is non-fatal: if it fails (offline), setup prints the manual install command and continues. To add another externally-maintained skill, append to the `externalSkills` array in `bin/setup.js` rather than writing a new bespoke block.
+
+`cursor/plugins` skills are nested under `pstack/skills/<name>` in that repo, and several (`blast-radius`, `technical-writing`, `interrogate`, `tdd`) ship `disable-model-invocation: true` — they need explicit slash-invocation rather than triggering automatically.
+
+The `externalSkills` loop groups entries by `repo` and pulls each repo's skills in one `npx skills add <repo> --skill a --skill b …` call (repeated `--skill` flags work; a single comma-separated value does not — it silently falls back to an interactive picker and installs nothing). This avoids cloning the same upstream repo once per skill. When adding a skill from a repo already in the array, just append another entry — the grouping is automatic, nothing else to wire up.
+
+Two skills from these same source repos are useful only for maintaining *this* repo (writing/reviewing skill and agent files) and are deliberately **not** in `externalSkills` — they'd have no purpose in an installed Drupal workspace: `writing-for-agents` (`mattpocock/skills`) and the `principle-fix-root-causes` / `principle-prove-it-works` / `principle-guard-the-context-window` micro-skills (`cursor/plugins`). Pull these into this repo's own `.claude/skills/` for local dev use only — `.gitignore` excludes `.claude/` and `skills-lock.json` for exactly this reason.
+
+### Git guardrail hook
+
+`templates/settings.json.template` wires a `PreToolUse` hook (`templates/hooks/block-dangerous-git.sh`, copied to `.claude/hooks/` and chmod +x'd by `bin/setup.js`) that hard-blocks `git reset --hard`, `git clean -f`/`-fd`, `git branch -D`, and `git checkout .`/`git restore .` regardless of the permissions `allow` list above — these discard local work with no recovery path. Adapted from `mattpocock/skills`' `git-guardrails-claude-code`, but **`git push` (including `--force-with-lease`) is deliberately not blocked**: `drupal-issue-reroll` force-pushes rerolled branches to the user's own issue fork as a normal, expected step, already safe-guarded by `--force-with-lease` and gated behind the `ask` permission tier. If you add more blocked patterns, check first that no skill's documented workflow relies on them (`grep -rniE "git (reset --hard|clean -f|branch -D|checkout \.|restore \.)" skills/ agents/`).
 
 ### Guiding philosophy — move issues toward RTBC, don't just find things
 
