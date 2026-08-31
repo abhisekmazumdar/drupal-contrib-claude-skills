@@ -46,3 +46,13 @@ glab api --hostname git.drupalcode.org \
 
 - **`glab ci run` does not work** — pipeline triggers are blocked; use an empty commit push instead
 - **Never WebFetch the GitLab job page** — it requires JavaScript and will return incomplete content; use `glab ci trace` or the API endpoint instead
+
+---
+
+## Diagnosing what a failure means
+
+This file only covers fetching and streaming the log. Once you have the
+trace text in hand, `drupal-issue-agent`'s
+[ci-failure-patterns.md](../../../agents/drupal-issue-agent/references/ci-failure-patterns.md)
+maps common failure strings (PHPCS, PHPStan, PHPUnit, Composer, CSpell) to
+their diagnosis and fix.

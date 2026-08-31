@@ -113,6 +113,23 @@ mentioned once and set aside — they are not blocking findings and reviews
 should not be padded with them to look thorough. Both review layers share
 this framing; if you change one, check whether the other needs to match.
 
+### Reference material vs. procedure — when to split into a `references/` subfolder
+
+`agents/*.md` and `skills/<name>/SKILL.md` files should stay lean when
+possible, but not at the cost of fragmenting a sequential, gated procedure —
+splitting `drupal-issue-agent`'s A1-A11/B1-B5 phases into pieces would break
+the agent's ability to track which `[PAUSE]` it's resuming from across a
+long session, so those stay inline. What *does* belong in a
+`references/` subfolder next to the agent/skill file is content that's a
+lookup, consulted only in one specific branch, not part of the always-active
+flow — e.g. `agents/drupal-issue-agent/references/ci-failure-patterns.md`,
+read only when A1 finds a failing pipeline. `bin/setup.js`'s `copyDirMerge`
+already copies `agents/` and `skills/` recursively, so a `references/`
+subfolder needs no setup.js changes to ship. Before adding one, check
+whether the content is really a rare-branch lookup table — if it's core
+sequence or an always-consulted checklist (like A7's review checklist),
+keep it inline instead.
+
 ### Agent handoff pattern
 
 Four agents in `agents/`, each with a persona name as a body-level identity
