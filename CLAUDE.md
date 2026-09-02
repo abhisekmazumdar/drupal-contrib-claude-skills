@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working on this repository.
 
 ## What this repo is
 
-A **Claude Code skills and agents package** for Drupal open source contribution. It is not a Drupal project — there is no PHP, no Composer, no web server. The output of this repo is the set of files that get installed into a user's Drupal workspace via `npx ~/drupal-claude-skills`.
+A **Claude Code skills and agents package** for Drupal open source contribution. It is not a Drupal project — there is no PHP, no Composer, no web server. The output of this repo is the set of files that get installed into a user's Drupal workspace via `npx github:abhisekmazumdar/drupal-contrib-claude-skills` (or `npx /path/to/local/clone` — see README.md).
 
 ---
 
@@ -12,7 +12,7 @@ A **Claude Code skills and agents package** for Drupal open source contribution.
 
 ```
 bin/
-  setup.js              # CLI entry point — run via `npx ~/drupal-claude-skills`
+  setup.js              # CLI entry point — run via `npx github:abhisekmazumdar/drupal-contrib-claude-skills`
 skills/                 # skill directories — each contains a SKILL.md
 agents/                 # agent markdown files
 templates/

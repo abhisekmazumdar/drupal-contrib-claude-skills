@@ -54,23 +54,32 @@ The script auto-detects which layout you have and asks if it can't tell.
 
 ## Installation
 
-Clone the repo to wherever you keep tools — the path you choose is the path you use:
+This repo is public but isn't published to npm — run it straight from
+GitHub with `npx`, no clone needed, from any machine with Node 18+ and
+network access:
 
 ```bash
-git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git /path/to/drupal-claude-skills
+npx github:abhisekmazumdar/drupal-contrib-claude-skills
 ```
 
-Then from your workspace root, pass that same path to `npx`:
-
-```bash
-npx /path/to/drupal-claude-skills
-```
-
-Add a shell alias so you don't have to remember the path:
+Add a shell alias so you don't have to remember it:
 
 ```bash
 # add to ~/.zshrc or ~/.bashrc
-alias drupal-claude-skills='npx /path/to/drupal-claude-skills'
+alias drupal-claude-skills='npx --yes github:abhisekmazumdar/drupal-contrib-claude-skills'
+```
+
+`--yes` skips npx's "ok to install?" confirmation on machines where it would
+otherwise prompt — safe here since this is a project you control.
+
+### Alternative: clone locally
+
+Prefer a pinned copy (offline reuse, a specific commit, or editing the
+skills yourself)? Clone it and point `npx` at the local path instead:
+
+```bash
+git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git /path/to/drupal-claude-skills
+npx /path/to/drupal-claude-skills
 ```
 
 ---
@@ -150,7 +159,16 @@ issues/
 
 ## Updating
 
-Pull the latest changes and re-run — the lockfile pre-fills all your answers:
+**If you installed via `npx github:...`:** just re-run the same command —
+`npx` fetches the current `main` branch each time, so re-running always
+picks up the latest version. The lockfile pre-fills all your answers so
+it's non-interactive (just press Enter through the prompts).
+
+```bash
+npx github:abhisekmazumdar/drupal-contrib-claude-skills
+```
+
+**If you cloned locally:** pull first, then re-run:
 
 ```bash
 git -C /path/to/drupal-claude-skills pull
@@ -164,7 +182,7 @@ All package files (skills, agents, CLAUDE.md, settings.json) are always updated 
 ```
 drupal-claude-skills/
   bin/
-    setup.js              # setup entry point (run via: npx ~/drupal-claude-skills)
+    setup.js              # setup entry point (run via: npx github:abhisekmazumdar/drupal-contrib-claude-skills)
   skills/                 # skill directories — copied as-is to .claude/skills/
   agents/                 # agent files — copied as-is to .claude/agents/
   templates/
