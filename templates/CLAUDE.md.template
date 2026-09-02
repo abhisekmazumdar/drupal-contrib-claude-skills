@@ -16,16 +16,18 @@ Before any code change, file edit, git operation, or other write action: **prese
 
 ---
 
-## Local environment (DDEV)
+## Local environments
 
-| Detail | Value |
-|---|---|
-| Project name | `{{DDEV_PROJECT}}` |
-| Site URL | `{{SITE_URL}}` |
-| PHP | {{PHP_VERSION}} |
-| Database | MariaDB {{MARIADB_VERSION}} |
-| Drupal project | `{{DRUPAL_WEBROOT}}/..` |
-| Docroot | `{{DRUPAL_WEBROOT}}/` |
+{{SITES_TABLE}}
+
+Skills accept an optional site name matching a **Name** above. When you name
+a site ("work on it in the cms dir", "test against umami"), resolve
+`<site>` to that row. Otherwise `<site>` is the row marked Default. Resolve
+`<webroot>`/`<drupal-path>`/DDEV project/site URL from that row — never
+assume there's only one, even when the table above has just one row today.
+Before running any `ddev` command, `cd` into that site's root
+(`<drupal-path>`, or this workspace's root if empty) first — DDEV
+auto-detects its project from the working directory, not a flag.
 
 Always use `ddev drush` and `ddev composer` — never bare `drush` or `composer`.
 
@@ -41,12 +43,13 @@ Every issue worked on has a directory at `issues/<nid>/`. These directories surv
 issues/
 └── 3456789/
     ├── README.md         ← persistent record: summary, related issues, work log, human notes
+    ├── history.md        ← archived Work Log sessions older than the 3 most recent (only once it exists)
     ├── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
     ├── screenshots/      ← browser screenshots captured during issue work and e2e test runs
     └── e2e/              ← generated Playwright artifacts from the drupal-e2e-tester phase
 ```
 
-The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too.
+The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too. The README only ever holds the 3 most recent Work Log sessions — `issue-record-update` moves anything older to `history.md` so routine reads stay bounded; agents read `history.md` only when genuinely digging for older context, not as a matter of course.
 
 ### Key workflow rules
 
@@ -61,6 +64,9 @@ The README is the **long-term memory** for each issue. It persists across sessio
 ## Coding standards (PHPCS / PHPCBF)
 
 Each contrib module ships its own `phpcs.xml`. **Always detect and use it** — do not hardcode `--standard=Drupal` alone, as modules like `ai` add `DrupalPractice` too.
+
+The example below uses the default site's webroot. When working against a
+different site, substitute that site's Webroot from the table above.
 
 **Always run via `ddev exec`** — the container PHP version matches CI; host PHP may not.
 
@@ -78,6 +84,11 @@ Walk **up** from the target file toward the project root to find the nearest `ph
 ---
 
 ## Running tests (PHPUnit)
+
+The examples below target the default site (`{{SITE_URL}}`, webroot
+`{{DRUPAL_WEBROOT}}`). Swap in the target site's Site URL and Webroot from
+the table above when testing against a different one — and `cd` into that
+site's root before the `ddev exec` call so DDEV picks the right container.
 
 **Unit tests** — no database needed:
 ```bash

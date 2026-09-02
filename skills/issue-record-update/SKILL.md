@@ -45,7 +45,7 @@ From the current conversation, collect:
 
 ## Step 3 — Read the current README
 
-Read `issues/<nid>/README.md` to find the position of `## Review Status`, `## Work Log`, and `## Notes` headings.
+Read `issues/<nid>/README.md` to find the position of `## At a Glance`, `## Work Log`, and `## Notes` headings.
 
 ---
 
@@ -55,6 +55,8 @@ Build this block:
 
 ```markdown
 ### Session: YYYY-MM-DD
+**TL;DR:** <one sentence — what changed or was decided this session>
+
 **What was done:**
 - <specific action 1>
 - <specific action 2>
@@ -68,14 +70,16 @@ Build this block:
 - No MR activity this session.
 
 **Open items:**
-- <anything unresolved or deferred>
+- <anything unresolved or deferred, as of this session>
   — OR —
 - None.
 ```
 
 Rules:
+- `TL;DR` must be a single skimmable sentence — a future session (or a human) reading only the TL;DRs down the Work Log should get the shape of the issue's history without opening any entry in full.
 - Be concrete — name files changed, tests fixed, PHPCS errors resolved, functions reviewed. Never write vague phrases like "worked on the issue."
 - Human instructions must reflect what was actually said — do not reinterpret or sanitize.
+- `Open items` is this session's historical record, not a running list — don't copy forward unresolved items from prior sessions' entries. The single current-and-still-relevant next step goes in `## At a Glance` instead (Step 5), not accumulated here session over session.
 
 ---
 
@@ -83,25 +87,60 @@ Rules:
 
 Insert the log entry immediately after the `## Work Log` heading and its following blank line, **before** any existing session entries. Most recent session is always first.
 
-If the issue status changed this session (e.g. an MR was merged and issue is now Fixed), also update the `**Status:**` line in the header.
+If the issue status changed this session (e.g. an MR was merged and issue is now Fixed), update the `**Status:**` line in the header, normalized to the fixed vocabulary `drupal-issue-start` uses (`Active`, `Needs review`, `Needs work`, `RTBC`, `Fixed`, `Closed`, `Postponed`, `Needs discussion`). Always refresh `**Last updated:**` to today, whether or not status changed.
 
-If any related issues were discovered this session, append them to the `## Related Issues` section (never remove existing entries). Format:
+If any related issues were discovered this session, append them to the `## Related Issues` section (never remove existing entries; add the heading if it doesn't exist yet). Format:
 ```
 - #<nid> <title> — <one line on the relationship>
 ```
 
-If the RTBC-readiness verdict changed this session, **overwrite** `## Review
-Status` in place with the new verdict and today's date — this section is
-always a snapshot of *now*, never append-only (unlike Work Log and Related
-Issues). The fact that it changed still belongs in this session's log entry
-above (e.g. under "What was done": "Verdict moved from Needs work — missing
-test to RTBC-ready after adding the Kernel test").
+**Always overwrite `## At a Glance` in place** — this section is always a
+snapshot of *now*, never append-only (unlike Work Log and Related Issues):
+- If the RTBC-readiness verdict changed this session, update `**Verdict:**`
+  and `**Current MR:**`. The fact that it changed still belongs in this
+  session's log entry above (e.g. under "What was done": "Verdict moved
+  from Needs work — missing test to RTBC-ready after adding the Kernel
+  test").
+- Always replace `**Next action:**` and `**Blocked on:**` with this
+  session's current values, sourced only from what's true right now — never
+  merge in leftover items from a previous session's `Open items`. If
+  nothing is blocking, write "Nothing".
 
 ---
 
-## Step 6 — Confirm
+## Step 6 — Archive old entries once Work Log grows past 3 sessions
 
-Tell the user: "Session logged in `issues/<nid>/README.md`."
+`drupal-issue-start` and `drupal-issue-catchup` read this README in full on
+every visit, so an unbounded Work Log means every future session pays to
+re-read the whole history even though it only needs the last one or two.
+
+After inserting this session's entry, count the `### Session:` headings in
+`## Work Log`. **If there are more than 3:** move every entry beyond the 3
+most recent (i.e. everything from the 4th onward) out to
+`issues/<nid>/history.md` — create that file if it doesn't exist yet, with a
+one-line header (`# Issue <nid> — archived session history`). Insert the
+moved entries at the **top** of `history.md`, most-recently-archived first,
+keeping the same relative order they had in the Work Log. Leave exactly the
+3 most recent entries in the README's `## Work Log`.
+
+If this is the first time `history.md` is created for this issue, add a
+one-line pointer right after the `## Work Log` heading in the README:
+```
+<!-- Older sessions archived to history.md — read it only when you
+     genuinely need pre-<oldest-remaining-date> context, e.g. digging up
+     why an old decision was made. Not part of the routine read. -->
+```
+
+Do not read `history.md` back in as part of this skill — writing to it is
+the only thing that happens here.
+
+---
+
+## Step 7 — Confirm
+
+Tell the user: "Session logged in `issues/<nid>/README.md`." If Step 6
+archived anything, add: "Archived N older session(s) to
+`issues/<nid>/history.md`."
 
 ---
 

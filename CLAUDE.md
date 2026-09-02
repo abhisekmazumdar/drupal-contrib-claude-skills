@@ -58,6 +58,39 @@ Instead, skills reference project paths using angle-bracket placeholders (`<webr
 
 **Before editing a skill or agent:** `grep -r "{{" skills/ agents/` — if you see any matches, that is a bug.
 
+### Multi-site support
+
+A workspace can hold more than one Drupal install (e.g. `drupal/`, `cms/`,
+an umami demo). `bin/setup.js` detects every top-level Drupal root (or the
+single install when the toolchain is set up from inside a Drupal codebase
+itself, e.g. `cd drupal11 && npx drupal-claude-skills`), configures each as
+a named **site** (the directory name, or the workspace's own basename at
+the root), and marks one **default**. All of this is rendered into
+`CLAUDE.md`'s `## Local environments` table via a single `{{SITES_TABLE}}`
+var built in `bin/setup.js` (the simple `{{VAR}}` substitution in
+`renderTemplate` can't loop, so the table is assembled in JS, not in the
+template). The lockfile (`.claude/claude-skills.lock.json`) stores
+`{ sites: {...}, defaultSite }`; older single-site lockfiles are migrated
+into this shape automatically on the next `setup.js` run, no re-prompting
+for already-known values.
+
+Skill/agent code never re-implements site selection — it happens exactly
+once, in `drupal-issue-start` Phase 0.5, which matches the user's wording
+against the table's Name column (falling back to Default when unmentioned)
+and resolves `<site>`/`<webroot>`/`<drupal-path>`/DDEV project/site URL as
+concrete values. Those values then flow downstream unchanged through
+`drupal-repo-setup`, `drupal-issue-agent`, `drupal-e2e-tester`, and
+`drupal-issue-catchup` — none of them re-resolve or re-prompt for a site.
+This works because `<webroot>`/`<drupal-path>` were already an indirection
+layer (see above) — most skills below the resolution point (
+`drupal-clone-contrib`, `drupal-issue-reroll`, `drupal-coding-standards`,
+etc.) need no site-awareness at all, since they only ever operate on
+whatever module dir they're handed. The one thing that does need explicit
+handling per site: DDEV has no `-C`/`--project` flag, so any `ddev` command
+must run with cwd inside that site's root first — documented once as a
+convention note in each agent that shells out to `ddev`, not repeated per
+call site.
+
 ### Skills are self-contained
 
 Each skill in `skills/<name>/SKILL.md` must work without knowing the specific Drupal project layout. Path detection belongs inside the skill (e.g. `find . -name "vendor/bin/phpcs"`), not baked in at install time.
@@ -147,6 +180,11 @@ name, and never change a frontmatter `name:` to match the persona.
 
 `drupal-issue-agent` is always invoked by `drupal-issue-start`. The agent's Phase 0 and Phase 1 are intentionally thin — they receive pre-parsed context from the skill rather than re-fetching it. Do not add URL parsing or issue-fetching logic back to the agent.
 
+`<site>` (and its resolved `<webroot>`/`<drupal-path>`) flows through this
+whole chain alongside `<nid>`/`<project>` — resolved once in
+`drupal-issue-start` Phase 0.5, never re-resolved by any agent it hands off
+to. See "Multi-site support" above.
+
 Sub-agents cannot talk to the user mid-run, so approval gates use a **pause-relay protocol**: the agent ends its run with a `[PAUSE — awaiting user decision]` report, `drupal-issue-start` relays it verbatim, and the agent is resumed/re-invoked with the user's reply. Keep this protocol intact — do not add gates that assume the agent can converse directly.
 
 `drupal-e2e-tester` is the dedicated test phase (PHPUnit + Playwright browser e2e), invoked by `drupal-issue-agent` at Phase T or directly by the user. It is deliberately **report-only** — the implementing agent must never be the one verifying its own work.
@@ -155,24 +193,33 @@ Sub-agents cannot talk to the user mid-run, so approval gates use a **pause-rela
 
 `drupal-repo-setup` also has a **`recon` mode**, used only by `drupal-issue-start`'s Phase 2.5, before its report: clone, branch checkout, and fork-remote setup all run **automatically, no pause** — they're local-only and reversible. Composer install still pauses in every mode, since it's the one step that mutates `composer.lock`. `recon` surfaces access/setup problems (no fork, no push access, DDEV down) in a `## Setup issues` block instead of pausing on them — `drupal-issue-start` relays that block verbatim into its report. When `drupal-issue-agent` receives an already-recon'd `<module_dir>`/`<branch>` from `drupal-issue-start`, it confirms the checkout still matches instead of re-invoking `drupal-repo-setup`.
 
-`drupal-issue-catchup` is invoked directly by the user ("catch me up on issue N") or from `drupal-issue-start`'s Phase 5 routing table. It never edits code — it diffs new activity against `issues/<nid>/README.md` and briefs, waiting for direction like every other agent here. It also re-derives the `## Review Status` verdict when new activity would change it.
+`drupal-issue-catchup` is invoked directly by the user ("catch me up on issue N") or from `drupal-issue-start`'s Phase 5 routing table. It never edits code — it diffs new activity against `issues/<nid>/README.md` and briefs, waiting for direction like every other agent here. It also re-derives the `## At a Glance` verdict, next action, and blocker when new activity would change them.
 
 The `drupal-related-issues` skill (`find_related_issues.py`) is used by both `drupal-issue-start` and `drupal-issue-catchup` to catch cross-references that only exist in *other* local issue records — a one-directional read of the current issue's own comments misses these. Results are merged into `## Related Issues`, append-only, labeled by source (comment thread vs. backlink scan).
 
 ### `issues/<nid>/README.md` format
 
 Written/updated by `drupal-issue-start` (Phase 3) and appended to by
-`issue-record-update`. Two sections work differently from the rest: `##
-Review Status` (verdict + `As of: MR !<iid> @ <sha> (<date>)`) and `## Key
-Context` (MRs, setup issues, latest discussion — the persisted version of
-the Phase 4 chat report) are both **snapshots, overwritten in place** every
-time they're re-derived — never append-only like `## Work Log` and `##
-Related Issues`. Both are written as short bullet points via the
-`technical-writing`/`unslop` skills when installed (see "Writing the
-record" in `drupal-issue-start`), so a future session doesn't have to
-re-fetch live state to get oriented. If you add another section, decide
-explicitly which behavior it needs and say so in the template comment, the
-way `## Review Status`, `## Key Context`, and `## Notes` already do.
+`issue-record-update`. Two sections work differently from the rest: `## At a
+Glance` (verdict, current MR + pipeline, this session's single next action
+and blocker) and `## Current State` (MR list, setup issues, latest
+discussion — the persisted version of the Phase 4 chat report) are both
+**snapshots, overwritten in place** every time they're re-derived — never
+append-only like `## Work Log` and `## Related Issues`. `Next action` /
+`Blocked on` are sourced only from the *current* session, never accumulated
+across sessions, or they go stale. Both sections are written as short
+bullet points via the `technical-writing`/`unslop` skills when installed
+(see "Writing the record" in `drupal-issue-start`), so a future session
+doesn't have to re-fetch live state to get oriented. The header's
+`**Status:**` field is normalized to a fixed vocabulary (see
+`drupal-issue-start`'s "Status vocabulary") so it's scannable across
+issues, not just within one, and `**Last updated:**` is refreshed every
+session. The header also carries a `**Site:**` line naming which configured
+Drupal install this issue was worked against — but only once the workspace
+has 2+ sites configured (see "Multi-site support" above); single-site
+workspaces render exactly as before, no `**Site:**` line at all. If you add another section, decide explicitly which behavior it
+needs and say so in the template comment, the way `## At a Glance`, `##
+Current State`, and `## Notes` already do.
 
 `issue-record-update` is invoked **automatically** at the end of any session
 in `drupal-issue-start`/`drupal-issue-agent` that did something — code
@@ -180,6 +227,17 @@ reviewed, changed, tested, or a comment/push attempted. A pure read-only
 catchup or browse with nothing done skips it, so the Work Log doesn't fill
 up with empty "reviewed the issue" entries. The human can still trigger it
 manually any time, e.g. to add their own context to an entry.
+
+**Work Log archiving (token-cost control):** `drupal-issue-start` and
+`drupal-issue-catchup` both read `issues/<nid>/README.md` in full on every
+visit, so an unbounded Work Log means every future session re-pays the cost
+of the whole history even when it only needs the last one. `issue-record-update`
+Step 6 keeps the README's `## Work Log` capped at the 3 most recent
+sessions, moving anything older to `issues/<nid>/history.md` (newest-archived
+first, same relative order as the Work Log). Neither `drupal-issue-start`
+Phase 1 nor `drupal-issue-catchup` Step 1 reads `history.md` by default —
+only when a session genuinely needs pre-archive context (e.g. `why`-skill
+rationale digging in `drupal-issue-catchup` Step 5).
 
 ---
 

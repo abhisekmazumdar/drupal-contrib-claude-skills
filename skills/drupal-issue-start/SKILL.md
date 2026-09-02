@@ -35,6 +35,28 @@ If the URL cannot be parsed, ask the user for the issue number and project name 
 
 ---
 
+## Phase 0.5 — Resolve the site
+
+Read the `## Local environments` table from the installed `CLAUDE.md`.
+
+**If it lists exactly one site:** `<site>` is implicitly that one. Skip the
+matching below — there's nothing to disambiguate.
+
+**If it lists two or more sites:** check the user's message for a mention of
+one by name — phrases like "in the `<name>` dir", "against `<name>`", "the
+`<name>` setup/project", or just the bare name — matched case-insensitively
+against the table's **Name** column.
+- **Matched:** `<site>` is that row.
+- **No mention:** `<site>` is the row marked Default.
+- **Named something that doesn't match any row:** list the configured site
+  names and ask the user to pick one — do not guess.
+
+Resolve `<webroot>`, `<drupal-path>`, DDEV project, and site URL from the
+chosen row now, and carry these concrete values through every later phase —
+never re-resolve or re-read the table again this session.
+
+---
+
 ## Phase 1 — Load issue record
 
 ```bash
@@ -43,9 +65,16 @@ ls issues/<nid>/README.md 2>/dev/null
 
 **If the file exists:** Read it in full. Note:
 - Issue title and current status from the header
-- All prior session log entries (what was done, when, by whom)
+- The Work Log entries present (most recent 3 sessions — `issue-record-update`
+  archives anything older to `issues/<nid>/history.md`, see below)
 - The Notes section (human-written — important context)
 - Last MR/patch referenced
+
+**If `## Work Log` has an archive pointer to `issues/<nid>/history.md`:**
+don't read that file here — the 3 most recent sessions in the README are
+enough context for a normal start/resume. Only read `history.md` if the
+human explicitly asks about older history, or something in this session
+genuinely needs pre-archive context (rare).
 
 **If the file does not exist:** Note this as a first-time visit. The directory and README will be created after Phase 2.
 
@@ -79,13 +108,13 @@ GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
 
 Extract: title, project, current status, **every** open MR (iid + branch + pipeline status — not just the first one returned), comment count + date of last comment, whether a fork exists.
 
-Also fetch every inline reviewer thread and top-level comment on each open MR, not just the issue's own comment thread:
-```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
-  https://git.drupalcode.org/project/<project>/-/merge_requests/<mr-iid>
-GITLAB_HOST=git.drupalcode.org glab mr note list <mr-iid> --repo project/<project>
-```
-Run this for every open MR found, not only the one you expect to review — the multi-MR selection in Phase 2.5 depends on knowing each one's actual activity, not just its existence.
+**Do not fetch full inline reviewer threads here for every open MR.** That's
+expensive (full comment bodies per thread, per MR) and Phase 2.5's selection
+only needs lightweight signals already in hand from the commands above —
+pipeline status and each MR's own last-activity date (`mr:list`/`glab mr
+list` output includes an updated/last-activity timestamp; use that, not a
+full thread fetch, to break ties). Phase 2.5 fetches the full inline threads
+for the **one** MR it actually picks — see below.
 
 Also note any **related issues** mentioned in comments or the issue body (e.g. "depends on #X", "follow-up to #X", "duplicate of #X", "blocks #X"). These will be written to the `## Related Issues` section.
 
@@ -131,6 +160,8 @@ Invoke agent: drupal-repo-setup
   nid:     <nid>
   mode:    recon
   branch:  <picked MR's branch>
+  site:    <site>       (name)
+  webroot: <webroot>    (resolved in Phase 0.5)
 ```
 
 This runs without a pause for clone/checkout/fork-remote — only a missing
@@ -139,15 +170,35 @@ Capture its `## Setup issues` block verbatim — fork access, push access,
 missing remote, DDEV not running, anything the human needs to know before
 trusting the rest of this report goes here, unfiltered.
 
+**Now fetch the full inline reviewer threads — for this one picked MR only:**
+```bash
+python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
+  https://git.drupalcode.org/project/<project>/-/merge_requests/<picked-mr-iid>
+GITLAB_HOST=git.drupalcode.org glab mr note list <picked-mr-iid> --repo project/<project>
+```
+This is the expensive fetch (full comment bodies per thread) that Phase 2
+deliberately skipped for every MR — doing it here, once, for only the MR
+actually being reviewed, is what makes that skip safe.
+
 **Preliminary review (light — not the full correctness audit).** Once the
 sub-agent confirms the branch is checked out:
 
 ```bash
 git -C <module_dir> diff origin/<default-branch>...HEAD --stat
-git -C <module_dir> diff origin/<default-branch>...HEAD
 ```
 
-Read the diff and produce:
+Check the `--stat` output before fetching anything more. If it's small
+enough for a light read (roughly under ~15 files or ~500 changed lines —
+use judgment, not a hard cutoff), fetch the full diff:
+```bash
+git -C <module_dir> diff origin/<default-branch>...HEAD
+```
+If it's clearly too large by that measure, **skip the full diff fetch
+entirely** and go straight to the "diff too large for a preliminary read"
+verdict below — there's no point paying for content that leads to the same
+"deferred to full review" outcome either way.
+
+When the full diff was fetched, read it and produce:
 - **What it changes** — 2-4 sentences, plain language, what the code
   actually does (not a restatement of the issue title).
 - **Verdict** — exactly one of:
@@ -185,33 +236,40 @@ Write `issues/<nid>/README.md`:
 - **URL:** <full URL as provided>
 - **Project:** <project machine name>
 - **Issue Number:** <nid>
-- **Status:** <current status>
+<!-- Only include the Site line when Phase 0.5 found 2+ configured sites —
+     omit it entirely in the common single-site workspace. -->
+- **Site:** <site> (only when 2+ sites are configured)
+- **Status:** <normalized — see "Status vocabulary" below>
 - **First seen:** <today YYYY-MM-DD>
+- **Last updated:** <today YYYY-MM-DD>
+
+## At a Glance
+<!-- Overwritten in place every session — the four lines a human needs before
+     reading anything else. Never appended to. -->
+- **Verdict:** <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic> | No MR yet>
+- **Current MR:** <!<iid> (`<branch>`) — pipeline PASSING|FAILING|PENDING|n/a | "None">
+- **Next action:** <single concrete next step — not a list>
+- **Blocked on:** <the specific blocker, or "Nothing">
 
 ## Issue Summary
 <3-5 sentences: what is broken or missing, why it matters, current state of discussion,
 what kind of fix is being proposed. Concrete and factual — no vague filler.>
 
-## Key Context
-<!-- Overwritten in place each session, like Review Status — a snapshot of
-     what a human needs to know right now, not a history. This is the
-     persisted version of the Phase 4 chat report, so a future session (or
-     drupal-issue-catchup) doesn't have to re-fetch live state to reconstruct
-     it. Bullet points, plain language — see "Writing the record" below. -->
+## Current State
+<!-- Overwritten in place each session — a snapshot of what a human needs to
+     know right now, not a history. This is the persisted version of the
+     Phase 4 chat report, so a future session (or drupal-issue-catchup)
+     doesn't have to re-fetch live state to reconstruct it. Bullet points,
+     plain language — see "Writing the record" below. -->
 - **MRs:** <iid, branch, pipeline status — one bullet per open MR>
 - **Setup issues:** <verbatim from drupal-repo-setup's recon block, or "None">
 - **Latest discussion:** <1-2 sentences on the most recent comment thread>
 
-## Review Status
-<!-- Reflects the CURRENT state only — overwritten in place each session,
-     never appended to. issue-record-update logs the fact that it changed
-     in that session's Work Log entry; this section itself stays a snapshot. -->
-- **Verdict:** <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic> | No MR yet>
-- **As of:** <MR !<iid> @ <short-sha> | "no MR"> (<today YYYY-MM-DD>)
-
 ## Related Issues
 <!-- Cross-references to issues that touch the same code, depend on this fix, or are
      otherwise connected. Updated by AI when discovered; also human-editable.
+     Omit this section entirely (no heading) until the first entry exists —
+     don't render the instructions as an empty placeholder.
      Format: - #<nid> <title> — <one line on the relationship> -->
 
 ## Work Log
@@ -221,28 +279,57 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
      This section is never overwritten by the AI. -->
 ```
 
+### Status vocabulary
+
+Normalize `**Status:**` to one of: `Active`, `Needs review`, `Needs work`,
+`RTBC`, `Fixed`, `Closed`, `Postponed`, `Needs discussion`. Map the live
+Drupal.org/GitLab label to the closest term rather than copying the raw
+label verbatim (e.g. GitLab's `state::needsWork` → `Needs work`, not
+`needsWork`) — this is what makes `Status:` scannable across issues, not
+just within one.
+
 **If `issues/<nid>/README.md` already exists:**
 
-- Update the `**Status:**` line in the header if the status has changed.
-- Add any newly discovered related issues to the `## Related Issues` section (append only — never remove existing entries).
+- Update the `**Status:**` line in the header if the status has changed, and
+  always refresh `**Last updated:**` to today.
+- Add any newly discovered related issues to the `## Related Issues` section (append only — never remove existing entries). Add the section heading if it doesn't exist yet.
+- If a `**Site:**` line already exists, leave it as-is unless the resolved
+  `<site>` this session is genuinely different (the human explicitly asked
+  to switch sites) — this shouldn't drift session to session on its own.
+  If the workspace now has 2+ sites configured but the existing record
+  predates multi-site and has no `**Site:**` line, add one.
 - Never touch the Work Log or Notes sections.
 
-**Always overwrite `## Review Status` in place** with the verdict from Phase
-2.5 (or "No MR yet" if there's nothing to review) — this section is a
-snapshot of *now*, not a history; that's what the Work Log is for.
+**Always overwrite `## At a Glance` in place** with the verdict, current MR,
+and this session's single next action and blocker — this section is a
+snapshot of *now*, not a history; that's what the Work Log is for. Source
+`Next action`/`Blocked on` only from the current session's findings, never
+by accumulating prior sessions' open items — that's how these fields go
+stale. If there is nothing blocking progress, write "Nothing", not an empty
+value.
 
-**Always overwrite `## Key Context` in place** the same way, with the MR
+**Always overwrite `## Current State` in place** the same way, with the MR
 list, setup issues, and latest-discussion summary gathered in Phase 2.
 
 ### Writing the record
 
-Write `## Issue Summary` and `## Key Context` as short, clean bullet points a
+Write `## Issue Summary` and `## Current State` as short, clean bullet points a
 human can skim in a few seconds — not paragraphs. If the `technical-writing`
 skill is installed, use it to structure these sections; then run an `unslop`
 pass (same pattern `drupalorg-comment-format` uses) before writing the file,
 to strip AI-writing tells. If either skill isn't installed,
 apply the same discipline manually: short sentences, concrete nouns, no
 filler ("leverages", "robust", "comprehensive").
+
+### Opening the record in the connected IDE
+
+After the README is written or updated, open it in the connected IDE:
+```bash
+code issues/<nid>/README.md
+```
+Best-effort only — if `code` isn't on PATH (no VS Code CLI installed, or a
+different editor is connected), skip silently and continue; this never
+blocks the rest of the phase.
 
 Add an entry to `## Related Issues` for every issue the backlink scan found
 that isn't already listed, whether the record is new or existing:
@@ -262,6 +349,7 @@ Present this in full. Do not skip sections.
 ## Issue <nid>: <title>
 - **URL:** <full URL>
 - **Project:** <project> (<classic Drupal.org | GitLab work items>)
+<If 2+ sites are configured:> - **Site:** <site>
 - **Status:** <current status>
 - **Record:** issues/<nid>/README.md (<first seen date | "first visit — just created">)
 
@@ -398,7 +486,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 | "this is related to #X" | Add the cross-reference to the `## Related Issues` section |
 | Specific instructions | Follow them, using the appropriate skills |
 
-Pass `<nid>`, `<project>`, `is_migrated`, MR iids, the full issue record content, and — if Phase 2.5 ran a recon checkout — the resolved `<module_dir>` and `<branch>` it already set up, plus the diff already read, so `drupal-issue-agent` does not have to re-fetch or re-checkout anything.
+Pass `<nid>`, `<project>`, `is_migrated`, `<site>` and its resolved `<webroot>`/`<drupal-path>` (from Phase 0.5), MR iids, the full issue record content, and — if Phase 2.5 ran a recon checkout — the resolved `<module_dir>` and `<branch>` it already set up, plus the diff already read, so `drupal-issue-agent` does not have to re-fetch, re-checkout, or re-resolve the site.
 
 ### Relaying agent pauses
 

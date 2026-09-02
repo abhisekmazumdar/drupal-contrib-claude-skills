@@ -60,11 +60,22 @@ Extract from the record:
 - **What was done** in the last session
 - **Open items** from the last session
 - **MR iid(s)** if any
-- **Prior review verdict** from `## Review Status` — this is a snapshot, not
-  history, so it only tells you where things stood as of that section's `As
-  of:` date; compare it against fresh activity in Step 3 to see if it's still
-  accurate
+- **Prior review verdict, next action, and blocker** from `## At a Glance` —
+  this is a snapshot, not history, so it only tells you where things stood
+  as of the last session; compare it against fresh activity in Step 3 to see
+  if it's still accurate
+- **`<site>`** from the header's `**Site:**` line, if present (only appears
+  once the workspace has 2+ sites configured). Keep using that same site for
+  the rest of this session — don't re-prompt or re-resolve it — unless the
+  user's message explicitly asks to switch. When the line is absent, treat
+  it as the CLAUDE.md default site.
 - **Related issues** from the `## Related Issues` section — if any have their own record at `issues/<related-nid>/README.md`, read those too and note any context relevant to the current issue
+
+The README only carries the 3 most recent Work Log sessions —
+`issue-record-update` archives older ones to `issues/<nid>/history.md`. That
+covers a normal catchup. Only read `history.md` when digging up cited
+rationale for the `why` skill (Step 5) genuinely requires pre-archive
+context — don't read it by default.
 
 ---
 
@@ -126,7 +137,7 @@ Categorise new activity:
 | **Thread resolutions** | Threads that were open last session and are now resolved |
 | **Pipeline changes** | Status changed (passing/failing) since last session |
 | **Issue status change** | Label or state changes (e.g. moved to `state::rtbc`) |
-| **Review verdict change** | Anything since the last session that would change the `## Review Status` verdict — a fix pushed, a thread resolved, a pipeline flip |
+| **Review verdict change** | Anything since the last session that would change the `## At a Glance` verdict — a fix pushed, a thread resolved, a pipeline flip |
 | **New related issues** | Any newly mentioned cross-references in comments, or found by the backlink scan, not yet in `## Related Issues` |
 
 ---
@@ -144,12 +155,14 @@ scan:
 - #<other-nid> <other-title> — found via backlink scan: referenced by #<other-nid>'s own record: "<matched line>"
 ```
 
-If activity since the last session would change the `## Review Status`
+If activity since the last session would change the `## At a Glance`
 verdict (fix pushed, thread resolved, pipeline flipped), re-derive it using
 the same rule `drupal-issue-start` Phase 2.5 uses — a judgment call naming
 the specific gap, not an exhaustive checklist — and overwrite the section in
-place (it's a snapshot, never append-only). Note in the Work Log entry that
-the verdict changed and from what to what.
+place (it's a snapshot, never append-only), along with `Next action` and
+`Blocked on` sourced only from current state, not accumulated from prior
+sessions. Note in the Work Log entry that the verdict changed and from what
+to what. Also refresh the header's `**Last updated:**` to today.
 
 If the record is already **up to date** (nothing new since last session), note that and continue.
 
@@ -217,7 +230,8 @@ Once the user replies:
 
 - If they name specific items → work only those items, in the order they specify
 - If they say "all" → confirm the order before starting
-- Delegate to the appropriate agent or skill:
+- Delegate to the appropriate agent or skill, passing along the `<site>`
+  resolved in Step 1 so nothing downstream has to re-resolve it:
   - Code fixes → use `drupal-issue-agent` (Path A fix loop)
   - Rebase needed → use `drupal-issue-reroll` skill
   - Draft a comment → use `drupalorg-comment-format` skill

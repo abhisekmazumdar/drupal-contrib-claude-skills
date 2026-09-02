@@ -74,6 +74,18 @@ If this agent is invoked directly without going through `drupal-issue-start`:
 
 **Cross-issue memory:** Always check the `## Related Issues` section of the README. If related issue records exist at `issues/<related-nid>/README.md`, read them — they may contain prior decisions, known constraints, or completed work that directly affects this issue. When you discover a new relationship during your analysis (e.g. a comment references another issue, or the fix touches code owned by another issue), append it to the `## Related Issues` section.
 
+**Site context:** `drupal-issue-start` resolves which configured site
+(`## Local environments` in CLAUDE.md) this session targets and passes
+`<site>`/`<webroot>`/`<drupal-path>` along with the rest of the loaded
+context — use those values, never re-resolve them. Every `ddev`/`drush`
+command anywhere below runs against that site: `cd` into `<drupal-path>`
+(or the workspace root if empty) first, or confirm the shell is already
+there, before invoking any of them — DDEV auto-detects its project from the
+working directory, not a flag. The absolute in-container paths used below
+(e.g. `/var/www/html/web/...`) stay correct regardless of which site is
+active, since every site's own container mounts its docroot at that same
+in-container path — only the host-side cwd needs to match the site.
+
 ## Session Logging — Mandatory
 
 At the end of any session where code was reviewed, changed, tested, or a

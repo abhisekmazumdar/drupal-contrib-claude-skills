@@ -42,11 +42,20 @@ an acceptable report.
 
 - `<nid>` — issue number
 - `<project>` — module machine name
-- `<module_dir>` — resolved local module path (e.g. `<webroot>/modules/contrib/<project>`)
-- `<site-url>` — the DDEV site URL (from the workspace `CLAUDE.md`)
+- `<site>` — the site name resolved by `drupal-issue-start`/`drupal-issue-agent`
+  earlier in the session (see `## Local environments` in CLAUDE.md) — not
+  re-resolved here
+- `<module_dir>` — resolved local module path (e.g. `<webroot>/modules/contrib/<project>`), already scoped to `<site>`
+- `<site-url>` — the DDEV site URL for `<site>` (from the workspace `CLAUDE.md`)
 - **Manual testing steps** — the A8/B3 step list from `drupal-issue-agent`. This is
   the source script for the Playwright layer.
 - Changed-files list — what the diff touched, to focus coverage assessment
+
+**Site context:** every `ddev`/`drush` command below runs against `<site>` —
+`cd` into that site's root (`<drupal-path>`) first, or confirm the shell is
+already there, so DDEV targets the right project's container. Absolute
+in-container paths (`/var/www/html/web/...`) stay correct regardless of
+which site is active — only the host-side cwd needs to match.
 
 If invoked directly without these, gather what you can from `issues/<nid>/README.md`
 and the workspace `CLAUDE.md`, and ask the caller for the manual testing steps —

@@ -26,16 +26,57 @@ function isDrupalRoot(dir) {
   return false;
 }
 
-function findDrupalSubdir(dir) {
+// Returns every top-level subdir of `dir` that is itself a Drupal root —
+// not just the first match — so a workspace holding several Drupal
+// installs side by side (e.g. drupal/, cms/, umami/) gets all of them
+// detected, not silently just one.
+function findAllDrupalSubdirs(dir) {
+  const found = [];
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      if (isDrupalRoot(path.join(dir, entry.name))) return entry.name;
+      if (isDrupalRoot(path.join(dir, entry.name))) found.push(entry.name);
     }
   } catch (_) {}
-  return null;
+  return found;
+}
+
+function buildSitesTable(sites, defaultSite) {
+  const header = '| Name | Default | DDEV Project | Site URL | Webroot | PHP | MariaDB |\n|---|---|---|---|---|---|---|';
+  const rows = Object.entries(sites).map(([name, cfg]) => {
+    const isDefault = name === defaultSite ? '✓' : '';
+    return `| ${name} | ${isDefault} | ${cfg.ddevProject} | ${cfg.siteUrl} | ${cfg.drupalWebroot}/ | ${cfg.phpVersion} | ${cfg.mariadbVersion} |`;
+  });
+  return [header, ...rows].join('\n');
+}
+
+// Older lockfiles stored one flat var set (DDEV_PROJECT, SITE_URL, ...) for
+// a single Drupal install. Wrap that shape into today's { sites, defaultSite }
+// shape so existing single-site installs don't have to redo setup.
+function normalizeLock(raw) {
+  if (raw.sites) return raw;
+  if (raw.DDEV_PROJECT) {
+    const subdir = raw.DRUPAL_SUBDIR || '.';
+    const name = (subdir === '.' || subdir === '') ? path.basename(CWD) : subdir.replace(/\/$/, '');
+    return {
+      sites: {
+        [name]: {
+          ddevProject: raw.DDEV_PROJECT,
+          siteUrl: raw.SITE_URL,
+          phpVersion: raw.PHP_VERSION,
+          mariadbVersion: raw.MARIADB_VERSION,
+          drupalPath: raw.DRUPAL_PATH || '',
+          drupalWebroot: raw.DRUPAL_WEBROOT || 'web',
+          drupalSubdir: subdir,
+        },
+      },
+      defaultSite: name,
+      drupalCliBin: raw.DRUPAL_CLI_BIN,
+    };
+  }
+  return { sites: {}, defaultSite: null };
 }
 
 function readDdevProjectName(drupalDir) {
@@ -117,55 +158,93 @@ function findBin(name) {
 async function main() {
   console.log('\n🎸 drupal-claude-skills setup\n');
 
-  const lock = readLock();
+  const lock = normalizeLock(readLock());
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  // ── Step 1: Where is Drupal? ───────────────────────────────────────────────
-  let drupalSubdir;
+  // ── Step 1: Where is Drupal? One or more installs. ─────────────────────────
+  // `siteDirs` is the list of { name, subdir } candidates to configure below.
+  // `subdir` is '.' when Drupal lives at the workspace root, or a top-level
+  // directory name (e.g. 'cms') when it's nested. `name` is the site's
+  // identifier everywhere else in this toolchain (CLAUDE.md's sites table,
+  // issue records, skill site-matching) — it's always the directory name
+  // (or the workspace's own basename when Drupal is at the root), never a
+  // separately-chosen alias.
+  let siteDirs;
   if (isDrupalRoot(CWD)) {
-    drupalSubdir = '.';
+    // Toolchain is being set up from inside a Drupal codebase itself (e.g.
+    // `cd drupal11 && npx drupal-claude-skills`) — a single site, no
+    // sibling subdirs to scan.
+    siteDirs = [{ name: path.basename(CWD), subdir: '.' }];
     console.log('Drupal project detected at current directory.\n');
   } else {
-    const detected = findDrupalSubdir(CWD);
-    const defaultSubdir = lock.DRUPAL_SUBDIR || detected || '.';
-    const hint = detected ? `${detected} (auto-detected)` : defaultSubdir;
-    const answer = await ask(rl, `Where is your Drupal project? [${hint}]: `);
-    drupalSubdir = answer || defaultSubdir;
+    const detected = findAllDrupalSubdirs(CWD);
+    if (detected.length === 0) {
+      const priorSite = lock.defaultSite && lock.sites[lock.defaultSite];
+      const defaultSubdir = (priorSite && priorSite.drupalSubdir) || '.';
+      const answer = await ask(rl, `Where is your Drupal project? [${defaultSubdir}]: `);
+      const subdir = answer || defaultSubdir;
+      const name = (subdir === '.' || subdir === '') ? path.basename(CWD) : subdir.replace(/\/$/, '');
+      siteDirs = [{ name, subdir }];
+      console.log('');
+    } else if (detected.length === 1) {
+      siteDirs = [{ name: detected[0], subdir: detected[0] }];
+      console.log(`Drupal project detected at ./${detected[0]}\n`);
+    } else {
+      console.log(`Found ${detected.length} Drupal projects: ${detected.join(', ')}\n`);
+      siteDirs = detected.map(d => ({ name: d, subdir: d }));
+    }
+  }
+
+  // ── Step 2: DDEV + site details, one pass per detected site ───────────────
+  const sites = {};
+  for (const { name, subdir } of siteDirs) {
+    const drupalPath = (subdir === '.' || subdir === '') ? '' : subdir.replace(/\/$/, '') + '/';
+    const drupalWebroot = drupalPath + 'web';
+    const drupalAbsDir = subdir === '.' ? CWD : path.join(CWD, subdir);
+    const existing = lock.sites[name] || {};
+
+    if (siteDirs.length > 1) console.log(`--- Site: ${name} ---`);
+
+    const detectedProject = readDdevProjectName(drupalAbsDir) || path.basename(drupalAbsDir);
+    const defaultProject = existing.ddevProject || detectedProject;
+    const projectName = await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
+    const defaultUrl = existing.siteUrl || `https://${projectName}.ddev.site`;
+    const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
+    const phpVersion = await ask(rl, `PHP version [${existing.phpVersion || '8.4'}]: `) || existing.phpVersion || '8.4';
+    const mariadbVersion = await ask(rl, `MariaDB version [${existing.mariadbVersion || '11.8'}]: `) || existing.mariadbVersion || '11.8';
+
+    sites[name] = { ddevProject: projectName, siteUrl, phpVersion, mariadbVersion, drupalPath, drupalWebroot, drupalSubdir: subdir };
     console.log('');
   }
 
-  // DRUPAL_PATH: prefix for host-side paths ('' or 'drupal/')
-  // DRUPAL_WEBROOT: full path to docroot from workspace root ('web' or 'drupal/web')
-  const drupalPath = (drupalSubdir === '.' || drupalSubdir === '')
-    ? ''
-    : drupalSubdir.replace(/\/$/, '') + '/';
-  const drupalWebroot = drupalPath + 'web';
-  const drupalAbsDir = drupalSubdir === '.' ? CWD : path.join(CWD, drupalSubdir);
-
-  // ── Step 2: DDEV + site details ────────────────────────────────────────────
-  const detectedProject = readDdevProjectName(drupalAbsDir) || path.basename(drupalAbsDir);
-  const defaultProject = lock.DDEV_PROJECT || detectedProject;
-  const projectName = await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
-  const defaultUrl = lock.SITE_URL || `https://${projectName}.ddev.site`;
-  const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
-  const phpVersion = await ask(rl, `PHP version [${lock.PHP_VERSION || '8.4'}]: `) || lock.PHP_VERSION || '8.4';
-  const mariadbVersion = await ask(rl, `MariaDB version [${lock.MARIADB_VERSION || '11.8'}]: `) || lock.MARIADB_VERSION || '11.8';
+  // ── Step 3: which site is default? ─────────────────────────────────────────
+  let defaultSite;
+  if (siteDirs.length === 1) {
+    defaultSite = siteDirs[0].name;
+  } else {
+    const names = siteDirs.map(s => s.name);
+    const lockedDefault = names.includes(lock.defaultSite) ? lock.defaultSite : names[0];
+    const answer = await ask(rl, `Which site is the default? [${lockedDefault}] (${names.join(', ')}): `);
+    defaultSite = names.includes(answer) ? answer : lockedDefault;
+    console.log('');
+  }
 
   rl.close();
-  console.log('');
 
   const drupalorgBin = findBin('drupalorg') || '/path/to/drupalorg';
+  const defaultSiteCfg = sites[defaultSite];
 
   const vars = {
-    DDEV_PROJECT: projectName,
-    SITE_URL: siteUrl,
-    PHP_VERSION: phpVersion,
-    MARIADB_VERSION: mariadbVersion,
-    DRUPAL_PATH: drupalPath,
-    DRUPAL_WEBROOT: drupalWebroot,
-    DRUPAL_SUBDIR: drupalSubdir,
+    DDEV_PROJECT: defaultSiteCfg.ddevProject,
+    SITE_URL: defaultSiteCfg.siteUrl,
+    PHP_VERSION: defaultSiteCfg.phpVersion,
+    MARIADB_VERSION: defaultSiteCfg.mariadbVersion,
+    DRUPAL_PATH: defaultSiteCfg.drupalPath,
+    DRUPAL_WEBROOT: defaultSiteCfg.drupalWebroot,
+    DRUPAL_SUBDIR: defaultSiteCfg.drupalSubdir,
     DRUPAL_CLI_BIN: drupalorgBin,
+    SITES_TABLE: buildSitesTable(sites, defaultSite),
   };
 
   const claudeDir = path.join(CWD, '.claude');
@@ -337,7 +416,7 @@ async function main() {
     for (const f of log.identical) console.log(`  =  ${f}`);
   }
 
-  writeLock(vars);
+  writeLock({ sites, defaultSite, drupalCliBin: drupalorgBin });
 
   if (drupalorgBin === '/path/to/drupalorg') {
     console.log('\n⚠  drupalorg not found on PATH — install it and re-run setup to activate the drupalorg-cli MCP server.');
