@@ -50,6 +50,23 @@ See "Testing setup changes" below for exercising `bin/setup.js` end-to-end again
 
 ## Key conventions — read before editing anything
 
+### `docs/index.html` is the detailed reference — keep it in sync
+
+`docs/index.html` (published via GitHub Pages at
+https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/) is a
+hand-written, standalone HTML page — not generated from `skills/`, `agents/`,
+or this file. It holds the full reference detail that `README.md`
+deliberately keeps out (README stays a short quickstart; the docs site is
+where every skill, every agent, multi-site support, the issue-record
+format, and the rest of the conventions below are written up for a human
+reader browsing the repo). **Whenever you change something this file
+documents** — add/remove/rename a skill or agent, change an agent's role or
+persona, add an external skill, change the issue-record format, add a
+convention to this file — check whether `docs/index.html` needs the same
+update. It won't drift into correctness on its own; nothing regenerates it.
+There's no automated check for this yet, so treat it as a manual step at
+the end of any change that touches the tables/conventions below.
+
 ### Template vars belong only in `templates/`
 
 `{{VAR}}` placeholders are substituted at install time **only** for files in `templates/`. Skills and agents are copied verbatim — they must never contain `{{VAR}}` patterns.
