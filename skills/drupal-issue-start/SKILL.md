@@ -186,6 +186,16 @@ actually being reviewed, is what makes that skip safe.
 **Preliminary review (light — not the full correctness audit).** Once the
 sub-agent confirms the branch is checked out:
 
+**Always use `git -C <module_dir> ...` for these commands — never `cd
+<module_dir> && git ...`.** The shell's working directory persists across
+tool calls in this harness. A bare `cd` into the module clone silently
+carries forward into every later command this session — including Phase 3's
+`mkdir issues/<nid>/...` and the README `Write` — landing them inside the
+module's own git clone instead of the workspace root. `git -C` never touches
+the shell's cwd, so it's the only safe form here. If a `cd` into a module
+directory is ever unavoidable, `cd` back to the workspace root immediately
+after, in the same breath, before running anything else.
+
 ```bash
 git -C <module_dir> diff origin/<default-branch>...HEAD --stat
 ```
