@@ -6,6 +6,15 @@ glab ci view            # interactive pipeline view
 glab ci trace <job>     # stream full log of a specific job
 ```
 
+Bare `glab ci status` (no `-b`/`-R`) infers the repo from the checked-out
+branch's git remote — correct when run from inside the module directory with
+the branch tracking the issue fork remote. When checking status **without**
+a local checkout, using `-b <branch> -R <repo>` explicitly, remember standard
+contrib MRs are pushed to the issue fork (`issue/<project>-<nid>`), not
+`project/<project>` — check the fork first, since `-R project/<project>`
+404s unless no fork exists. A 404 there means "wrong repo checked", not "no
+pipeline ran."
+
 Use `glab ci trace <job-name>` as the **primary tool for debugging pipeline failures** — it streams the full job log. Fetching the GitLab job page directly won't work (requires JavaScript rendering).
 
 ---

@@ -101,10 +101,13 @@ GITLAB_HOST=git.drupalcode.org glab mr list --repo project/<project> --search "<
 ```
 This reliably returns the MR iid, branch, and target for migrated issues. Prefer its result over a malformed `drupalorg` output when the two disagree.
 
-For any issue with existing MRs, also fetch pipeline status for the latest MR branch:
+For any issue with existing MRs, also fetch pipeline status for the latest MR branch. Standard Drupal contrib MRs run from the issue fork (`issue/<project>-<nid>`), not from `project/<project>` itself, so the pipeline lives on the fork — check there first and only fall back to the project repo if no fork exists (rare: MR opened from a branch pushed directly to the project):
 ```bash
+GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R issue/<project>-<nid>
+# If that 404s (no fork, or branch pushed straight to the project):
 GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
 ```
+A 404 from the fork lookup does **not** mean "no pipeline ever ran" — it means the wrong repo was checked. Only report "pipeline never ran" after both lookups 404.
 
 Extract: title, project, current status, **every** open MR (iid + branch + pipeline status — not just the first one returned), comment count + date of last comment, whether a fork exists.
 

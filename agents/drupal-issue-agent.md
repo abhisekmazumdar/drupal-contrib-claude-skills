@@ -202,10 +202,17 @@ Do NOT proceed to Path A or B until the user explicitly says yes.
 # Full diff
 drupalorg mr:diff <nid> <mr-iid> --format=llm
 
-# Pipeline status — pipelines run on the upstream project repo, not the issue
-# fork. glab works for both migrated and non-migrated projects.
-# drupalorg mr:status works only for non-migrated projects (fails with 404
-# for migrated queue projects like 'ai').
+# Pipeline status — standard contrib MRs run from the issue fork
+# (issue/<project>-<nid>), so the pipeline lives there, not on the upstream
+# project repo. Check the fork first; only fall back to the project repo if
+# that 404s (no fork, or branch pushed straight to the project). A 404 from
+# the fork lookup means "wrong repo checked", not "no pipeline ran" — don't
+# report the latter until both lookups 404. glab works for both migrated and
+# non-migrated projects. drupalorg mr:status works only for non-migrated
+# projects (fails with 404 for migrated queue projects like 'ai').
+GITLAB_HOST=git.drupalcode.org glab ci status \
+  -b <branch> -R issue/<project>-<nid>
+# fallback if the fork lookup 404s:
 GITLAB_HOST=git.drupalcode.org glab ci status \
   -b <branch> -R project/<project>
 
@@ -522,14 +529,20 @@ For each approved fix:
        → if behind: use drupal-issue-reroll skill before pushing
    ```
 7. After all fixes pass preflight (requires user approval): `git -C <webroot>/modules/contrib/<project> push <project>-<nid> HEAD`
-8. Poll pipeline:
+8. Poll pipeline (check the issue fork first — that's where the branch was
+   pushed and where the pipeline runs; `-R project/<project>` 404s unless no
+   fork exists):
    ```bash
+   GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R issue/<project>-<nid>
+   # fallback if that 404s (no fork):
    GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
    # fallback for non-migrated projects only:
    drupalorg mr:status <nid> <mr-iid> --format=llm
    ```
 8. If failing, stream the trace:
    ```bash
+   GITLAB_HOST=git.drupalcode.org glab ci trace -b <branch> -R issue/<project>-<nid>
+   # fallback if that 404s (no fork):
    GITLAB_HOST=git.drupalcode.org glab ci trace -b <branch> -R project/<project>
    # fallback for non-migrated projects only:
    drupalorg mr:logs <nid> <mr-iid>

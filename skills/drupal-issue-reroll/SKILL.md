@@ -211,8 +211,10 @@ against overwriting someone else's push).
 - PHPStan: clean (or "skipped — no phpstan.neon")
 - Pushed: yes (force-with-lease)
 
-Pipeline will start shortly. Monitor with:
-  GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R project/<project>
+Pipeline will start shortly. Monitor with (the branch was pushed to the issue
+fork, so check there first — `-R project/<project>` will 404 since that
+branch doesn't exist in the target project's own repo):
+  GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R issue/<project>-<nid>
 ```
 
 ---
