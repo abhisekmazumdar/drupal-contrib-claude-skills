@@ -108,8 +108,14 @@ GITLAB_HOST=git.drupalcode.org glab mr note list <mr-iid> \
   --repo project/<project>
 ```
 
-**c) MR and pipeline status** (if an MR exists):
+**c) MR and pipeline status** (if an MR exists). Standard contrib MRs run
+from the issue fork, so check there first — `-R project/<project>` 404s
+unless no fork exists. A 404 from the fork lookup means "wrong repo
+checked", not "no pipeline ran":
 ```bash
+GITLAB_HOST=git.drupalcode.org glab ci status \
+  -b <branch> -R issue/<project>-<nid>
+# fallback if that 404s (no fork):
 GITLAB_HOST=git.drupalcode.org glab ci status \
   -b <branch> -R project/<project>
 ```
