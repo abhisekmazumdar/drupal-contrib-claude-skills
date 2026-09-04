@@ -37,7 +37,7 @@ node --check bin/setup.js
 # (exact check lives in .github/workflows/ci.yml under "Validate skill and agent frontmatter")
 
 # {{VAR}} placeholders may only appear in templates/, and only from the known set
-# (DDEV_PROJECT, SITE_URL, PHP_VERSION, MARIADB_VERSION, DRUPAL_PATH, DRUPAL_WEBROOT, DRUPAL_CLI_BIN)
+# (DDEV_PROJECT, SITE_URL, PHP_VERSION, MARIADB_VERSION, DRUPAL_PATH, DRUPAL_WEBROOT, DRUPAL_CLI_BIN, SITES_TABLE)
 grep -rn "{{" skills/ agents/   # must be empty
 
 # templates/settings.json.template must still be valid JSON once vars are substituted
