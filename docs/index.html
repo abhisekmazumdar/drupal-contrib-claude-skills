@@ -216,6 +216,7 @@
     <div class="section-title">Conventions</div>
     <ul>
       <li><a href="#issue-record">Issue record format</a></li>
+      <li><a href="#ai-policy">Drupal.org AI contribution policy</a></li>
       <li><a href="#review-philosophy">Review philosophy</a></li>
       <li><a href="#git-guardrail">Git guardrail hook</a></li>
       <li><a href="#mcp">MCP servers</a></li>
@@ -553,6 +554,60 @@ npx /path/to/drupal-claude-skills</code></pre>
       <p>
         <code>issue-record-update</code> runs automatically at the end of any session that did something — code
         reviewed, changed, tested, or a comment/push attempted. A pure read-only catchup skips it.
+      </p>
+    </section>
+
+    <section id="ai-policy">
+      <h2>Drupal.org AI contribution policy</h2>
+      <p>
+        This toolkit is built to comply with
+        <a href="https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal">Drupal.org's policy on the use of AI when contributing to Drupal</a>,
+        not to work around it. The policy's core principle is that you are
+        fully responsible for the integrity of your submission, and "the AI
+        wrote it" is never an acceptable answer. That's why every agent in
+        this repo is built around hard approval gates instead of autonomous
+        posting:
+      </p>
+      <ul>
+        <li><strong>Nothing reaches Drupal.org without a human reading it first.</strong>
+          Every code edit, git operation, and Drupal.org post sits behind an
+          explicit <code>[PAUSE]</code> the agent cannot skip. See
+          <code>drupal-issue-agent</code>'s approval gates above.</li>
+        <li><strong>AI involvement is disclosed, every time.</strong>
+          <code>drupal-gitlab</code> appends an <code>AI-Generated:</code> line to
+          every MR body; <code>drupalorg-comment-format</code> does the same for
+          issue comments (Markdown italic form for migrated/GitLab queues).
+          This isn't optional formatting. It's required before anything is
+          shown to the user for approval.</li>
+        <li><strong>No submission goes out untested.</strong> The pre-push
+          preflight in A10/B5 blocks staging until PHPCS, PHPStan, and
+          relevant tests pass locally, on top of whatever CI already
+          enforces.</li>
+        <li><strong>Prior discussion is read, not steamrolled.</strong> The A6
+          timeline cross-reference and cross-issue <code>## Related Issues</code>
+          memory exist specifically so the agent doesn't repeat a proposal a
+          maintainer already rejected, or miss a reviewer thread nobody
+          replied to.</li>
+        <li><strong>Posting is a commitment, not a drop-and-run.</strong> A11's
+          comment draft reminds the user that posting means being ready to
+          follow up when a maintainer or reviewer responds. The policy
+          treats drive-by AI patches with no follow-up as a bannable pattern.</li>
+        <li><strong>Licensing and provenance are checked, not assumed.</strong>
+          All contributed code must stay GPL-2.0-or-later compatible, and the
+          A7 review checklist flags code that reads as copied verbatim from a
+          non-GPL source rather than written for the context at hand.</li>
+        <li><strong>Security issues never touch the public queue.</strong> If a
+          review surfaces a vulnerability, the agent stops and directs the
+          human to report it privately to the Drupal Security Team instead.</li>
+      </ul>
+      <p>
+        None of this is enforced by the platform. It's enforced by the
+        prompts in this repo, which means it holds only as long as the human
+        in the loop actually reads each <code>[PAUSE]</code> report and
+        approves deliberately rather than reflexively. If you're extending
+        this toolkit, keep new automation behind the same gates. See
+        <a href="#dev">Developing this repo</a> for the conventions that keep
+        it that way.
       </p>
     </section>
 

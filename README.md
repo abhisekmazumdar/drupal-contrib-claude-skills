@@ -6,6 +6,8 @@ Claude Code skills and agents for Drupal open source contribution. Run once from
 
 📖 **[Full documentation](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/)** covers every skill and agent in depth, the review/approval workflow, multi-site support, and repo conventions. This README covers the basics: install, what you get, and how to use it.
 
+This toolkit is built to comply with [Drupal.org's policy on the use of AI when contributing to Drupal](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal). See [Drupal.org AI contribution policy](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#ai-policy) in the docs for how each requirement is enforced. Nothing here removes your responsibility as the human contributor. You still review, approve, and stay accountable for every submission.
+
 ## What gets installed
 
 - **Skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, and more
