@@ -6,10 +6,13 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
+const { installExternal } = require('./external-skills');
+const { options, readState, writer, installTargets, symlinkAncestor } = require('./install');
 
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const CWD = process.cwd();
-const LOCK_FILE = path.join(CWD, '.claude', 'claude-skills.lock.json');
+const LOCK_FILE = path.join(CWD, '.drupal-contrib', 'install.json');
+const cli = options(process.argv.slice(2));
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -98,55 +101,9 @@ function renderTemplate(templatePath, vars) {
   return content;
 }
 
-/**
- * Copy a single file, always overwriting with the latest source content.
- * Logs as 'identical' when the content is unchanged (skips the write),
- * and as 'copied' when the file is new or updated.
- * Never deletes destination files that are not in the source.
- */
-function copyFile(srcContent, destPath, log) {
-  const rel = path.relative(CWD, destPath);
-  fs.mkdirSync(path.dirname(destPath), { recursive: true });
-
-  if (fs.existsSync(destPath) && fs.readFileSync(destPath, 'utf8') === srcContent) {
-    log.identical.push(rel);
-    return;
-  }
-
-  fs.writeFileSync(destPath, srcContent);
-  log.copied.push(rel);
-}
-
-/**
- * Recursively copy src into dest, rendering template vars in each file.
- * Only copies files present in src — never removes files already in dest.
- */
-function copyDirMerge(src, dest, vars, log, skipDirs = new Set()) {
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    if (entry.isDirectory() && skipDirs.has(entry.name)) continue;
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDirMerge(srcPath, destPath, vars, log, skipDirs);
-    } else {
-      const srcContent = vars ? renderTemplate(srcPath, vars) : fs.readFileSync(srcPath, 'utf8');
-      copyFile(srcContent, destPath, log);
-    }
-  }
-}
-
 function ask(rl, question) {
+  if (cli.yes || cli.dryRun || !process.stdin.isTTY) return Promise.resolve('');
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
-}
-
-function readLock() {
-  try { return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8')).vars || {}; } catch (_) { return {}; }
-}
-
-function writeLock(vars) {
-  fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
-  fs.writeFileSync(LOCK_FILE, JSON.stringify({ lockedAt: new Date().toISOString(), vars }, null, 2));
 }
 
 function findBin(name) {
@@ -156,9 +113,22 @@ function findBin(name) {
 // ── main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('\n🎸 drupal-claude-skills setup\n');
+  if (cli.help) {
+    console.log('Usage: drupal-claude-skills [--target claude-code|codex|both] [--yes] [--dry-run] [--skip-external]');
+    console.log('--yes accepts detected defaults; --dry-run previews without writes or downloads.');
+    return;
+  }
+  console.log('\nDrupal contribution toolkit setup\n');
+  const state = readState(CWD);
+  const lock = normalizeLock(state.vars || {});
+  const targets = cli.target === 'both' ? ['claude-code', 'codex']
+    : cli.target ? [cli.target] : state.targets || ['claude-code'];
+  if (!Array.isArray(targets) || !targets.length || targets.some(target => !['claude-code', 'codex'].includes(target))) throw new Error('Invalid targets in installation state');
+  const output = writer(CWD, state.files, cli.dryRun);
+  const log = output.log;
 
-  const lock = normalizeLock(readLock());
+  if (!findBin('python3')) console.log('Warning: Python 3 is required for the command guard; hooks will block shell calls until it is installed.');
+  if (!findBin('php')) console.log('Warning: PHP is required on the host to launch the drupalorg-cli MCP server.');
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -208,11 +178,11 @@ async function main() {
 
     const detectedProject = readDdevProjectName(drupalAbsDir) || path.basename(drupalAbsDir);
     const defaultProject = existing.ddevProject || detectedProject;
-    const projectName = await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
+    const projectName = existing.ddevProject || await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
     const defaultUrl = existing.siteUrl || `https://${projectName}.ddev.site`;
-    const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
-    const phpVersion = await ask(rl, `PHP version [${existing.phpVersion || '8.4'}]: `) || existing.phpVersion || '8.4';
-    const mariadbVersion = await ask(rl, `MariaDB version [${existing.mariadbVersion || '11.8'}]: `) || existing.mariadbVersion || '11.8';
+    const siteUrl = existing.siteUrl || await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
+    const phpVersion = existing.phpVersion || await ask(rl, `PHP version [${existing.phpVersion || '8.4'}]: `) || existing.phpVersion || '8.4';
+    const mariadbVersion = existing.mariadbVersion || await ask(rl, `MariaDB version [${existing.mariadbVersion || '11.8'}]: `) || existing.mariadbVersion || '11.8';
 
     sites[name] = { ddevProject: projectName, siteUrl, phpVersion, mariadbVersion, drupalPath, drupalWebroot, drupalSubdir: subdir };
     console.log('');
@@ -225,14 +195,14 @@ async function main() {
   } else {
     const names = siteDirs.map(s => s.name);
     const lockedDefault = names.includes(lock.defaultSite) ? lock.defaultSite : names[0];
-    const answer = await ask(rl, `Which site is the default? [${lockedDefault}] (${names.join(', ')}): `);
+    const answer = (names.includes(lock.defaultSite) ? lock.defaultSite : '') || await ask(rl, `Which site is the default? [${lockedDefault}] (${names.join(', ')}): `);
     defaultSite = names.includes(answer) ? answer : lockedDefault;
     console.log('');
   }
 
   rl.close();
 
-  const drupalorgBin = findBin('drupalorg') || '/path/to/drupalorg';
+  const drupalorgBin = findBin('drupalorg') || lock.drupalCliBin || '/path/to/drupalorg';
   const defaultSiteCfg = sites[defaultSite];
 
   const vars = {
@@ -247,26 +217,7 @@ async function main() {
     SITES_TABLE: buildSitesTable(sites, defaultSite),
   };
 
-  const claudeDir = path.join(CWD, '.claude');
-  if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
-
-  const log = { copied: [], identical: [] };
-
-  // Skills — copied as-is; skills read project paths from CLAUDE.md context
-  copyDirMerge(
-    path.join(PACKAGE_ROOT, 'skills'),
-    path.join(claudeDir, 'skills'),
-    null,
-    log
-  );
-
-  // Agents — copied as-is; project paths come from CLAUDE.md context
-  copyDirMerge(
-    path.join(PACKAGE_ROOT, 'agents'),
-    path.join(claudeDir, 'agents'),
-    null,
-    log
-  );
+  installTargets({ cwd: CWD, packageRoot: PACKAGE_ROOT, targets, output, render: renderTemplate, vars });
 
   // Externally-maintained skills — pulled at install time, never vendored in
   // this repo. Each pull is non-fatal: offline/npx failures print a manual
@@ -334,74 +285,10 @@ async function main() {
     },
   ];
 
-  // Group by repo so skills sharing an upstream (e.g. cursor/plugins,
-  // mattpocock/skills) are pulled with one clone via repeated --skill flags,
-  // instead of one clone per skill.
-  const skillsByRepo = new Map();
-  for (const entry of externalSkills) {
-    if (!skillsByRepo.has(entry.repo)) skillsByRepo.set(entry.repo, []);
-    skillsByRepo.get(entry.repo).push(entry);
-  }
-
-  for (const [repo, entries] of skillsByRepo) {
-    const pending = entries.filter(({ name }) => {
-      const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
-      const exists = fs.existsSync(skillFile);
-      if (exists) log.identical.push(path.relative(CWD, skillFile) + ' (update with: npx skills update)');
-      return !exists;
-    });
-    if (!pending.length) continue;
-
-    console.log(`Pulling ${pending.map(e => e.name).join(', ')} from github.com/${repo} …`);
-    const skillFlags = pending.map(({ name }) => `--skill ${name}`).join(' ');
-    try {
-      execSync(
-        `npx -y skills@latest add ${repo} ${skillFlags} --agent claude-code --copy -y`,
-        { cwd: CWD, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
-      );
-    } catch (_) {
-      // Non-fatal — fall through to the per-skill check below, which reports
-      // whatever did or didn't land (a partial batch failure may still have
-      // installed some skills before failing).
-    }
-    for (const { name, usedBy } of pending) {
-      const skillFile = path.join(claudeDir, 'skills', name, 'SKILL.md');
-      if (fs.existsSync(skillFile)) {
-        log.copied.push(path.relative(CWD, skillFile));
-      } else {
-        console.log(`⚠  Could not pull the ${name} skill (offline or npx unavailable).`);
-        console.log(`   ${usedBy} Install later with:`);
-        console.log(`   npx skills add ${repo} --skill ${name}\n`);
-      }
-    }
-  }
-
-
-  // settings.json
-  copyFile(
-    renderTemplate(path.join(PACKAGE_ROOT, 'templates', 'settings.json.template'), vars),
-    path.join(claudeDir, 'settings.json'),
-    log
-  );
-
-  // Git guardrail hook — blocks locally-destructive git commands (reset
-  // --hard, clean -f/-fd, branch -D, checkout ./restore .) regardless of the
-  // permissions allow-list above. git push is deliberately not blocked here;
-  // drupal-issue-reroll relies on --force-with-lease pushes to issue forks.
-  const hookDestPath = path.join(claudeDir, 'hooks', 'block-dangerous-git.sh');
-  copyFile(
-    fs.readFileSync(path.join(PACKAGE_ROOT, 'templates', 'hooks', 'block-dangerous-git.sh'), 'utf8'),
-    hookDestPath,
-    log
-  );
-  fs.chmodSync(hookDestPath, 0o755);
-
-  // CLAUDE.md
-  copyFile(
-    renderTemplate(path.join(PACKAGE_ROOT, 'templates', 'CLAUDE.md.template'), vars),
-    path.join(CWD, 'CLAUDE.md'),
-    log
-  );
+  installExternal({
+    cwd: CWD, targets, entries: externalSkills, output,
+    dryRun: cli.dryRun, skipExternal: cli.skipExternal,
+  });
 
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n── Summary ──────────────────────────────────────────────────');
@@ -416,12 +303,29 @@ async function main() {
     for (const f of log.identical) console.log(`  =  ${f}`);
   }
 
-  writeLock({ sites, defaultSite, drupalCliBin: drupalorgBin });
+  if (log.conflicts.length) {
+    console.log('\nManual integration required (originals were preserved):');
+    for (const file of log.conflicts) console.log('  ! ' + file);
+    console.log('Review proposals before copying/merging them into their intended locations. Re-run setup afterward to record ownership of matching files.');
+  }
+  if (!cli.dryRun) {
+    if (symlinkAncestor(CWD, LOCK_FILE)) throw new Error('Refusing to write a symlinked installation state');
+    fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
+    fs.writeFileSync(LOCK_FILE, JSON.stringify({
+      version: 1, targets: [...new Set([...(state.targets || []), ...targets])],
+      vars: { sites, defaultSite, drupalCliBin: drupalorgBin }, files: output.files,
+    }, null, 2) + '\n');
+  }
 
   if (drupalorgBin === '/path/to/drupalorg') {
     console.log('\n⚠  drupalorg not found on PATH — install it and re-run setup to activate the drupalorg-cli MCP server.');
   }
-  console.log('\nDone. Open this project in Claude Code and paste a Drupal.org issue URL — or run /drupal-issue-start <url> to get started.\n');
+  if (targets.includes('codex')) {
+    console.log('Codex: trust this workspace, review/trust the Git hook with /hooks, then use $drupal-issue-start <url>.');
+    console.log('Custom agents and PreToolUse hooks require a client supporting those features. Configuration alone does not activate untrusted hooks.');
+  }
+  if (targets.includes('claude-code')) console.log('Claude Code: use /drupal-issue-start <url>.');
+  console.log(cli.dryRun ? '\nPreview only: no files changed or external skills downloaded.' : '\nInstallation files prepared. Resolve any integration notices above before starting issue work.');
 }
 
 main().catch(err => {

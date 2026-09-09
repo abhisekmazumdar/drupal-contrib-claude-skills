@@ -116,12 +116,6 @@
       "Bash(GITLAB_HOST=git.drupalcode.org glab api*)"
     ]
   },
-  "mcpServers": {
-    "drupalorg-cli": {
-      "command": "php",
-      "args": ["{{DRUPAL_CLI_BIN}}", "mcp:serve"]
-    }
-  },
   "hooks": {
     "PreToolUse": [
       {

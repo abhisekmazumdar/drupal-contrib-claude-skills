@@ -14,8 +14,12 @@ description: >
 
 One script: `find_related_issues.py`. Pure standard library, no dependencies.
 
+Resolve the script relative to this installed `SKILL.md`. In workflow examples,
+`<skills-root>` is the parent of this skill directory; it is supplied by the
+active client's workspace instructions.
+
 ```bash
-python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
+python3 "<skills-root>/drupal-related-issues/find_related_issues.py" <nid>
 ```
 
 Scans every `issues/<other-nid>/*.md` file (recursively) except the target

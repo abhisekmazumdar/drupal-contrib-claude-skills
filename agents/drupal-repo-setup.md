@@ -40,10 +40,10 @@ If the DDEV environment is not running or behaves unexpectedly during any step, 
   - `worktree` — create a new worktree branch (Path B, after plan is approved) — pauses before creating it
 - `<branch>` — branch name (required for `checkout` and `recon` mode when an MR exists; for `worktree` mode you will derive it as `<nid>-<short-description>`)
 - `<site>` / `<webroot>` — the site name and its already-resolved webroot
-  from the calling agent's `## Local environments` lookup (see CLAUDE.md).
+  from the calling agent's `## Local environments` lookup (see .drupal-contrib/context.md).
   This agent never re-resolves which site is in play — it just operates
   inside the webroot it's given. When the calling agent omits these
-  (single-site workspace, or an older caller), fall back to the CLAUDE.md
+  (single-site workspace, or an older caller), fall back to the .drupal-contrib/context.md
   default site.
 
 `recon` is the only mode where clone/checkout/fork-remote steps skip their `[PAUSE]` — every other mode keeps the approval gates below exactly as before.

@@ -1,0 +1,41 @@
+# Rules apply to commands requesting execution outside the sandbox.
+# The PreToolUse hook covers supported shell calls inside it as well.
+prefix_rule(
+    pattern = ["git", ["add", "commit", "push", "pull", "rebase", "revert", "merge"]],
+    decision = "prompt",
+    justification = "Confirm the contribution operation is within the human-approved phase.",
+    match = ["git push fork HEAD", "git add src", "git rebase origin/main"],
+    not_match = ["git status", "git diff"],
+)
+
+# Prefix rules cannot skip an arbitrary -C path. Conservatively prompt for
+# escalated git -C calls; read-only in-sandbox operations still run normally.
+prefix_rule(
+    pattern = ["git", "-C"],
+    decision = "prompt",
+    justification = "Review the repository and operation before elevated Git access.",
+)
+
+prefix_rule(
+    pattern = ["glab", "api"],
+    decision = "forbidden",
+    justification = "Use supported read commands; prepare public changes for the human to post.",
+)
+
+prefix_rule(
+    pattern = ["glab", "mr", ["note", "comment", "create", "merge", "approve", "update", "close"]],
+    decision = "forbidden",
+    justification = "Prepare the MR change or comment for the human to submit.",
+)
+
+prefix_rule(
+    pattern = ["glab", "issue", ["create", "note", "comment", "update", "close"]],
+    decision = "forbidden",
+    justification = "Prepare the issue change or comment for the human to submit.",
+)
+
+prefix_rule(
+    pattern = ["glab", ["ci", "pipeline"], "run"],
+    decision = "forbidden",
+    justification = "Pipeline triggers are reserved for the human.",
+)

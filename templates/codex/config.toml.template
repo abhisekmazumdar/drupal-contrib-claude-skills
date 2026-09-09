@@ -1,0 +1,11 @@
+# Project configuration; loaded only after the workspace is trusted.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[features]
+hooks = true
+
+[mcp_servers.drupalorg-cli]
+command = "php"
+# The installer supplies a TOML-escaped string, including its quotes.
+args = [{{DRUPAL_CLI_BIN}}, "mcp:serve"]

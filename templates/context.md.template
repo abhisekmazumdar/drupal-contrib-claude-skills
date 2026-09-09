@@ -1,0 +1,212 @@
+# Drupal contribution workspace
+
+Shared guidance for Claude Code and Codex. Read this file before issue work.
+
+## What this project is
+
+A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `{{DRUPAL_WEBROOT}}/modules/contrib/`.
+
+The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for direction. From there it delegates to `drupal-issue-agent` for review and implementation work, `drupal-e2e-tester` for the dedicated test phase (PHPUnit + Playwright browser e2e), or `drupal-issue-catchup` to sync after time away.
+
+---
+
+## Global Rule — Report Before Acting
+
+Present findings before requesting approval for code changes, dependency changes, commits, or pushes. Reading, fetching, automatic recon (clone/checkout/fork remote), and issue-record maintenance follow their documented procedures without an extra gate. Respect the scope of the user's approval; request a new decision when the next phase exceeds it. Never answer a delegated agent's approval question for the human. Draft public comments for the human to post.
+
+## Runtime conventions
+
+The active client's root instruction file supplies `<skills-root>`: `.claude/skills` for Claude Code or `.agents/skills` for Codex. Resolve this once, alongside the site context, and pass it through all agent handoffs. Shell examples using `<skills-root>` must substitute the concrete path before execution. Discover external skills by their installed `SKILL.md` path; never assume a user-global location.
+
+Procedures use `/skill-name` as notation. In Claude Code invoke `/skill-name`; in Codex invoke `$skill-name` or explicitly load that skill by name. Agent names denote delegated roles, not slash commands. Use the client's native subagent tools for Nora, Wren, Milo, and Sage. Pass the complete context and resume point; relay `[PAUSE — awaiting user decision]` reports to the human. If native custom roles are unavailable but subagents work, pass the full procedure from `.drupal-contrib/agents/<name>.md` to a fresh subagent. If delegation is unavailable, report the missing capability. Never label the implementing agent's checks as independent testing.
+
+Role tool lists in Markdown describe Claude capabilities; Codex uses its native equivalents. A report-only tester may create test artifacts and exercise the site but must not edit module code. These role boundaries are workflow instructions, not a filesystem sandbox guarantee.
+
+If a nested delegation is unavailable (for example Nora cannot spawn Milo at the client's nesting limit), return a `[DELEGATE — <agent-name>]` handoff with the full inputs and resume phase. The main conversation runs that role as a sibling subagent, then resumes the caller with its report. This is a routing request, not user approval; relay any missing approval through the existing `[PAUSE]` protocol first.
+
+Both clients share `issues/`; avoid concurrent writers to the same issue record or module checkout. Use separate worktrees for concurrent code work and serialize record updates. Disclosures name the actual assistant(s) that contributed, including work inherited from the record.
+
+---
+
+## Local environments
+
+{{SITES_TABLE}}
+
+Skills accept an optional site name matching a **Name** above. When you name
+a site ("work on it in the cms dir", "test against umami"), resolve
+`<site>` to that row. Otherwise `<site>` is the row marked Default. Resolve
+`<webroot>`/`<drupal-path>`/DDEV project/site URL from that row — never
+assume there's only one, even when the table above has just one row today.
+Before running any `ddev` command, `cd` into that site's root
+(`<drupal-path>`, or this workspace's root if empty) first — DDEV
+auto-detects its project from the working directory, not a flag.
+
+Always use `ddev drush` and `ddev composer` — never bare `drush` or `composer`.
+
+Run the assistant from the host workspace with DDEV available. Use the selected site's container for PHP tooling and verify the relevant binaries before testing. Do not assume a Claude-specific container addon is installed. A cloud session without access to this DDEV project cannot perform its local tests.
+
+---
+
+## Issue tracking system
+
+Every issue worked on has a directory at `issues/<nid>/`. These directories survive across sessions — they are the long-term memory for contribution work.
+
+```
+issues/
+└── 3456789/
+    ├── README.md         ← persistent record: summary, related issues, work log, human notes
+    ├── history.md        ← archived Work Log sessions older than the 3 most recent (only once it exists)
+    ├── comments/         ← drafted Drupal.org / GitLab comments (markdown files)
+    ├── screenshots/      ← browser screenshots captured during issue work and e2e test runs
+    └── e2e/              ← generated Playwright artifacts from the drupal-e2e-tester phase
+```
+
+The README is the **long-term memory** for each issue. It persists across sessions. All agents read it at the start and write to it at the end. If related issue records exist (e.g. `issues/3001/README.md`), agents read those too. The README only ever holds the 3 most recent Work Log sessions — `issue-record-update` moves anything older to `history.md` so routine reads stay bounded; agents read `history.md` only when genuinely digging for older context, not as a matter of course.
+
+### Key workflow rules
+
+1. **Start every issue session with `/drupal-issue-start <url>`** — it loads the record, fetches live state, and presents a report before any work begins.
+2. After every session, **`/issue-record-update <nid>`** logs what was done (no confirmation prompt — writes directly).
+3. To catch up after time away, use **`/drupal-issue-catchup <nid>`** instead of re-running issue-start.
+4. Screenshots go in `issues/<nid>/screenshots/` via **`/issue-record-screenshot`**, using the active client's connected browser integration or an existing Playwright session.
+5. Drafted comments are saved to `issues/<nid>/comments/` via the **`drupalorg-comment-format`** skill.
+
+---
+
+## Coding standards (PHPCS / PHPCBF)
+
+Each contrib module ships its own `phpcs.xml`. **Always detect and use it** — do not hardcode `--standard=Drupal` alone, as modules like `ai` add `DrupalPractice` too.
+
+The example below uses the default site's webroot. When working against a
+different site, substitute that site's Webroot from the table above.
+
+**Always run via `ddev exec`** — the container PHP version matches CI; host PHP may not.
+
+```bash
+ddev exec php vendor/bin/phpcs --standard={{DRUPAL_WEBROOT}}/modules/contrib/<module>/phpcs.xml <relative-path>
+ddev exec php vendor/bin/phpcbf --standard={{DRUPAL_WEBROOT}}/modules/contrib/<module>/phpcs.xml <relative-path>
+```
+
+Pass paths **relative to the Drupal root** — `ddev exec` runs from `/var/www/html`. Use the **`/drupal-coding-standards`** skill which handles root detection, config discovery, and path conversion automatically.
+
+If a module has no `phpcs.xml`, fall back to `--standard=Drupal --extensions=php,module,inc,install,test,profile,theme,info,engine,yml`.
+
+Walk **up** from the target file toward the project root to find the nearest `phpcs.xml` — submodules (e.g. `ai_agents/modules/ai_agents_views/`) inherit the parent module's config.
+
+---
+
+## Running tests (PHPUnit)
+
+The examples below target the default site (`{{SITE_URL}}`, webroot
+`{{DRUPAL_WEBROOT}}`). Swap in the target site's Site URL and Webroot from
+the table above when testing against a different one — and `cd` into that
+site's root before the `ddev exec` call so DDEV picks the right container.
+
+**Unit tests** — no database needed:
+```bash
+ddev exec phpunit \
+  --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  /var/www/html/web/modules/contrib/<module>/tests/src/Unit
+```
+
+**Kernel and Functional tests** — require database and base URL:
+```bash
+ddev exec bash -c "
+  SIMPLETEST_BASE_URL={{SITE_URL}} \
+  SIMPLETEST_DB=mysql://db:db@db/db \
+  phpunit --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  /var/www/html/web/modules/contrib/<module>/tests/src/Kernel
+"
+```
+
+**Filter to a single test:**
+```bash
+ddev exec bash -c "
+  SIMPLETEST_BASE_URL={{SITE_URL}} \
+  SIMPLETEST_DB=mysql://db:db@db/db \
+  phpunit --bootstrap /var/www/html/web/core/tests/bootstrap.php \
+  --filter testMethodName \
+  /var/www/html/web/modules/contrib/<module>/tests/src
+"
+```
+
+---
+
+## Contribution toolchain
+
+Two CLI tools are required and both are installed:
+
+| Tool | Command | Purpose |
+|---|---|---|
+| drupalorg-cli | `drupalorg` | Issue/MR lifecycle (show, diff, checkout, push) |
+| GitLab CLI | `glab` | Pipeline status, inline threads, MR ops |
+
+**`glab` must always be prefixed with `GITLAB_HOST=git.drupalcode.org`** when targeting the Drupal GitLab instance. It is authenticated — no token setup needed.
+
+`drupalorg-cli` also runs as an MCP server (configured in `.mcp.json` for Claude Code or `.codex/config.toml` for Codex) exposing
+read-only tools like `issue_show`, `mr_list`, `mr_diff`, `mr_status`,
+`gitlab_issue_show`. These work for classic (non-migrated) Drupal.org issues.
+For **migrated** issues (GitLab work items), any tool that resolves a project
+from `nid` alone (`mr_list`, `mr_status`, `mr_files`, `issue_get_fork`,
+`issue_show`) errors or returns empty/garbage data — the classic Drupal.org
+REST lookup can't map a migrated nid to its project. Only `gitlab_issue_show`
+(pass the full work-item URL) works correctly there. Prefer the Bash `drupalorg`
+and `glab` commands documented above for migrated-issue workflows until this is
+fixed upstream.
+
+---
+
+## Issue queue types
+
+Two URL forms are valid inputs to the agent:
+- `https://www.drupal.org/project/<name>/issues/<nid>` — classic Drupal.org queue
+- `https://git.drupalcode.org/project/<name>/-/work_items/<nid>` — migrated GitLab queue
+
+**Detection:** if `drupalorg issue:show <nid>` returns an empty `<issue_id>` and `<title>`, the project has migrated its issue queue to GitLab. Fetch issue body and comments from GitLab instead:
+
+```bash
+# Issue body
+GITLAB_HOST=git.drupalcode.org glab issue view <nid> --repo project/<name>
+
+# All comments (chronological, system notes filtered)
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch_issue_notes.py" project/<name>#<nid>
+```
+
+`drupalorg mr:list`, `mr:diff`, `mr:status`, and `mr:logs` **still work** for both migrated and non-migrated projects — only the issue body/comments differ.
+
+---
+
+## Key contrib modules
+
+| Module | Path | Issue queue |
+|---|---|---|
+| *(add your modules here)* | `{{DRUPAL_WEBROOT}}/modules/contrib/…` | drupal.org |
+
+For a module to be available for git operations (checkout, branch, push), its directory must be a git clone — not just a Composer-extracted directory. Run `/drupal-clone-contrib <module>` if needed.
+
+---
+
+## Skills and agents
+
+Skills live under `<skills-root>`. Shared role procedures are installed in `.drupal-contrib/agents/`; the installer also generates each client's native agent definitions.
+
+### Agents
+- `drupal-issue-agent` — full lifecycle: MR review (Path A) and new issue implementation (Path B)
+- `drupal-e2e-tester` — dedicated test phase: PHPUnit via ddev + Playwright browser e2e; report-only, never edits code
+- `drupal-issue-catchup` — sync after time away: fetches new comments/threads, updates record, briefs human
+- `drupal-repo-setup` — sub-agent for git/module setup: clone, remote, checkout, worktree
+
+### Entry point skills
+- `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report, wait for direction
+- `issue-record-update` — append timestamped session log to `issues/<nid>/README.md` (writes directly, no confirmation)
+- `issue-record-screenshot` — capture a browser screenshot into `issues/<nid>/screenshots/` using the connected browser session
+- `drupalorg-comment-format` — draft and save comments to `issues/<nid>/comments/` (HTML for Drupal.org, GFM for GitLab)
+
+### Other key skills
+- `drupal-issue-reroll` — rebase a branch on latest upstream, run checks, force-push
+- `drupal-gitlab-inline-comments` — fetch MR inline threads and issue notes
+- `drupal-coding-standards` — PHPCS/PHPCBF via ddev with automatic module config detection
+- `drupalorg-cli` — reference stub; run `drupalorg skill:get drupalorg-cli` before using any `drupalorg` command; pulled from `mglaman/drupalorg-cli` at setup time (not part of this package — update with `npx skills update`)
+- `ddev-expert` — ddev environment management, troubleshooting, container commands
+- `drupal-automated-testing` — writing/modifying PHPUnit tests: test type selection, attributes, DDEV env vars
+- `playwright-cli` — browser automation for the e2e test phase; pulled from `microsoft/playwright-cli` at setup time (not part of this package — update with `npx skills update`)

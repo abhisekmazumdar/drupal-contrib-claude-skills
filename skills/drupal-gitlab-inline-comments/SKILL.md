@@ -8,6 +8,10 @@ description: >
 
 Two scripts live here; pick by what the URL points at:
 
+Resolve scripts relative to this installed `SKILL.md`. In workflow examples,
+`<skills-root>` is the parent of this skill directory; it is supplied by the
+active client's workspace instructions.
+
 | Input | Script | Endpoint | Output |
 |---|---|---|---|
 | `…/-/merge_requests/<iid>` | `fetch.py` | `/discussions` | Inline diff threads (grouped by file/line, open vs resolved) plus general MR comments |
@@ -21,7 +25,7 @@ GitLab REST API directly so the output is stable and parseable.
 ## MR inline review comments
 
 ```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch.py" \
   https://git.drupalcode.org/project/ai/-/merge_requests/899
 ```
 
@@ -36,7 +40,7 @@ Also accepts the shorthand `project/<name>#<nid>` (e.g. `project/ai#3577170`)
 in place of a full URL.
 
 ```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py \
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch_issue_notes.py" \
   https://git.drupalcode.org/project/ai/-/work_items/3577170
 ```
 

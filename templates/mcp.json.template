@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "drupalorg-cli": {
+      "command": "php",
+      "args": ["{{DRUPAL_CLI_BIN}}", "mcp:serve"]
+    }
+  }
+}

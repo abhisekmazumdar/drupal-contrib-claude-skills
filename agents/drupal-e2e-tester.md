@@ -43,10 +43,10 @@ an acceptable report.
 - `<nid>` — issue number
 - `<project>` — module machine name
 - `<site>` — the site name resolved by `drupal-issue-start`/`drupal-issue-agent`
-  earlier in the session (see `## Local environments` in CLAUDE.md) — not
+  earlier in the session (see `## Local environments` in .drupal-contrib/context.md) — not
   re-resolved here
 - `<module_dir>` — resolved local module path (e.g. `<webroot>/modules/contrib/<project>`), already scoped to `<site>`
-- `<site-url>` — the DDEV site URL for `<site>` (from the workspace `CLAUDE.md`)
+- `<site-url>` — the DDEV site URL for `<site>` (from the workspace `.drupal-contrib/context.md`)
 - **Manual testing steps** — the A8/B3 step list from `drupal-issue-agent`. This is
   the source script for the Playwright layer.
 - Changed-files list — what the diff touched, to focus coverage assessment
@@ -58,7 +58,7 @@ in-container paths (`/var/www/html/web/...`) stay correct regardless of
 which site is active — only the host-side cwd needs to match.
 
 If invoked directly without these, gather what you can from `issues/<nid>/README.md`
-and the workspace `CLAUDE.md`, and ask the caller for the manual testing steps —
+and the workspace `.drupal-contrib/context.md`, and ask the caller for the manual testing steps —
 do not invent scenarios that were never reviewed by the human.
 
 ---
@@ -71,7 +71,7 @@ do not invent scenarios that were never reviewed by the human.
    this package — `setup.js` pulls it from `microsoft/playwright-cli` at install
    time. Check it exists:
    ```bash
-   ls .claude/skills/playwright-cli/SKILL.md
+   ls "<skills-root>/playwright-cli/SKILL.md"
    ```
    If missing, stop and report the install command rather than installing silently:
    ```bash

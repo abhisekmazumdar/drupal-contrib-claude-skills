@@ -16,8 +16,19 @@ jobs:
         with:
           node-version: 18
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Syntax check
-        run: node --check bin/setup.js
+        run: |
+          node --check bin/setup.js
+          node --check bin/install.js
+          node --check bin/external-skills.js
+          bash -n templates/hooks/block-dangerous-git.sh
+
+      - name: Installer, configuration, and command guard tests
+        run: node --test tests/*.test.js
 
       - name: Validate skill and agent frontmatter
         run: |
@@ -67,6 +78,9 @@ jobs:
             return found;
           }
           let failed = false;
+          for (const dir of ['skills', 'agents']) {
+            if (scanDir(dir).size) { console.error('Template variables are forbidden in ' + dir); failed = true; }
+          }
           for (const v of new Set([...scanDir('skills'), ...scanDir('agents'), ...scanDir('templates')])) {
             if (!knownVars.has(v)) { console.error('Unhandled template variable: {{' + v + '}}'); failed = true; }
           }

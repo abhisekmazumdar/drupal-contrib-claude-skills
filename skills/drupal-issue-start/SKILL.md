@@ -11,14 +11,19 @@ argument-hint: <issue-url>
 
 **Usage:** `/drupal-issue-start <url>`
 
+In Codex use `$drupal-issue-start <url>`. Read `.drupal-contrib/context.md`
+before Phase 0. Resolve `<skills-root>` for the active client and pass it
+unchanged with the site context. Explicitly delegate the roles requested below
+using native subagents; see the shared runtime conventions for fallback handling.
+
 ---
 
 ## Non-negotiable rules
 
 - The issue record at `issues/<nid>/README.md` is **always** read (and created if absent) **before** any other action.
 - The structured report is **always** shown to the human **before** any work is proposed.
-- **Work never begins until the human gives explicit direction.**
-- After any session involving code or reviews, remind the human to run `/issue-record-update <nid>`.
+- Recon and issue-record maintenance run as documented below. Code and dependency changes require the human's direction and scoped approval.
+- After a session involving code or reviews, invoke `issue-record-update` automatically as described in Phase 6.
 
 ---
 
@@ -37,7 +42,7 @@ If the URL cannot be parsed, ask the user for the issue number and project name 
 
 ## Phase 0.5 — Resolve the site
 
-Read the `## Local environments` table from the installed `CLAUDE.md`.
+Read the `## Local environments` table from the installed `.drupal-contrib/context.md`.
 
 **If it lists exactly one site:** `<site>` is implicitly that one. Skip the
 matching below — there's nothing to disambiguate.
@@ -90,7 +95,7 @@ drupalorg issue:get-fork <nid> --format=llm
 For **migrated** issues (`is_migrated=true`):
 ```bash
 GITLAB_HOST=git.drupalcode.org glab issue view <nid> --repo project/<project>
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py project/<project>#<nid>
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch_issue_notes.py" project/<project>#<nid>
 drupalorg mr:list <nid> --format=llm
 drupalorg issue:get-fork <nid> --format=llm
 ```
@@ -125,7 +130,7 @@ Also note any **related issues** mentioned in comments or the issue body (e.g. "
 relationships the live comment thread doesn't mention (e.g. another issue's
 own notes already reference this one):
 ```bash
-python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
+python3 "<skills-root>/drupal-related-issues/find_related_issues.py" <nid>
 ```
 Note every referencing issue and the matched line — these feed into Phase 3
 and Phase 4 alongside the comment-derived related issues.
@@ -175,7 +180,7 @@ trusting the rest of this report goes here, unfiltered.
 
 **Now fetch the full inline reviewer threads — for this one picked MR only:**
 ```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch.py" \
   https://git.drupalcode.org/project/<project>/-/merge_requests/<picked-mr-iid>
 GITLAB_HOST=git.drupalcode.org glab mr note list <picked-mr-iid> --repo project/<project>
 ```

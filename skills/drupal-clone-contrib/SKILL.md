@@ -23,7 +23,7 @@ into the correct local directory for contribution work.
 /drupal-clone-contrib eca_starterkit --branch=1.0.x --type=recipe
 ```
 
-**Path references:** use the `Docroot` path from CLAUDE.md as `<webroot>` (e.g. `web` or `drupal/web`) and the Drupal project prefix as `<drupal-path>` (e.g. `` or `drupal/`).
+**Path references:** use the `Docroot` path from .drupal-contrib/context.md as `<webroot>` (e.g. `web` or `drupal/web`) and the Drupal project prefix as `<drupal-path>` (e.g. `` or `drupal/`).
 
 ---
 

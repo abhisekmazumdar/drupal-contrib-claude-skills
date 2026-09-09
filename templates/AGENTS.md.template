@@ -1,0 +1,17 @@
+# Drupal contribution workspace (Codex)
+
+Read `.drupal-contrib/context.md` in full before contribution work. It contains the shared site table, workflow, and issue-record rules.
+
+Resolve `<skills-root>` to `.agents/skills`. Start with `$drupal-issue-start <url>`.
+Explicitly delegate the roles requested by that workflow, using the installed
+`.codex/agents/*.toml` definitions. Keep the complete sequential procedure and
+site/issue context in each handoff; relay agent pauses to the human.
+
+Use native Codex tools instead of Claude tool names. If a custom role cannot be
+selected, give a fresh subagent the corresponding full procedure from
+`.drupal-contrib/agents/<name>.md`. If subagents are unavailable, report the
+limitation; independent testing must not silently become self-verification.
+
+Trust the project configuration and review/trust the installed hook with `/hooks`
+before relying on its Git protection. Resolve `.drupal-contrib/proposals/`
+notices first. Do not change global configuration or trust settings automatically.

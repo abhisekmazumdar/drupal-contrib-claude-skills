@@ -2,4 +2,7 @@
 # (e.g. writing-for-agents, principle-* — see CLAUDE.md). Never shipped by
 # bin/setup.js, which only copies from skills/ and agents/ at the repo root.
 .claude/
+.codex/
+.agents/
+.drupal-contrib/
 skills-lock.json

@@ -1,13 +1,13 @@
 ---
 name: issue-record-screenshot
 description: >
-  Capture a screenshot of the current browser state and save it to issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the current state", "take a screenshot for the issue record", or when documenting a visual state during issue work. Requires the Claude-in-Chrome browser extension to be connected.
+  Capture a screenshot of the current browser state and save it to issues/<nid>/screenshots/. Use when the user says "screenshot this", "capture the current state", "take a screenshot for the issue record", or when documenting a visual state during issue work. Requires a connected browser tool or Playwright session.
 argument-hint: <nid> [<label>]
 ---
 
 # /issue-record-screenshot
 
-**Purpose:** Capture a timestamped screenshot into the issue's screenshots directory using Claude-in-Chrome.
+**Purpose:** Capture a timestamped screenshot into the issue's screenshots directory using the active client's connected browser tooling.
 
 **Usage:** `/issue-record-screenshot <nid> [<label>]`
 
@@ -36,19 +36,19 @@ Format: `YYYY-MM-DD-HHmmss-<label>.png`
 
 ## Step 3 — Check browser connection
 
-Call `mcp__claude-in-chrome__tabs_context_mcp` to confirm a browser tab is connected.
+Select the available integration without inventing tool names:
 
-If no tab is available, tell the user: "No browser session is active. Open Chrome with the Claude-in-Chrome extension enabled, then run this skill again." Stop here.
+- Claude Code with Claude-in-Chrome: inspect the connected tabs using that integration.
+- Codex with browser/computer tools: load their instructions and inspect connected tabs.
+- Either client with an existing Playwright CLI session: load the installed `playwright-cli` skill and inspect that session.
+
+Use the tab/session the user identified. A new Playwright browser does not inherit the user's open tabs or authentication. If the requested session is unavailable, explain the missing connection and stop instead of capturing a different page.
 
 ---
 
 ## Step 4 — Take the screenshot
 
-Use `mcp__claude-in-chrome__computer` with `action: screenshot`. It returns base64 image data. Save it with:
-
-```bash
-echo "<base64_data>" | base64 -d > issues/<nid>/screenshots/<filename>
-```
+Use the selected integration's documented screenshot operation. Save or export the resulting image to `issues/<nid>/screenshots/<filename>` using its supported file API. If it cannot export a file, report that limitation; do not claim a saved screenshot from an inline preview. Verify that the destination file exists before confirming success.
 
 ---
 

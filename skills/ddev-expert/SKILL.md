@@ -127,15 +127,10 @@ ddev drush cr
 ### Common Issues
 
 **`ddev composer create-project` fails with "not allowed to be present":**
-```bash
-# This happens when extra directories exist (like .claude/, .git/, etc.)
-# Solution: Move them out temporarily
-mv .claude /tmp/claude-backup
-mv .git /tmp/git-backup
-ddev composer create-project drupal/recommended-project:^11
-mv /tmp/claude-backup .claude
-mv /tmp/git-backup .git
-```
+This can happen when assistant configuration or Git metadata already exists
+in the destination (`.claude/`, `.agents/`, `.codex/`, `.drupal-contrib/`, `.git/`).
+Create the Drupal project in an empty directory and run the toolkit installer
+afterward. Do not move existing configuration into fixed shared `/tmp` paths.
 
 **Port conflicts:**
 ```bash

@@ -31,7 +31,9 @@ Drupal.org projects fall into two categories. Always determine which before form
 - Cross-references: `#NID` for issues, `!NID` for MRs (GitLab syntax)
 
 The AI disclosure line still applies for migrated issues, but uses `_` for italic (Markdown):
-`_AI assisted (Claude Code): [what it did]. All commits and decisions are mine._`
+`_AI assisted ([actual assistant(s)]): [what each did]. All commits and decisions are mine._`
+
+Name Claude Code, Codex, or both according to the work actually performed, including prior work recorded for this issue. Do not substitute the current client's name for another assistant's contribution.
 
 ---
 

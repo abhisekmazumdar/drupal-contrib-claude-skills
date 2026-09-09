@@ -68,7 +68,7 @@ Extract from the record:
   once the workspace has 2+ sites configured). Keep using that same site for
   the rest of this session — don't re-prompt or re-resolve it — unless the
   user's message explicitly asks to switch. When the line is absent, treat
-  it as the CLAUDE.md default site.
+  it as the .drupal-contrib/context.md default site.
 - **Related issues** from the `## Related Issues` section — if any have their own record at `issues/<related-nid>/README.md`, read those too and note any context relevant to the current issue
 
 The README only carries the 3 most recent Work Log sessions —
@@ -92,13 +92,13 @@ drupalorg issue:show <nid> --with-comments --format=llm
 
 For migrated (GitLab work items):
 ```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py \
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch_issue_notes.py" \
   project/<project>#<nid>
 ```
 
 **b) Inline MR reviewer threads** (if an MR exists):
 ```bash
-python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py \
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch.py" \
   https://git.drupalcode.org/project/<project>/-/merge_requests/<mr-iid>
 ```
 
@@ -123,7 +123,7 @@ GITLAB_HOST=git.drupalcode.org glab ci status \
 **d) Backlink scan** — other local issue records that mention this one but
 that this issue's own record doesn't yet list:
 ```bash
-python3 .claude/skills/drupal-related-issues/find_related_issues.py <nid>
+python3 "<skills-root>/drupal-related-issues/find_related_issues.py" <nid>
 ```
 
 ---

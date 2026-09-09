@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>drupal-claude-skills · Documentation</title>
-<meta name="description" content="Full reference for the drupal-claude-skills package: skills, agents, conventions, and architecture for Drupal contribution work with Claude Code.">
+<meta name="description" content="Full reference for the drupal-claude-skills package: skills, agents, conventions, and architecture for Drupal contribution work with Claude Code and Codex.">
 <style>
   :root {
     --bg: #ffffff;
@@ -208,6 +208,7 @@
     <div class="section-title">Reference</div>
     <ul>
       <li><a href="#repo-layout">Repository layout</a></li>
+      <li><a href="#clients">Claude Code and Codex</a></li>
       <li><a href="#skills">Skills</a></li>
       <li><a href="#agents">Agents</a></li>
       <li><a href="#external-skills">External skills</a></li>
@@ -226,15 +227,15 @@
 
   <main id="top">
     <h1>drupal-claude-skills</h1>
-    <p class="subtitle">Claude Code skills and agents for Drupal open source contribution. Full reference documentation.</p>
+    <p class="subtitle">A shared Claude Code and Codex toolkit for Drupal open source contribution.</p>
 
     <section id="overview">
       <h2>Overview</h2>
       <p>
-        This package installs a set of Claude Code <strong>skills</strong> and <strong>agents</strong> into a Drupal
-        workspace so Claude can pick up a Drupal.org or GitLab work-item URL and carry it through the full
+        This package installs shared <strong>skills</strong> and client-specific <strong>agents</strong> into a Drupal
+        workspace so either assistant can pick up a Drupal.org or GitLab work-item URL and carry it through the full
         contribution lifecycle: review, implementation, testing, and issue-record keeping, with explicit
-        approval gates at every mutating step.
+        scoped approvals for code, dependency, and contribution changes.
       </p>
       <p>
         The package itself is not a Drupal project. There's no PHP, no Composer, no web server here. Its
@@ -249,7 +250,8 @@
       <h3>Requirements</h3>
       <ul>
         <li><a href="https://nodejs.org">Node.js</a> 18 or later (for <code>npx</code>)</li>
-        <li><a href="https://claude.ai/code">Claude Code</a> installed and authenticated</li>
+        <li>Claude Code, Codex CLI/IDE, or both, installed and authenticated</li>
+        <li>Python 3 and PHP on the host for the command guard and MCP server</li>
         <li>A running DDEV Drupal project</li>
         <li><a href="https://github.com/mglaman/drupalorg-cli"><code>drupalorg-cli</code></a> on <code>PATH</code></li>
         <li><a href="https://gitlab.com/gitlab-org/cli">GitLab CLI</a> (<code>glab</code>), authenticated against <code>git.drupalcode.org</code></li>
@@ -278,18 +280,18 @@ MariaDB version [11.8]:</code></pre>
         <li>The Drupal project location is asked <strong>first</strong> so the DDEV project name can be auto-detected from <code>.ddev/config.yaml</code>.</li>
         <li>If Drupal is at the workspace root, the location question is skipped entirely.</li>
         <li>Press Enter to accept any default, or type a custom value.</li>
-        <li>Answers are saved to <code>.claude/claude-skills.lock.json</code>. Re-runs pre-fill every question, so updates are non-interactive.</li>
+        <li>Answers are saved to <code>.drupal-contrib/install.json</code>. Re-runs reuse recorded answers; <code>--yes</code> accepts defaults for new sites.</li>
       </ul>
 
       <h3>What happens</h3>
       <ol>
         <li><code>.claude/skills/</code> is created (or updated) with all package skills</li>
         <li><code>.claude/agents/</code> is created (or updated) with all agents; external skills such as <code>playwright-cli</code> and <code>drupalorg-cli</code> (see <a href="#external-skills">External skills</a> for the full list) are pulled from their upstream repos via <code>npx skills</code> if not already installed</li>
-        <li><code>.claude/settings.json</code> is written with pre-approved permissions and MCP server definitions</li>
-        <li><code>CLAUDE.md</code> is generated at the workspace root with your project details substituted in</li>
-        <li><code>.claude/claude-skills.lock.json</code> is written with your answers for future re-runs</li>
+        <li>Client configuration is prepared: Claude permissions/hooks in <code>.claude/settings.json</code> and MCP in <code>.mcp.json</code>; Codex configuration in <code>.codex/</code></li>
+        <li><code>CLAUDE.md</code> and/or <code>AGENTS.md</code> point to shared project details in <code>.drupal-contrib/context.md</code></li>
+        <li><code>.drupal-contrib/install.json</code> is written with your answers for future re-runs</li>
       </ol>
-      <p>Re-running is always safe. Files only in the destination (your own custom skills) are never touched. All package files update to the latest version.</p>
+      <p>Re-runs update unchanged package-owned files. Custom files, user edits, and symlinks are preserved. Proposed replacements appear under <code>.drupal-contrib/proposals/</code> for manual integration.</p>
 
       <h3>Updating</h3>
       <p><strong>Installed via <code>npx github:...</code>:</strong> just re-run the same command. <code>npx</code> fetches the current <code>main</code> branch each time.</p>
@@ -320,7 +322,7 @@ npx /path/to/drupal-claude-skills</code></pre>
 
     <section id="after-install">
       <h2>After installation</h2>
-      <p>Open the workspace in Claude Code and paste a Drupal.org issue URL:</p>
+      <p>Open the workspace in either client and paste a Drupal.org issue URL (or use <code>/drupal-issue-start</code> in Claude Code and <code>$drupal-issue-start</code> in Codex):</p>
       <pre><code>https://www.drupal.org/project/ai/issues/3499692</code></pre>
       <p>Or run the entry-point skill directly:</p>
       <pre><code>/drupal-issue-start https://www.drupal.org/project/ai/issues/3499692</code></pre>
@@ -358,22 +360,62 @@ npx /path/to/drupal-claude-skills</code></pre>
   bin/
     setup.js              # CLI entry point, run via npx github:abhisekmazumdar/drupal-contrib-claude-skills
   skills/                 # skill directories, each contains a SKILL.md, copied as-is
-  agents/                 # agent markdown files, copied as-is
+  agents/                 # shared role procedures and Claude metadata
   templates/
-    CLAUDE.md.template      # rendered at install time with {{VAR}} substitution
-    settings.json.template  # rendered at install time with {{VAR}} substitution
-    hooks/
-      block-dangerous-git.sh  # copied verbatim to .claude/hooks/, chmod +x'd
+    context.md.template    # shared site/workflow guidance with {{VAR}} substitution
+    CLAUDE.md.template     # Claude entry instructions
+    AGENTS.md.template     # Codex entry instructions
+    settings.json.template # Claude permissions and hooks
+    mcp.json.template      # Claude project MCP server
+    codex/                 # Codex config, hooks, and rules
+    hooks/                 # shared shell wrapper and Python command guard
+  tests/                   # Node built-in installer and policy tests
   docs/                   # this documentation site
   package.json
   README.md
   CLAUDE.md               # guidance for Claude Code when working on this repo</code></pre>
       <p>
         <code>{{VAR}}</code> placeholders are substituted at install time <strong>only</strong> for files in
-        <code>templates/</code>. Skills and agents are copied verbatim. They read project paths
-        (<code>&lt;webroot&gt;</code>, <code>&lt;drupal-path&gt;</code>) from the installed <code>CLAUDE.md</code>
+        <code>templates/</code>. Skills are copied verbatim; Codex agent TOML is generated from the same complete Markdown procedures. They read project paths
+        (<code>&lt;webroot&gt;</code>, <code>&lt;drupal-path&gt;</code>) from the installed <code>.drupal-contrib/context.md</code>
         context at runtime instead.
       </p>
+    </section>
+
+    <section id="clients">
+      <h2>Claude Code and Codex</h2>
+      <p>The Drupal procedures and issue records have one source. The installer generates each client's entry instructions, agent format, and configuration.</p>
+      <pre><code>npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target codex
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target claude-code
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run</code></pre>
+      <p>First installs default to Claude Code. Later runs without a target update all recorded targets. Use <code>--yes</code> to accept detected defaults and <code>--skip-external</code> to omit upstream downloads. Preview performs no writes or downloads. No target is uninstalled implicitly.</p>
+      <table>
+        <tr><th>Capability</th><th>Claude Code</th><th>Codex CLI/IDE</th></tr>
+        <tr><td>Workspace entry</td><td><code>CLAUDE.md</code></td><td><code>AGENTS.md</code></td></tr>
+        <tr><td>Skills</td><td><code>.claude/skills/</code>, slash invocation</td><td><code>.agents/skills/</code>, dollar invocation</td></tr>
+        <tr><td>Agents</td><td><code>.claude/agents/*.md</code></td><td><code>.codex/agents/*.toml</code></td></tr>
+        <tr><td>MCP server</td><td><code>.mcp.json</code></td><td><code>.codex/config.toml</code></td></tr>
+        <tr><td>Command controls</td><td><code>settings.json</code> permissions and hook</td><td><code>config.toml</code>, <code>hooks.json</code>, and rules</td></tr>
+      </table>
+      <h3>Shared content and safe migration</h3>
+      <p><code>.drupal-contrib/context.md</code> contains the site table and runtime conventions. Skills resolve <code>&lt;skills-root&gt;</code> from the active client and pass it with the selected site. Complete agent procedures also live under <code>.drupal-contrib/agents/</code>; sequential phases remain together. Codex uses native tools and role definitions rather than Claude frontmatter tool names. If nested delegation is unavailable, the main conversation runs the requested role as a sibling agent and resumes its caller. If subagents cannot run, independent verification is reported unavailable.</p>
+      <p><code>.drupal-contrib/install.json</code> stores a versioned configuration and hashes of installed files. The legacy <code>.claude/claude-skills.lock.json</code> is retained and its answers are imported. Existing custom settings, edited package files, and symlinks are never overwritten. Proposals go under <code>.drupal-contrib/proposals/</code>, outside either client's discovery paths. Review and merge them before starting issue work. Re-run setup after accepting an exact proposal to record ownership. A manually merged file continues to be preserved on future updates.</p>
+      <p>External skills are downloaded into temporary staging directories, grouped by upstream repository for each client, then copied through the same preservation checks. Their source lock entries are retained for <code>npx skills update</code>; merge a proposed <code>skills-lock.json</code> first if needed. Upstream explicit-only skills receive missing Codex invocation-policy metadata. Existing metadata is preserved and conflicts are reported. Re-run setup after upstream updates; unsupported upstream tools remain a reported capability gap.</p>
+      <h3>Activation and permission differences</h3>
+      <p>Approve Claude's project MCP server interactively and inspect it with <code>/mcp</code>. In Codex, trust the workspace configuration and inspect/review/trust the hook through <code>/hooks</code>. Hooks awaiting trust are skipped. The installer never changes global trust or configuration.</p>
+      <p>The shared shell wrapper calls <code>check-command.py</code>, which requires Python 3. It recognizes destructive Git operations including <code>git -C</code>, combined flags, compound commands, and explicit shell wrappers. Bare force-pushes and the toolkit's reserved GitLab writes are blocked; <code>--force-with-lease</code> remains available with approval. Command arguments are not echoed into error messages.</p>
+      <p>Codex rules govern commands requesting execution outside the sandbox. Its current <code>PreToolUse</code> hook can deny a call but cannot force an approval prompt. Workflow approvals therefore remain instructions, supplemented by native permissions and rules. Hooks do not inspect arbitrary script contents, aliases, dynamic shell expansion, or later interactive stdin. They are a practical guardrail, not a complete enforcement boundary.</p>
+      <p>Keep Nora's implementation separate from Milo's report-only testing. Both may need to write local artifacts or exercise DDEV; a report-only role does not imply a completely read-only operating-system sandbox. Both clients share <code>issues/</code>; serialize record updates and use separate worktrees for concurrent code work. AI declarations name whichever assistants actually contributed.</p>
+      <h3>Compatibility and validation</h3>
+      <p>Target local macOS/Linux or WSL sessions with DDEV access. Native Windows and hosted cloud DDEV access are not validated. Codex must support repository skills, standalone custom agents, and trusted PreToolUse hooks. Local rule/configuration checks used Codex CLI 0.153.4; Claude Code 2.1.236 was available during development. No live Drupal issue lifecycle has been claimed as tested.</p>
+      <p>Automated tests cover all targets, repeated installs, legacy and multi-site configuration, user-edited files, symlinks, offline and grouped external installs, JSON/TOML generation, and command-guard decisions. Browser screenshots require the requested connected session: a new Playwright browser does not inherit the user's open tab or login.</p>
+      <p>Before a release, exercise an issue in each client: load context, recon, review, relay an approval, delegate tests, save screenshots, and resume the record in the other client. Confirm hook trust and MCP connectivity on the actual host.</p>
+      <p>Runtime references: <a href="https://learn.chatgpt.com/docs/build-skills">Codex skills</a>,
+        <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents">custom agents</a>,
+        <a href="https://learn.chatgpt.com/docs/hooks">hooks</a>,
+        <a href="https://learn.chatgpt.com/docs/agent-configuration/rules">rules</a>, and
+        <a href="https://code.claude.com/docs/en/mcp">Claude project MCP configuration</a>.</p>
     </section>
 
     <section id="skills">
@@ -387,7 +429,7 @@ npx /path/to/drupal-claude-skills</code></pre>
         <tr><td><code>drupal-issue-reroll</code></td><td>Rebases (rerolls) an issue branch on the latest upstream branch, runs PHPCS/PHPStan, and pushes the result. <span class="pill">no auto-invoke</span></td></tr>
         <tr><td><code>drupal-related-issues</code></td><td>Scans the local <code>issues/</code> directory for backlinks to a given issue number that its own comment thread wouldn't surface.</td></tr>
         <tr><td><code>issue-record-update</code></td><td>Appends a timestamped session log entry to <code>issues/&lt;nid&gt;/README.md</code>. Invoked automatically at the end of any session that did something.</td></tr>
-        <tr><td><code>issue-record-screenshot</code></td><td>Captures a browser screenshot into <code>issues/&lt;nid&gt;/screenshots/</code> via Claude-in-Chrome.</td></tr>
+        <tr><td><code>issue-record-screenshot</code></td><td>Captures a browser screenshot into <code>issues/&lt;nid&gt;/screenshots/</code> using the active client’s connected browser or an existing Playwright session.</td></tr>
       </table>
 
       <h3>Drupal.org &amp; GitLab</h3>
@@ -516,7 +558,7 @@ npx /path/to/drupal-claude-skills</code></pre>
       <p>
         A workspace can hold more than one Drupal install (e.g. <code>drupal/</code>, <code>cms/</code>, an umami
         demo). <code>bin/setup.js</code> detects every top-level Drupal root, configures each as a named
-        <strong>site</strong>, and marks one <strong>default</strong>. This is rendered into <code>CLAUDE.md</code>'s
+        <strong>site</strong>, and marks one <strong>default</strong>. This is rendered into <code>.drupal-contrib/context.md</code>'s
         <code>## Local environments</code> table. The lockfile stores <code>{ sites: {...}, defaultSite }</code>;
         older single-site lockfiles migrate automatically on the next run.
       </p>
@@ -570,8 +612,8 @@ npx /path/to/drupal-claude-skills</code></pre>
       </p>
       <ul>
         <li><strong>Nothing reaches Drupal.org without a human reading it first.</strong>
-          Every code edit, git operation, and Drupal.org post sits behind an
-          explicit <code>[PAUSE]</code> the agent cannot skip. See
+          Code/dependency changes, staging, commits, and pushes require scoped approval.
+          Recon and issue-record writes are automatic exceptions. Public posts are drafted for the human. See
           <code>drupal-issue-agent</code>'s approval gates above.</li>
         <li><strong>AI involvement is disclosed, every time.</strong>
           <code>drupal-gitlab</code> appends an <code>AI-Generated:</code> line to
@@ -601,8 +643,9 @@ npx /path/to/drupal-claude-skills</code></pre>
           human to report it privately to the Drupal Security Team instead.</li>
       </ul>
       <p>
-        None of this is enforced by the platform. It's enforced by the
-        prompts in this repo, which means it holds only as long as the human
+        The contribution responsibilities are expressed in prompts. Client permissions and
+        trusted hooks additionally restrict supported commands, but are not a complete
+        security boundary. The workflow still depends on the human
         in the loop actually reads each <code>[PAUSE]</code> report and
         approves deliberately rather than reflexively. If you're extending
         this toolkit, keep new automation behind the same gates. See
@@ -632,7 +675,7 @@ npx /path/to/drupal-claude-skills</code></pre>
     <section id="git-guardrail">
       <h2>Git guardrail hook</h2>
       <p>
-        <code>templates/settings.json.template</code> wires a <code>PreToolUse</code> hook
+        Both client adapters register a <code>PreToolUse</code> hook
         (<code>templates/hooks/block-dangerous-git.sh</code>) that hard-blocks destructive git commands regardless
         of the permissions <code>allow</code> list:
       </p>
@@ -647,10 +690,10 @@ npx /path/to/drupal-claude-skills</code></pre>
         <code>git-guardrails-claude-code</code>.
       </p>
       <div class="note">
-        <strong><code>git push</code> (including <code>--force-with-lease</code>) is deliberately not blocked.</strong>
+        <strong>Normal <code>git push</code> and <code>--force-with-lease</code> remain available; bare <code>--force</code> is blocked.</strong>
         <code>drupal-issue-reroll</code> force-pushes rerolled branches to the user's own issue fork as a normal,
-        expected step, already safe-guarded by <code>--force-with-lease</code> and gated behind the <code>ask</code>
-        permission tier.
+        expected step, guarded by <code>--force-with-lease</code> and scoped approval.
+        See client-specific permission limits above.
       </div>
     </section>
 
@@ -676,9 +719,10 @@ npx /path/to/drupal-claude-skills</code></pre>
 
     <section id="dev">
       <h2>Developing this repo</h2>
-      <p>No build step, no test suite. CI runs these checks directly against the repo:</p>
+      <p>No build step or npm dependencies. CI runs Node built-in tests (Python 3.11+ validates TOML), frontmatter checks, and template checks:</p>
       <pre><code># Syntax-check the setup script
 node --check bin/setup.js
+node --test tests/*.test.js
 
 # {{VAR}} placeholders may only appear in templates/, from the known set
 # (DDEV_PROJECT, SITE_URL, PHP_VERSION, MARIADB_VERSION, DRUPAL_PATH,
@@ -690,7 +734,7 @@ node -e "JSON.parse(require('fs').readFileSync('templates/settings.json.template
       <p>To test <code>bin/setup.js</code> end-to-end against a real workspace:</p>
       <pre><code>cd /path/to/drupal-workspace
 npx /path/to/this/repo</code></pre>
-      <p>Then verify: no <code>{{VAR}}</code> left in installed skills/agents, the lockfile was written, and MCP servers appear in <code>.claude/settings.json</code>. Re-running is non-interactive once the lockfile exists.</p>
+      <p>Then verify: no <code>{{VAR}}</code> left in installed skills/agents, the lockfile was written, and MCP servers appear in <code>.mcp.json</code> (Claude Code) or <code>.codex/config.toml</code> (Codex). Re-running is non-interactive once the lockfile exists.</p>
       <p>Full contribution and architecture guidance for working on this repo itself lives in
         <a href="https://github.com/abhisekmazumdar/drupal-contrib-claude-skills/blob/main/CLAUDE.md">CLAUDE.md</a>.</p>
     </section>

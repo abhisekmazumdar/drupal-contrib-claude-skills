@@ -2,92 +2,102 @@
 
 [![CI](https://github.com/abhisekmazumdar/drupal-contrib-claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/abhisekmazumdar/drupal-contrib-claude-skills/actions/workflows/ci.yml)
 
-Claude Code skills and agents for Drupal open source contribution. Run once from your workspace root to install everything you need to start working on Drupal.org issues with Claude Code.
+A shared Drupal contribution toolkit for Claude Code and Codex. Install it into your Drupal workspace to investigate issues, review merge requests, implement approved changes, run independent tests, and keep issue records across sessions.
 
-📖 **[Full documentation](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/)** covers every skill and agent in depth, the review/approval workflow, multi-site support, and repo conventions. This README covers the basics: install, what you get, and how to use it.
+[Full documentation](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/) covers the skills, agents, multi-site workflow, and [client compatibility](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#clients).
 
-This toolkit is built to comply with [Drupal.org's policy on the use of AI when contributing to Drupal](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal). See [Drupal.org AI contribution policy](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#ai-policy) in the docs for how each requirement is enforced. Nothing here removes your responsibility as the human contributor. You still review, approve, and stay accountable for every submission.
-
-## What gets installed
-
-- **Skills** in `.claude/skills/` covering DDEV, PHPCS/PHPCBF, PHPUnit, GitLab MR workflow, drupalorg-cli, and more
-- **Agents** in `.claude/agents/`. Give the issue agent a Drupal.org or GitLab work-item URL and it handles the full issue lifecycle end-to-end
-- **CLAUDE.md** at your workspace root, pre-filled with your DDEV project name, site URL, stack details, and correct module paths
-- **`.claude/settings.json`**, pre-configured Claude Code permissions and MCP server definitions for drupalorg-cli and GitLab
-- **`.claude/claude-skills.lock.json`**, records your answers so re-runs are non-interactive
+The workflows support [Drupal.org's AI contribution policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal). You remain responsible for reviewing submissions, disclosing the actual assistants involved, and following up with maintainers.
 
 ## Requirements
 
-- [Node.js](https://nodejs.org) 18 or later (for `npx`)
-- [Claude Code](https://claude.ai/code) installed and authenticated
-- A running DDEV Drupal project
-- [`drupalorg-cli`](https://github.com/mglaman/drupalorg-cli) (`drupalorg`) on `PATH`
-- [GitLab CLI](https://gitlab.com/gitlab-org/cli) (`glab`), authenticated against `git.drupalcode.org`
+- Node.js 18+ and Python 3 on the host.
+- Claude Code, Codex CLI/IDE, or both, installed and authenticated.
+- A DDEV Drupal workspace for local code checks and browser tests.
+- [drupalorg-cli](https://github.com/mglaman/drupalorg-cli) on PATH, with PHP available to launch its MCP server.
+- [glab](https://gitlab.com/gitlab-org/cli), authenticated against `git.drupalcode.org`.
+- Network access for optional upstream skill downloads. Failures print manual installation commands.
 
-Two more skills, [playwright-cli](https://github.com/microsoft/playwright-cli) (browser e2e tests) and drupalorg-cli itself, are pulled from their upstream repos automatically at install time (needs network access on first run). See the [docs](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#external-skills) for the full list of external skills.
+Codex needs repository skills, standalone custom agents, and `PreToolUse` hooks. Local configuration/rule checks used Codex CLI 0.153.4; Claude Code 2.1.236 was present during development. This is not a claim that a live Drupal issue has been exercised end-to-end in either client. Cloud sessions without access to your DDEV environment cannot run its local tests.
 
-## Installation
+## Install
+
+Run from the Drupal workspace, not this package's source directory:
 
 ```bash
+# Existing command stays compatible: defaults to Claude Code on first install
 npx github:abhisekmazumdar/drupal-contrib-claude-skills
+
+# Install for both clients
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both
+
+# Or select one client
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target codex
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target claude-code
+
+# Preview without writing or downloading
+npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run
 ```
 
-Add a shell alias so you don't have to remember it:
+For a local checkout, use `npx /path/to/drupal-contrib-claude-skills --target both`.
+Use `--yes` to accept detected defaults and `--skip-external` to skip upstream downloads.
+The installer detects Drupal at the workspace root or in top-level subdirectories and records site settings for future runs.
 
-```bash
-# add to ~/.zshrc or ~/.bashrc
-alias drupal-claude-skills='npx --yes github:abhisekmazumdar/drupal-contrib-claude-skills'
-```
+## What gets installed
 
-Prefer a pinned copy (offline reuse, a specific commit, or editing the skills yourself)? Clone it and point `npx` at the local path instead:
+| Shared | Claude Code | Codex |
+|---|---|---|
+| `.drupal-contrib/context.md`: site table and workflow | `CLAUDE.md`: entry instructions | `AGENTS.md`: entry instructions |
+| `.drupal-contrib/agents/`: complete role procedures | `.claude/agents/*.md` | `.codex/agents/*.toml` |
+| Same source skills and helper scripts | `.claude/skills/` | `.agents/skills/` |
+| Shared command guard logic | `.claude/settings.json` and hooks | `.codex/config.toml`, hooks, and rules |
+| `.drupal-contrib/install.json`: settings and file ownership | `.mcp.json`: drupalorg-cli MCP | MCP entry in `.codex/config.toml` |
 
-```bash
-git clone git@github.com:abhisekmazumdar/drupal-contrib-claude-skills.git /path/to/drupal-claude-skills
-npx /path/to/drupal-claude-skills
-```
+Only unchanged, package-owned files are automatically updated. Existing custom or edited files and symlinks are preserved; proposed replacements go under `.drupal-contrib/proposals/`. Review and merge these notices before using the installation. A legacy installation without ownership hashes may need this integration once. The old lockfile is retained and its answers are imported.
 
-The script works with Drupal at your workspace root, or in a subdirectory (e.g. `my-workspace/drupal/`). It auto-detects which layout you have. It then asks a few questions (project location, DDEV project name, site URL, PHP/MariaDB version), all with sensible defaults, saved to `.claude/claude-skills.lock.json` so re-runs are non-interactive. Full walkthrough and both supported layouts are in the [docs](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#installation).
+In Claude Code, approve the project MCP server when prompted and inspect it with `/mcp`.
+In Codex, trust the workspace and review/trust the command hook through `/hooks`. Hooks awaiting trust do not protect commands.
 
-Re-running is always safe. Files only in the destination (your own custom skills) are never touched; all package files update to the latest version.
+## Use
 
-## After installation
+Claude Code:
 
-Open the workspace in Claude Code and paste a Drupal.org or GitLab work-item issue URL, or run the entry point directly:
-
-```
+```text
 /drupal-issue-start https://www.drupal.org/project/ai/issues/3499692
 ```
 
-This loads any prior work from `issues/<nid>/README.md`, fetches live issue state (every open MR, all comments), gives it a light preliminary read, and leads with a verdict (RTBC-ready, close with a named gap, needs work, or needs discussion) before asking what you want to do. From there it delegates to whichever agent the job needs:
+Codex CLI/IDE:
 
-| Agent | What it does |
+```text
+$drupal-issue-start https://www.drupal.org/project/ai/issues/3499692
+```
+
+The entry skill loads prior context, fetches issue/MR activity, performs automatic local recon, and presents a verdict and next action. It delegates to four roles:
+
+| Agent | Responsibility |
 |---|---|
-| `drupal-issue-agent` | Full review, implementation, and fix loop. The only one that edits module code |
-| `drupal-repo-setup` | Locates/clones the module, installs missing dependencies via Composer, checks out the MR branch or creates a worktree |
-| `drupal-e2e-tester` | Dedicated test phase. PHPUnit via DDEV plus Playwright browser e2e. Report-only, never edits code |
-| `drupal-issue-catchup` | Re-briefs you on an issue after time away, diffing new activity against the local record |
+| Nora (`drupal-issue-agent`) | Review, implementation, and fixes |
+| Wren (`drupal-repo-setup`) | Repository, branch, worktree, and dependency setup |
+| Milo (`drupal-e2e-tester`) | Independent PHPUnit/Playwright testing; never fixes module code |
+| Sage (`drupal-issue-catchup`) | Briefing on changes since the previous session |
 
-Agents pause at every approval gate. Nothing is written, edited, `composer require`'d, committed, or posted without your explicit go-ahead. See the [docs](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#agents) for what each agent does in detail, and the [skills catalog](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#skills) for everything else installed.
+Code/dependency changes, commits, and pushes require scoped approval. Recon and issue-record maintenance are documented automatic exceptions. Public comments are drafted for the human to post. Hooks and client permissions supplement these workflow instructions; they are not identical security boundaries across clients.
 
-Every issue you work on gets a persistent record at `issues/<nid>/README.md`, the long-term memory for contribution work, read at the start of every session.
+Both clients use `issues/<nid>/README.md` and archived `history.md`. You can resume an issue in the other client. Avoid concurrent writes to the same record or checkout.
 
-## Updating
+## Update and develop
 
-**Installed via `npx github:...`:** just re-run the same command. It fetches the current `main` branch each time.
+Re-run the installer to update package-owned files and install missing upstream skills. After adding another target, future runs without `--target` update all recorded targets. No target is uninstalled implicitly.
 
-**Cloned locally:** `git -C /path/to/drupal-claude-skills pull`, then re-run `npx /path/to/drupal-claude-skills`.
+Use `npx skills update` for upstream skills; resolve any proposed `skills-lock.json` integration first, then re-run this installer to restore missing Codex invocation-policy metadata.
 
-## Repository layout
+The package uses Node built-ins and has no build step:
 
+```bash
+node --check bin/setup.js
+node --test tests/*.test.js
 ```
-drupal-claude-skills/
-  bin/setup.js            # CLI entry point
-  skills/                 # skill directories, copied as-is to .claude/skills/
-  agents/                 # agent files, copied as-is to .claude/agents/
-  templates/              # CLAUDE.md.template, settings.json.template: {{VAR}} substituted at install time
-  docs/                   # full documentation (GitHub Pages)
-  CLAUDE.md               # guidance for Claude Code when working on this repo
-```
+
+Tests require Python 3.11+ for TOML validation. CI also validates skill/agent frontmatter and template variables. Source lives in `skills/`, `agents/`, `templates/`, and `bin/`; the hand-written reference is `docs/index.html`.
 
 ## License
 
