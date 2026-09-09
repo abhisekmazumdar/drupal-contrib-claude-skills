@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>drupal-claude-skills — Documentation</title>
+<title>drupal-claude-skills · Documentation</title>
 <meta name="description" content="Full reference for the drupal-claude-skills package: skills, agents, conventions, and architecture for Drupal contribution work with Claude Code.">
 <style>
   :root {
@@ -226,18 +226,18 @@
 
   <main id="top">
     <h1>drupal-claude-skills</h1>
-    <p class="subtitle">Claude Code skills and agents for Drupal open source contribution — full reference documentation.</p>
+    <p class="subtitle">Claude Code skills and agents for Drupal open source contribution. Full reference documentation.</p>
 
     <section id="overview">
       <h2>Overview</h2>
       <p>
         This package installs a set of Claude Code <strong>skills</strong> and <strong>agents</strong> into a Drupal
         workspace so Claude can pick up a Drupal.org or GitLab work-item URL and carry it through the full
-        contribution lifecycle — review, implementation, testing, and issue-record keeping — with explicit
+        contribution lifecycle: review, implementation, testing, and issue-record keeping, with explicit
         approval gates at every mutating step.
       </p>
       <p>
-        The package itself is not a Drupal project — there's no PHP, no Composer, no web server here. Its
+        The package itself is not a Drupal project. There's no PHP, no Composer, no web server here. Its
         output is the set of files installed into <em>your</em> Drupal workspace via:
       </p>
       <pre><code>npx github:abhisekmazumdar/drupal-contrib-claude-skills</code></pre>
@@ -260,7 +260,7 @@
       <p>Add a shell alias so you don't have to remember it:</p>
       <pre><code># add to ~/.zshrc or ~/.bashrc
 alias drupal-claude-skills='npx --yes github:abhisekmazumdar/drupal-contrib-claude-skills'</code></pre>
-      <p><code>--yes</code> skips npx's "ok to install?" confirmation — safe here since this is a project you control.</p>
+      <p><code>--yes</code> skips npx's "ok to install?" confirmation. Safe here since this is a project you control.</p>
 
       <h3>Alternative: clone locally</h3>
       <p>Prefer a pinned copy (offline reuse, a specific commit, or editing the skills yourself)?</p>
@@ -278,21 +278,21 @@ MariaDB version [11.8]:</code></pre>
         <li>The Drupal project location is asked <strong>first</strong> so the DDEV project name can be auto-detected from <code>.ddev/config.yaml</code>.</li>
         <li>If Drupal is at the workspace root, the location question is skipped entirely.</li>
         <li>Press Enter to accept any default, or type a custom value.</li>
-        <li>Answers are saved to <code>.claude/claude-skills.lock.json</code> — re-runs pre-fill every question, so updates are non-interactive.</li>
+        <li>Answers are saved to <code>.claude/claude-skills.lock.json</code>. Re-runs pre-fill every question, so updates are non-interactive.</li>
       </ul>
 
       <h3>What happens</h3>
       <ol>
         <li><code>.claude/skills/</code> is created (or updated) with all package skills</li>
-        <li><code>.claude/agents/</code> is created (or updated) with all agents; external skills (<code>playwright-cli</code>, <code>drupalorg-cli</code>, and others — see <a href="#external-skills">External skills</a>) are pulled from their upstream repos via <code>npx skills</code> if not already installed</li>
+        <li><code>.claude/agents/</code> is created (or updated) with all agents; external skills such as <code>playwright-cli</code> and <code>drupalorg-cli</code> (see <a href="#external-skills">External skills</a> for the full list) are pulled from their upstream repos via <code>npx skills</code> if not already installed</li>
         <li><code>.claude/settings.json</code> is written with pre-approved permissions and MCP server definitions</li>
         <li><code>CLAUDE.md</code> is generated at the workspace root with your project details substituted in</li>
         <li><code>.claude/claude-skills.lock.json</code> is written with your answers for future re-runs</li>
       </ol>
-      <p>Re-running is always safe — files only in the destination (your own custom skills) are never touched. All package files are updated to the latest version.</p>
+      <p>Re-running is always safe. Files only in the destination (your own custom skills) are never touched. All package files update to the latest version.</p>
 
       <h3>Updating</h3>
-      <p><strong>Installed via <code>npx github:...</code>:</strong> just re-run the same command — <code>npx</code> fetches the current <code>main</code> branch each time.</p>
+      <p><strong>Installed via <code>npx github:...</code>:</strong> just re-run the same command. <code>npx</code> fetches the current <code>main</code> branch each time.</p>
       <pre><code>npx github:abhisekmazumdar/drupal-contrib-claude-skills</code></pre>
       <p><strong>Cloned locally:</strong> pull first, then re-run.</p>
       <pre><code>git -C /path/to/drupal-claude-skills pull
@@ -302,13 +302,13 @@ npx /path/to/drupal-claude-skills</code></pre>
     <section id="layouts">
       <h2>Supported project layouts</h2>
       <p>The setup script auto-detects which layout you have and asks if it can't tell.</p>
-      <h4>Structure A — Drupal is the workspace root</h4>
+      <h4>Structure A: Drupal is the workspace root</h4>
       <pre><code>my-drupal-project/       ← run the script from here
   .claude/               ← installed here
   web/
   composer.json
   CLAUDE.md</code></pre>
-      <h4>Structure B — Drupal lives in a subdirectory</h4>
+      <h4>Structure B: Drupal lives in a subdirectory</h4>
       <pre><code>my-workspace/            ← run the script from here
   .claude/               ← installed here
   drupal/                ← your Drupal project
@@ -330,23 +330,23 @@ npx /path/to/drupal-claude-skills</code></pre>
         The skill loads any prior work from <code>issues/&lt;nid&gt;/README.md</code>, fetches live issue state
         (every open MR, all inline and top-level comments), cross-checks other local issue records for backlinks
         to this one, then automatically checks out the most relevant MR locally and gives it a light preliminary
-        read — no approval needed for the checkout itself, since it's local and reversible. If more than one MR
+        read. The checkout itself needs no approval, since it's local and reversible. If more than one MR
         is open, it picks the most active one and lists the rest so you can redirect.
       </p>
       <p>
         The resulting report leads with a verdict (<strong>RTBC-ready</strong>, <strong>close with a named gap</strong>,
-        <strong>needs work with a named gap</strong>, or <strong>needs discussion</strong>) plus anything you need to
-        know before trusting it — missing fork access, no push access, DDEV not running — and only <em>then</em>
-        asks what you want to do.
+        <strong>needs work with a named gap</strong>, or <strong>needs discussion</strong>), plus anything you need to
+        know before trusting it: missing fork access, no push access, DDEV not running. Only <em>then</em>
+        does it ask what you want to do.
       </p>
       <div class="note">
-        Beyond the automatic recon checkout, agents pause at every approval gate — the skill relays each pause
+        Beyond the automatic recon checkout, agents pause at every approval gate. The skill relays each pause
         report back to you, and nothing is written, edited, <code>composer require</code>'d, committed, or posted
         without your explicit go-ahead.
       </div>
 
       <h3>Issue tracking</h3>
-      <p>Every issue you work on gets a persistent record at <code>issues/&lt;nid&gt;/README.md</code> — the long-term memory for contribution work, read at the start of every session.</p>
+      <p>Every issue you work on gets a persistent record at <code>issues/&lt;nid&gt;/README.md</code>, the long-term memory for contribution work, read at the start of every session.</p>
       <pre><code>issues/
 └── 3499692/
     └── README.md         ← summary, work log, notes</code></pre>
@@ -356,8 +356,8 @@ npx /path/to/drupal-claude-skills</code></pre>
       <h2>Repository layout</h2>
       <pre><code>drupal-claude-skills/
   bin/
-    setup.js              # CLI entry point — run via npx github:abhisekmazumdar/drupal-contrib-claude-skills
-  skills/                 # skill directories — each contains a SKILL.md, copied as-is
+    setup.js              # CLI entry point, run via npx github:abhisekmazumdar/drupal-contrib-claude-skills
+  skills/                 # skill directories, each contains a SKILL.md, copied as-is
   agents/                 # agent markdown files, copied as-is
   templates/
     CLAUDE.md.template      # rendered at install time with {{VAR}} substitution
@@ -370,7 +370,7 @@ npx /path/to/drupal-claude-skills</code></pre>
   CLAUDE.md               # guidance for Claude Code when working on this repo</code></pre>
       <p>
         <code>{{VAR}}</code> placeholders are substituted at install time <strong>only</strong> for files in
-        <code>templates/</code>. Skills and agents are copied verbatim — they read project paths
+        <code>templates/</code>. Skills and agents are copied verbatim. They read project paths
         (<code>&lt;webroot&gt;</code>, <code>&lt;drupal-path&gt;</code>) from the installed <code>CLAUDE.md</code>
         context at runtime instead.
       </p>
@@ -378,15 +378,15 @@ npx /path/to/drupal-claude-skills</code></pre>
 
     <section id="skills">
       <h2>Skills</h2>
-      <p>Each skill lives in <code>skills/&lt;name&gt;/SKILL.md</code> and is self-contained — it works without knowing the specific Drupal project layout, detecting paths at runtime.</p>
+      <p>Each skill lives in <code>skills/&lt;name&gt;/SKILL.md</code> and is self-contained. It works without knowing the specific Drupal project layout, detecting paths at runtime.</p>
 
       <h3>Issue lifecycle</h3>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
-        <tr><td><code>drupal-issue-start</code></td><td>The single entry point for all Drupal contribution work. Loads prior context, fetches live issue state, gives a preliminary read, and routes to the right agent. Always start here — never invoke <code>drupal-issue-agent</code> directly.</td></tr>
+        <tr><td><code>drupal-issue-start</code></td><td>The single entry point for all Drupal contribution work. Loads prior context, fetches live issue state, gives a preliminary read, and routes to the right agent. Always start here. Never invoke <code>drupal-issue-agent</code> directly.</td></tr>
         <tr><td><code>drupal-issue-reroll</code></td><td>Rebases (rerolls) an issue branch on the latest upstream branch, runs PHPCS/PHPStan, and pushes the result. <span class="pill">no auto-invoke</span></td></tr>
         <tr><td><code>drupal-related-issues</code></td><td>Scans the local <code>issues/</code> directory for backlinks to a given issue number that its own comment thread wouldn't surface.</td></tr>
-        <tr><td><code>issue-record-update</code></td><td>Appends a timestamped session log entry to <code>issues/&lt;nid&gt;/README.md</code> — invoked automatically at the end of any session that did something.</td></tr>
+        <tr><td><code>issue-record-update</code></td><td>Appends a timestamped session log entry to <code>issues/&lt;nid&gt;/README.md</code>. Invoked automatically at the end of any session that did something.</td></tr>
         <tr><td><code>issue-record-screenshot</code></td><td>Captures a browser screenshot into <code>issues/&lt;nid&gt;/screenshots/</code> via Claude-in-Chrome.</td></tr>
       </table>
 
@@ -394,9 +394,9 @@ npx /path/to/drupal-claude-skills</code></pre>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
         <tr><td><code>drupal-gitlab</code></td><td>Drupal's GitLab instance (git.drupalcode.org): CI pipeline status, pushing to issue forks, cross-project MRs, work items, the issue-fork workflow, and Drupal Conventional Commits.</td></tr>
-        <tr><td><code>drupal-gitlab-inline-comments</code></td><td>Fetches review comments from git.drupalcode.org — inline MR diff threads or top-level comments on a migrated-queue issue/work item.</td></tr>
-        <tr><td><code>drupalorg-issue-search</code></td><td>Searches Drupal.org issues by keyword across the API, classic queue, and web — for finding existing issues before filing a new one.</td></tr>
-        <tr><td><code>drupalorg-comment-format</code></td><td>Formats text for Drupal.org fields — comments, issue descriptions, summaries — in classic HTML markup or GitLab Markdown, per the platform's supported rules.</td></tr>
+        <tr><td><code>drupal-gitlab-inline-comments</code></td><td>Fetches review comments from git.drupalcode.org: inline MR diff threads or top-level comments on a migrated-queue issue/work item.</td></tr>
+        <tr><td><code>drupalorg-issue-search</code></td><td>Searches Drupal.org issues by keyword across the API, classic queue, and web. Useful for finding existing issues before filing a new one.</td></tr>
+        <tr><td><code>drupalorg-comment-format</code></td><td>Formats text for Drupal.org fields (comments, issue descriptions, summaries) in classic HTML markup or GitLab Markdown, per the platform's supported rules.</td></tr>
         <tr><td><code>drupal-clone-contrib</code></td><td>Clones a Drupal contrib module/theme/recipe from git.drupalcode.org into the correct local directory. <span class="pill">no auto-invoke</span></td></tr>
       </table>
 
@@ -404,20 +404,20 @@ npx /path/to/drupal-claude-skills</code></pre>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
         <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs.</td></tr>
-        <tr><td><code>drupal-automated-testing</code></td><td>Guidance for writing/modifying Functional, Kernel, FunctionalJavascript, and Unit tests — PHPUnit attributes, test namespaces, the Functional dual-container trap, DDEV env vars.</td></tr>
-        <tr><td><code>drupal-php-changes</code></td><td>PHP-related changes across Drupal 11.x — deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility.</td></tr>
+        <tr><td><code>drupal-automated-testing</code></td><td>Guidance for writing/modifying Functional, Kernel, FunctionalJavascript, and Unit tests: PHPUnit attributes, test namespaces, the Functional dual-container trap, DDEV env vars.</td></tr>
+        <tr><td><code>drupal-php-changes</code></td><td>PHP-related changes across Drupal 11.x: deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility.</td></tr>
       </table>
 
       <h3>Environment</h3>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
-        <tr><td><code>ddev-expert</code></td><td>DDEV local environment expertise — containers, configuration, Drush/Composer via DDEV, Xdebug, database imports/snapshots.</td></tr>
+        <tr><td><code>ddev-expert</code></td><td>DDEV local environment expertise: containers, configuration, Drush/Composer via DDEV, Xdebug, database imports/snapshots.</td></tr>
       </table>
 
       <div class="warn">
         <strong><code>disable-model-invocation</code>:</strong> <code>drupal-clone-contrib</code> and
-        <code>drupal-issue-reroll</code> mutate disk/git with no internal confirmation of their own — they're
-        marked non-auto-triggering and are only ever invoked from behind another skill's <code>[PAUSE]</code>.
+        <code>drupal-issue-reroll</code> mutate disk/git with no internal confirmation of their own. They're
+        marked non-auto-triggering and only ever get invoked from behind another skill's <code>[PAUSE]</code>.
         Every other skill here is read-only, writes only append-only records under <code>issues/&lt;nid&gt;/</code>,
         or already gates its own writes internally.
       </div>
@@ -427,7 +427,7 @@ npx /path/to/drupal-claude-skills</code></pre>
       <h2>Agents</h2>
       <p>
         Four agents live in <code>agents/</code>, each with a persona name as a body-level identity. The persona
-        name is cosmetic — the frontmatter <code>name:</code> field (matching the filename) is what every
+        name is cosmetic. The frontmatter <code>name:</code> field (matching the filename) is what every
         invocation and cross-reference actually uses.
       </p>
       <table>
@@ -435,22 +435,22 @@ npx /path/to/drupal-claude-skills</code></pre>
         <tr>
           <td><code>drupal-issue-agent</code></td>
           <td><span class="badge-persona">Nora</span></td>
-          <td>Full review/implement/fix loop — the only agent that edits module code. Always invoked by <code>drupal-issue-start</code>, never invoked from a bare user phrase.</td>
+          <td>Full review/implement/fix loop. The only agent that edits module code. Always invoked by <code>drupal-issue-start</code>, never invoked from a bare user phrase.</td>
         </tr>
         <tr>
           <td><code>drupal-e2e-tester</code></td>
           <td><span class="badge-persona">Milo</span></td>
-          <td>Dedicated test phase — PHPUnit via DDEV plus Playwright browser e2e. Report-only: never edits code, so the implementing agent is never the one verifying its own work.</td>
+          <td>Dedicated test phase. PHPUnit via DDEV plus Playwright browser e2e. Report-only. It never edits code, so the implementing agent is never the one verifying its own work.</td>
         </tr>
         <tr>
           <td><code>drupal-repo-setup</code></td>
           <td><span class="badge-persona">Wren</span></td>
-          <td>Git/repo plumbing — locates, clones, installs missing Composer dependencies (with approval), checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused since it's local and reversible; Composer install always pauses.</td>
+          <td>Git/repo plumbing: locates, clones, installs missing Composer dependencies (with approval), checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused since it's local and reversible; Composer install always pauses.</td>
         </tr>
         <tr>
           <td><code>drupal-issue-catchup</code></td>
           <td><span class="badge-persona">Sage</span></td>
-          <td>Re-briefs on an issue after time away — diffs new activity against the local record, re-derives the verdict/next-action/blocker, and waits for direction. Never edits code.</td>
+          <td>Re-briefs on an issue after time away. Diffs new activity against the local record, re-derives the verdict/next-action/blocker, and waits for direction. Never edits code.</td>
         </tr>
       </table>
 
@@ -481,15 +481,15 @@ npx /path/to/drupal-claude-skills</code></pre>
       </p>
       <p>
         <code>&lt;site&gt;</code> (and its resolved <code>&lt;webroot&gt;</code>/<code>&lt;drupal-path&gt;</code>) flows
-        through this whole chain alongside <code>&lt;nid&gt;</code>/<code>&lt;project&gt;</code> — resolved once in
-        <code>drupal-issue-start</code> Phase 0.5, never re-resolved by any agent it hands off to.
+        through this whole chain alongside <code>&lt;nid&gt;</code>/<code>&lt;project&gt;</code>. It resolves once
+        in <code>drupal-issue-start</code> Phase 0.5 and never re-resolves for any agent it hands off to.
       </p>
     </section>
 
     <section id="external-skills">
       <h2>External skills</h2>
       <p>
-        None of these skills are vendored into this repo — <code>bin/setup.js</code> pulls all of them at install
+        None of these skills are vendored into this repo. <code>bin/setup.js</code> pulls all of them at install
         time from their upstream repos via <code>npx skills add</code>, grouped by source repo. Update them later
         with <code>npx skills update</code>.
       </p>
@@ -501,7 +501,7 @@ npx /path/to/drupal-claude-skills</code></pre>
         <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, before finalizing RTBC verdict</td></tr>
         <tr><td><code>unslop</code></td><td><code>cursor/plugins</code></td><td><code>drupalorg-comment-format</code>, <code>drupal-issue-start</code> Phase 3, pre-output writing pass</td></tr>
         <tr><td><code>technical-writing</code></td><td><code>cursor/plugins</code></td><td>Same pre-output pass, for structure</td></tr>
-        <tr><td><code>interrogate</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, offered explicitly — never automatic</td></tr>
+        <tr><td><code>interrogate</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, offered explicitly, never automatic</td></tr>
         <tr><td><code>why</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-catchup</code> Step 5, design-decision digging</td></tr>
         <tr><td><code>tdd</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A10, bug fixes with a cheap local test target</td></tr>
         <tr><td><code>diagnosing-bugs</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-agent</code> A1, fallback for unrecognized CI failures</td></tr>
@@ -525,7 +525,7 @@ npx /path/to/drupal-claude-skills</code></pre>
         user's wording against the table's Name column (falling back to Default when unmentioned) and resolves
         <code>&lt;site&gt;</code>/<code>&lt;webroot&gt;</code>/<code>&lt;drupal-path&gt;</code>/DDEV project/site
         URL as concrete values. Those values then flow downstream unchanged through <code>drupal-repo-setup</code>,
-        <code>drupal-issue-agent</code>, <code>drupal-e2e-tester</code>, and <code>drupal-issue-catchup</code> — none
+        <code>drupal-issue-agent</code>, <code>drupal-e2e-tester</code>, and <code>drupal-issue-catchup</code>. None
         of them re-resolve or re-prompt for a site.
       </p>
       <p>DDEV has no <code>-C</code>/<code>--project</code> flag, so any <code>ddev</code> command must run with cwd inside that site's root first.</p>
@@ -538,7 +538,7 @@ npx /path/to/drupal-claude-skills</code></pre>
         <code>drupal-issue-start</code> and appended to by <code>issue-record-update</code>.
       </p>
       <ul>
-        <li><strong><code>## At a Glance</code></strong> and <strong><code>## Current State</code></strong> are <em>snapshots</em>, overwritten in place every session — never append-only.</li>
+        <li><strong><code>## At a Glance</code></strong> and <strong><code>## Current State</code></strong> are <em>snapshots</em>, overwritten in place every session, never append-only.</li>
         <li><strong><code>## Work Log</code></strong> and <strong><code>## Related Issues</code></strong> are append-only.</li>
         <li><code>Next action</code> / <code>Blocked on</code> are sourced only from the current session, never accumulated across sessions.</li>
         <li>The header's <code>**Status:**</code> field uses a fixed vocabulary so it's scannable across issues.</li>
@@ -549,10 +549,10 @@ npx /path/to/drupal-claude-skills</code></pre>
         <code>issue-record-update</code> keeps the README's <code>## Work Log</code> capped at the 3 most recent
         sessions, moving anything older to <code>issues/&lt;nid&gt;/history.md</code> (newest-archived first).
         Neither <code>drupal-issue-start</code> nor <code>drupal-issue-catchup</code> reads <code>history.md</code>
-        by default — only when a session genuinely needs pre-archive context.
+        by default, only when a session genuinely needs pre-archive context.
       </p>
       <p>
-        <code>issue-record-update</code> runs automatically at the end of any session that did something — code
+        <code>issue-record-update</code> runs automatically at the end of any session that did something: code
         reviewed, changed, tested, or a comment/push attempted. A pure read-only catchup skips it.
       </p>
     </section>
@@ -614,8 +614,8 @@ npx /path/to/drupal-claude-skills</code></pre>
     <section id="review-philosophy">
       <h2>Review philosophy: move issues toward RTBC</h2>
       <p>
-        Every review this package produces — the light preliminary one in <code>drupal-issue-start</code> Phase 2.5
-        and the full one in <code>drupal-issue-agent</code>'s A9 — ends with a <strong>judgment call</strong>:
+        Every review this package produces, the light preliminary one in <code>drupal-issue-start</code> Phase 2.5
+        and the full one in <code>drupal-issue-agent</code>'s A9, ends with a <strong>judgment call</strong>:
       </p>
       <ul>
         <li>RTBC-ready</li>
@@ -647,7 +647,7 @@ npx /path/to/drupal-claude-skills</code></pre>
         <code>git-guardrails-claude-code</code>.
       </p>
       <div class="note">
-        <strong><code>git push</code> (including <code>--force-with-lease</code>) is deliberately not blocked</strong> —
+        <strong><code>git push</code> (including <code>--force-with-lease</code>) is deliberately not blocked.</strong>
         <code>drupal-issue-reroll</code> force-pushes rerolled branches to the user's own issue fork as a normal,
         expected step, already safe-guarded by <code>--force-with-lease</code> and gated behind the <code>ask</code>
         permission tier.
@@ -664,19 +664,19 @@ npx /path/to/drupal-claude-skills</code></pre>
         As of <code>drupalorg-cli</code> 0.10.3 this server exposes 17 read-only tools. <code>gitlab_issue_show</code>
         works correctly for migrated GitLab issues; tools that resolve a project from a classic nid alone
         (<code>mr_list</code>, <code>mr_status</code>, <code>mr_files</code>, <code>issue_get_fork</code>) are broken
-        for migrated issues — <code>drupal-issue-start</code>'s <code>glab mr list --search</code> Bash fallback is
+        for migrated issues. <code>drupal-issue-start</code>'s <code>glab mr list --search</code> Bash fallback is
         the working path for MR discovery there.
       </p>
       <p>
         A native GitLab MCP for <code>git.drupalcode.org</code> is tracked at
-        <a href="https://www.drupal.org/project/infrastructure/issues/3557469">drupal.org/project/infrastructure/issues/3557469</a>
-        — blocked on GitLab Duo, a paid feature not yet available on Drupal's infrastructure.
+        <a href="https://www.drupal.org/project/infrastructure/issues/3557469">drupal.org/project/infrastructure/issues/3557469</a>.
+        It's blocked on GitLab Duo, a paid feature not yet available on Drupal's infrastructure.
       </p>
     </section>
 
     <section id="dev">
       <h2>Developing this repo</h2>
-      <p>No build step, no test suite — CI runs these checks directly against the repo:</p>
+      <p>No build step, no test suite. CI runs these checks directly against the repo:</p>
       <pre><code># Syntax-check the setup script
 node --check bin/setup.js
 
