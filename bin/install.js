@@ -45,10 +45,6 @@ function readState(cwd) {
     if (file.startsWith('.drupal-contrib/') && state.version !== 1) {
       throw new Error(`Unsupported installation state version in ${file}`);
     }
-    // The pre-refactor lockfile never tracked per-file hashes (no `files`
-    // key) — flag it so writer() can trust its existing package-owned files
-    // instead of treating every one of them as a conflicting user edit.
-    if (!file.startsWith('.drupal-contrib/')) state.legacy = true;
     return state;
   }
   return {};
@@ -67,7 +63,7 @@ function symlinkAncestor(cwd, destination) {
   return null;
 }
 
-function writer(cwd, previous = {}, dryRun = false, { trustUnknown = false } = {}) {
+function writer(cwd, previous = {}, dryRun = false) {
   const files = { ...previous };
   const log = { copied: [], identical: [], conflicts: [] };
   function write(relative, content, mode) {
@@ -82,13 +78,7 @@ function writer(cwd, previous = {}, dryRun = false, { trustUnknown = false } = {
       if (mode && !dryRun) fs.chmodSync(destination, mode);
       return;
     }
-    // A file absent from `previous` (no recorded hash) is either genuinely
-    // foreign, or — when migrating a legacy lockfile that never tracked
-    // hashes — one of our own files that trustUnknown says to update rather
-    // than flag as a conflict.
-    const known = Object.prototype.hasOwnProperty.call(previous, relative);
-    const isConflict = old !== null && (known ? previous[relative] !== hash(old) : !trustUnknown);
-    if (linked || (exists && (old === null || isConflict))) {
+    if (linked || (exists && (old === null || previous[relative] !== hash(old)))) {
       // Store proposals outside either client's discovery/config directories.
       let proposal = path.join(cwd, '.drupal-contrib', 'proposals', relative);
       if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);

@@ -124,7 +124,7 @@ async function main() {
   const targets = cli.target === 'both' ? ['claude-code', 'codex']
     : cli.target ? [cli.target] : state.targets || ['claude-code'];
   if (!Array.isArray(targets) || !targets.length || targets.some(target => !['claude-code', 'codex'].includes(target))) throw new Error('Invalid targets in installation state');
-  const output = writer(CWD, state.files, cli.dryRun, { trustUnknown: !!state.legacy });
+  const output = writer(CWD, state.files, cli.dryRun);
   const log = output.log;
 
   if (!findBin('python3')) console.log('Warning: Python 3 is required for the command guard; hooks will block shell calls until it is installed.');

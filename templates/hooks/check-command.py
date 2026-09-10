@@ -56,35 +56,17 @@ def blocked(command, depth=0):
             continue
         verb, args = tokens[sub], tokens[sub + 1:end]
         if binary == 'glab':
-            if verb == 'api':
-                # `glab api` defaults to a GET read; only an explicit
-                # non-GET method is a write. settings.json.template allows
-                # `glab api*` reads at the ask tier — don't block those.
-                method = 'GET'
-                for k, a in enumerate(args):
-                    if a in ('-X', '--method') and k + 1 < len(args):
-                        method = args[k + 1].upper()
-                    elif a.startswith('--method='):
-                        method = a.split('=', 1)[1].upper()
-                if method != 'GET':
-                    return 'Public GitLab writes and pipeline triggers are reserved for the human.'
-                continue
+            if verb in ('api', 'note'):
+                return 'Use the supported read commands; public changes are drafted for the human.'
             action_index = arguments(args, 0, {'-R', '--repo', '--hostname', '--host'})
             action = args[action_index] if action_index < len(args) else ''
             denied = {
-                'mr': {'create', 'merge', 'approve', 'update', 'close'},
-                'issue': {'create', 'update', 'close'},
+                'mr': {'note', 'comment', 'create', 'merge', 'approve', 'update', 'close'},
+                'issue': {'create', 'note', 'comment', 'update', 'close'},
                 'pipeline': {'run'}, 'ci': {'run'},
             }
             if action in denied.get(verb, set()):
                 return 'Public GitLab writes and pipeline triggers are reserved for the human.'
-            if verb in ('mr', 'issue') and action in ('note', 'comment'):
-                # `glab mr note list`/`glab issue note list` are reads
-                # (settings.json.template allows `glab mr note*`/`glab issue
-                # note*`); any other sub-action (bare, or "create") posts.
-                sub_action = args[action_index + 1] if action_index + 1 < len(args) else ''
-                if sub_action != 'list':
-                    return 'Public GitLab writes and pipeline triggers are reserved for the human.'
             continue
         flags = {a for a in args if a.startswith('-')}
         short = ''.join(a[1:] for a in flags if not a.startswith('--'))
