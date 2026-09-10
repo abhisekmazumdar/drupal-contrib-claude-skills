@@ -35,10 +35,20 @@ function readState(cwd) {
     if (!fs.existsSync(absolute)) continue;
     let state;
     try { state = JSON.parse(fs.readFileSync(absolute, 'utf8')); }
-    catch (err) { throw new Error(`Cannot read ${file}: ${err.message}`); }
+    catch (err) {
+      // A partially written or hand-edited lockfile shouldn't hard-fail every
+      // future run — fall back to a fresh install the way the pre-refactor
+      // readLock() did.
+      console.error(`Warning: could not read ${file} (${err.message}); ignoring it and starting fresh.`);
+      continue;
+    }
     if (file.startsWith('.drupal-contrib/') && state.version !== 1) {
       throw new Error(`Unsupported installation state version in ${file}`);
     }
+    // The pre-refactor lockfile never tracked per-file hashes (no `files`
+    // key) — flag it so writer() can trust its existing package-owned files
+    // instead of treating every one of them as a conflicting user edit.
+    if (!file.startsWith('.drupal-contrib/')) state.legacy = true;
     return state;
   }
   return {};
@@ -57,7 +67,7 @@ function symlinkAncestor(cwd, destination) {
   return null;
 }
 
-function writer(cwd, previous = {}, dryRun = false) {
+function writer(cwd, previous = {}, dryRun = false, { trustUnknown = false } = {}) {
   const files = { ...previous };
   const log = { copied: [], identical: [], conflicts: [] };
   function write(relative, content, mode) {
@@ -72,7 +82,13 @@ function writer(cwd, previous = {}, dryRun = false) {
       if (mode && !dryRun) fs.chmodSync(destination, mode);
       return;
     }
-    if (linked || (exists && (old === null || previous[relative] !== hash(old)))) {
+    // A file absent from `previous` (no recorded hash) is either genuinely
+    // foreign, or — when migrating a legacy lockfile that never tracked
+    // hashes — one of our own files that trustUnknown says to update rather
+    // than flag as a conflict.
+    const known = Object.prototype.hasOwnProperty.call(previous, relative);
+    const isConflict = old !== null && (known ? previous[relative] !== hash(old) : !trustUnknown);
+    if (linked || (exists && (old === null || isConflict))) {
       // Store proposals outside either client's discovery/config directories.
       let proposal = path.join(cwd, '.drupal-contrib', 'proposals', relative);
       if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
@@ -96,8 +112,9 @@ function writer(cwd, previous = {}, dryRun = false) {
       if (mode) fs.chmodSync(destination, mode);
     }
   }
-  function copy(source, destination) {
+  function copy(source, destination, exclude = new Set()) {
     for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+      if (exclude.has(entry.name)) continue;
       const src = path.join(source, entry.name);
       const dest = path.join(destination, entry.name);
       if (entry.isDirectory()) copy(src, dest);
@@ -115,7 +132,15 @@ function agentToml(content) {
   const description = metadata.match(/^description: >\n((?:[ \t]+[^\n]*\n)+)/m)?.[1].trim().replace(/\s+/g, ' ');
   if (!name || !description) throw new Error('Missing agent name or description');
   const dependencies = [...metadata.matchAll(/^  - (\S+)$/gm)].map(m => m[1]);
-  const instructions = `Read .drupal-contrib/context.md before acting. Resolve <skills-root> to .agents/skills and load the relevant installed skills by name. Use Codex tools, not Claude tool names. Dependencies: ${dependencies.join(', ')}. If an upstream skill requires unavailable tools, report that limitation and use a supported equivalent only when it preserves the requested behavior. Delegate the named roles using native subagents; if custom roles are unavailable, pass the full corresponding .drupal-contrib/agents/<name>.md procedure to a fresh subagent. Never silently replace independent testing with self-verification.\n\n${body}`;
+  const tools = metadata.match(/^tools:\s*(.+)$/m)?.[1].trim();
+  // Codex's .toml agent format has no structural tool-allowlist field, so the
+  // frontmatter `tools:` restriction (e.g. drupal-e2e-tester's report-only
+  // guarantee — no Edit) can only be carried forward as an explicit,
+  // enumerated instruction, not dropped silently.
+  const toolsClause = tools
+    ? `You may only use these tools: ${tools}. Never use any other tool, including file-edit or patch-apply tools, even if one would otherwise seem available or convenient.`
+    : '';
+  const instructions = `Read .drupal-contrib/context.md before acting. Resolve <skills-root> to .agents/skills and load the relevant installed skills by name. Use Codex tools, not Claude tool names. ${toolsClause} Dependencies: ${dependencies.join(', ')}. If an upstream skill requires unavailable tools, report that limitation and use a supported equivalent only when it preserves the requested behavior. Delegate the named roles using native subagents; if custom roles are unavailable, pass the full corresponding .drupal-contrib/agents/<name>.md procedure to a fresh subagent. Never silently replace independent testing with self-verification.\n\n${body}`;
   // JSON basic strings are valid TOML strings, including escaped newlines.
   return `name = ${JSON.stringify(name)}\ndescription = ${JSON.stringify(description)}\ndeveloper_instructions = ${JSON.stringify(instructions)}\n`;
 }
@@ -128,7 +153,10 @@ function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
     const root = claude ? '.claude' : '.codex';
     output.copy(path.join(packageRoot, 'skills'), claude ? '.claude/skills' : '.agents/skills');
     const hookPath = path.join(cwd, root, 'hooks', 'block-dangerous-git.sh');
-    output.copy(path.join(packageRoot, 'templates', 'hooks'), `${root}/hooks`);
+    // block-dangerous-git.sh needs the executable bit, so it's written
+    // separately with a mode; exclude it here to avoid writing (and
+    // logging) it twice.
+    output.copy(path.join(packageRoot, 'templates', 'hooks'), `${root}/hooks`, new Set(['block-dangerous-git.sh']));
     output.write(`${root}/hooks/block-dangerous-git.sh`, fs.readFileSync(path.join(packageRoot, 'templates/hooks/block-dangerous-git.sh'), 'utf8'), 0o755);
     const instruction = claude ? 'CLAUDE.md' : 'AGENTS.md';
     output.write(instruction, fs.readFileSync(path.join(packageRoot, 'templates', `${instruction}.template`), 'utf8'));
@@ -144,7 +172,10 @@ function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
     } else {
       output.write('.codex/rules/contribution.rules', fs.readFileSync(path.join(packageRoot, 'templates/codex/contribution.rules'), 'utf8'));
       const config = fs.readFileSync(path.join(packageRoot, 'templates/codex/config.toml.template'), 'utf8');
-      output.write('.codex/config.toml', config.replace('{{DRUPAL_CLI_BIN}}', JSON.stringify(vars.DRUPAL_CLI_BIN)));
+      // A function replacer is used (not a string) so `$&`/`$1`-style
+      // sequences that might appear in a detected binary path are inserted
+      // literally instead of being interpreted as replacement patterns.
+      output.write('.codex/config.toml', config.replace('{{DRUPAL_CLI_BIN}}', () => JSON.stringify(vars.DRUPAL_CLI_BIN)));
       const hooks = JSON.parse(fs.readFileSync(path.join(packageRoot, 'templates/codex/hooks.json.template'), 'utf8'));
       hooks.hooks.PreToolUse[0].hooks[0].command = `bash ${quote(hookPath)}`;
       output.write('.codex/hooks.json', JSON.stringify(hooks, null, 2) + '\n');

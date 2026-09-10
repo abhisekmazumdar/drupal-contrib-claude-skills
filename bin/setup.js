@@ -124,7 +124,7 @@ async function main() {
   const targets = cli.target === 'both' ? ['claude-code', 'codex']
     : cli.target ? [cli.target] : state.targets || ['claude-code'];
   if (!Array.isArray(targets) || !targets.length || targets.some(target => !['claude-code', 'codex'].includes(target))) throw new Error('Invalid targets in installation state');
-  const output = writer(CWD, state.files, cli.dryRun);
+  const output = writer(CWD, state.files, cli.dryRun, { trustUnknown: !!state.legacy });
   const log = output.log;
 
   if (!findBin('python3')) console.log('Warning: Python 3 is required for the command guard; hooks will block shell calls until it is installed.');
@@ -178,11 +178,14 @@ async function main() {
 
     const detectedProject = readDdevProjectName(drupalAbsDir) || path.basename(drupalAbsDir);
     const defaultProject = existing.ddevProject || detectedProject;
-    const projectName = existing.ddevProject || await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
+    // Always prompt (ask() itself no-ops to '' under --yes/--dry-run/non-TTY)
+    // so a re-run can still change a previously recorded value — an existing
+    // value is only the *default* answer, not a value that skips the prompt.
+    const projectName = await ask(rl, `DDEV project name [${defaultProject}]: `) || defaultProject;
     const defaultUrl = existing.siteUrl || `https://${projectName}.ddev.site`;
-    const siteUrl = existing.siteUrl || await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
-    const phpVersion = existing.phpVersion || await ask(rl, `PHP version [${existing.phpVersion || '8.4'}]: `) || existing.phpVersion || '8.4';
-    const mariadbVersion = existing.mariadbVersion || await ask(rl, `MariaDB version [${existing.mariadbVersion || '11.8'}]: `) || existing.mariadbVersion || '11.8';
+    const siteUrl = await ask(rl, `Site URL [${defaultUrl}]: `) || defaultUrl;
+    const phpVersion = await ask(rl, `PHP version [${existing.phpVersion || '8.4'}]: `) || existing.phpVersion || '8.4';
+    const mariadbVersion = await ask(rl, `MariaDB version [${existing.mariadbVersion || '11.8'}]: `) || existing.mariadbVersion || '11.8';
 
     sites[name] = { ddevProject: projectName, siteUrl, phpVersion, mariadbVersion, drupalPath, drupalWebroot, drupalSubdir: subdir };
     console.log('');
