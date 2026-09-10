@@ -487,7 +487,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr>
           <td><code>drupal-repo-setup</code></td>
           <td><span class="badge-persona">Wren</span></td>
-          <td>Git/repo plumbing: locates, clones, installs missing Composer dependencies (with approval), checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused since it's local and reversible; Composer install always pauses.</td>
+          <td>Git/repo plumbing: locates, clones, installs missing Composer dependencies (with approval), checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused since it's local and reversible; Composer install always pauses. After checkout, cross-checks the MR's actual GitLab target branch against the issue's declared version (a structured field for non-migrated issues, the last version-change comment for migrated ones) and flags a mismatch as a non-blocking setup issue.</td>
         </tr>
         <tr>
           <td><code>drupal-issue-catchup</code></td>
@@ -704,11 +704,15 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><td><code>drupalorg-cli</code></td><td><code>{{DRUPAL_CLI_BIN}}</code> (detected via <code>which drupalorg</code>)</td><td>Drupal.org issue/MR data</td></tr>
       </table>
       <p>
-        As of <code>drupalorg-cli</code> 0.10.3 this server exposes 17 read-only tools. <code>gitlab_issue_show</code>
-        works correctly for migrated GitLab issues; tools that resolve a project from a classic nid alone
-        (<code>mr_list</code>, <code>mr_status</code>, <code>mr_files</code>, <code>issue_get_fork</code>) are broken
-        for migrated issues. <code>drupal-issue-start</code>'s <code>glab mr list --search</code> Bash fallback is
-        the working path for MR discovery there.
+        As of <code>drupalorg-cli</code> 0.12.0 this server exposes 17 read-only tools. <code>gitlab_issue_show</code>
+        works correctly for migrated GitLab issues (but doesn't return comments); <code>issue_show</code> gained a
+        <code>withComments</code> param in 0.12.0, but only for non-migrated issues. Tools that resolve a project
+        from a classic nid alone (<code>mr_list</code>, <code>mr_status</code>, <code>mr_files</code>,
+        <code>issue_get_fork</code>) are still broken for migrated issues at the MCP layer — the underlying CLI
+        commands were fixed in 0.11.0 to accept a <code>&lt;project&gt;#&lt;nid&gt;</code> form, but the MCP tool
+        schemas were never updated to expose that, so the fix isn't reachable through this MCP server.
+        <code>drupal-issue-start</code>'s <code>glab mr list --search</code> Bash fallback is still the working
+        path for MR discovery there.
       </p>
       <p>
         A native GitLab MCP for <code>git.drupalcode.org</code> is tracked at

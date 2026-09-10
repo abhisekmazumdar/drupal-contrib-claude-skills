@@ -284,25 +284,37 @@ Re-running is non-interactive once the lockfile exists.
 |---|---|---|
 | `drupalorg-cli` | `{{DRUPAL_CLI_BIN}}` (detected via `which drupalorg`) | Drupal.org issue/MR data |
 
-As of `drupalorg-cli` 0.10.3 this server exposes 17 read-only tools (`issue_show`,
+As of `drupalorg-cli` 0.12.0 this server exposes 17 read-only tools (`issue_show`,
 `issue_get_link`, `issue_get_branch`, `issue_get_patch_url`, `issue_get_fork`,
 `project_get_issues`, `issue_search`, `project_get_releases`,
 `project_get_release_notes`, `maintainer_get_issues`, `mr_list`, `mr_diff`,
 `mr_files`, `mr_status`, `mr_logs`, `gitlab_issue_show`, `gitlab_project_issues`).
-Verified 2026-07-06 against a live migrated issue (`ai` project, nid 3540491):
+Verified 2026-09-10 against a live migrated issue (`ai` project, nid 3540491),
+both via `tools/list` schemas and live `tools/call` invocations:
 
 - **Works correctly:** `gitlab_issue_show` (takes a full GitLab work-item URL,
   bypasses the classic nid→project lookup) — returns title, description, state,
   labels, timestamps. It does not return comments; `fetch_issue_notes.py`
   (`drupal-gitlab-inline-comments` skill) is still needed for those.
-- **Broken for migrated issues** (same root cause as the CLI bug in
-  `drupalorg mr:list <nid>` / `issue:get-fork <nid>` — the classic Drupal.org
-  REST lookup can't resolve a migrated nid to its project): `mr_list`,
-  `mr_status`, `mr_files`, `issue_get_fork` (all error or return
-  all-empty/garbage fields). Any tool that resolves project from `nid` alone
-  inherits this. `drupal-issue-start`'s `glab mr list --search` Bash fallback
-  (Phase 2) is the only working path for MR discovery on migrated issues —
-  do not replace it with an MCP tool call until upstream fixes this.
+- `issue_show` gained a `withComments` boolean param in 0.12.0 and does return
+  full comment bodies — but only for **non-migrated** issues (confirmed against
+  nid 3000000). Its `nid` param is still a bare `^\d+$` pattern with no project
+  prefix, so it still errors on a migrated nid — this doesn't help
+  `gitlab_issue_show`'s missing-comments gap above.
+- **Still broken for migrated issues at the MCP layer:** `mr_list`, `mr_status`,
+  `mr_files`, `issue_get_fork` all error (`-32603`) on a migrated nid, confirmed
+  by direct `tools/call`. The underlying CLI *commands* were fixed in 0.11.0
+  (`mr:list`/`issue:get-fork`/etc. now resolve correctly when given
+  `<project>#<nid>`, e.g. `ai#3540491`, instead of a bare nid) — but the MCP
+  tool schemas were never updated to expose a project-prefix field, so that
+  fix isn't reachable through the MCP server, only the raw CLI. Any MCP tool
+  whose schema resolves project from `nid` alone still inherits this.
+  `drupal-issue-start`'s `glab mr list --search` Bash fallback (Phase 2) is
+  still the only working path for MR discovery on migrated issues through this
+  MCP server — do not replace it with an MCP tool call until the tool schemas
+  themselves gain a project-prefix parameter (tracked upstream at
+  [mglaman/drupalorg-cli](https://github.com/mglaman/drupalorg-cli); re-check
+  `tools/list` after future releases rather than assuming a CLI fix propagated).
 - Not yet verified against a non-migrated issue — assume the nid-based tools
   work correctly there, since the bug is specific to migrated-nid resolution.
 

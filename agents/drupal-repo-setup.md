@@ -39,6 +39,7 @@ If the DDEV environment is not running or behaves unexpectedly during any step, 
   - `checkout` — check out an existing branch (Path A, MR review) — pauses before cloning and before checkout
   - `worktree` — create a new worktree branch (Path B, after plan is approved) — pauses before creating it
 - `<branch>` — branch name (required for `checkout` and `recon` mode when an MR exists; for `worktree` mode you will derive it as `<nid>-<short-description>`)
+- `<mr-iid>` — the merge request IID the branch belongs to (required alongside `<branch>` for `checkout` and `recon` mode when an MR exists; used by the migrated-checkout fallback in Step 6 and by the target-branch check in Step 6.5)
 - `<site>` / `<webroot>` — the site name and its already-resolved webroot
   from the calling agent's `## Local environments` lookup (see .drupal-contrib/context.md).
   This agent never re-resolves which site is in play — it just operates
@@ -312,6 +313,56 @@ Report: "Worktree created at `<module_dir>--<nid>` on branch `<nid>-<short-descr
 
 ---
 
+## Step 6.5 — Validate target branch (recon and checkout modes only, when `<branch>` was passed)
+
+Skip this step for `probe` and `worktree` modes, and for `recon`/`checkout`
+when no `<branch>`/`<mr-iid>` was passed (no open MR yet — nothing to
+validate). This is a read-only cross-check, not a gate — it never blocks or
+pauses, only adds to the Step 7 report.
+
+Neither Drupal.org nor the `drupalorg-cli` MCP tools validate this
+automatically (confirmed against a live migrated issue, 2026-09-10) — this
+step does it locally from data the CLI/`glab` already expose.
+
+**1. Get what the MR actually targets** — the ground truth:
+
+```bash
+GITLAB_HOST=git.drupalcode.org glab mr view <mr-iid> --repo project/<project>
+```
+
+Read `target_branch:` from the output. If this command fails (no fork, MR
+opened straight against the project), skip the rest of this step — nothing
+to compare against.
+
+**2. Get what the issue declares as its target version:**
+
+For a **non-migrated** issue:
+```bash
+drupalorg issue:show <nid> -f json
+```
+Read `field_issue_version` (e.g. `"8.x-1.x-dev"` → branch `8.x-1.x`).
+
+For a **migrated** issue, there is no structured version field —
+`drupalorg issue:show <project>#<nid> --with-comments -f json` and scan the
+`comments` array for the most recent system-generated diff block of the form:
+```
+- Version: <old>
++ Version: <new>
+```
+Take the `<new>` value from the last (most recent) such comment. If none
+exists, skip the rest of this step — the issue has no declared version to
+compare against.
+
+**3. Compare.** Normalize both to a bare branch name (strip a trailing
+`-dev`) before comparing — e.g. `1.4.x-dev` and `1.4.x` are the same target.
+
+- **Match, or step 1/2 yielded nothing to compare** — nothing to report,
+  continue silently.
+- **Mismatch** — record as a setup issue (not fatal, informational only):
+  `"MR !<mr-iid> targets <target_branch>, but the issue's most recently declared version is <declared-version> — worth checking whether the branch drifted after the MR was opened, or the MR was opened against the wrong target."`
+
+---
+
 ## Step 7 — Report back to the calling agent
 
 Return a short status block. Always include `## Setup issues` — even when
@@ -328,10 +379,11 @@ as "nothing wrong":
 - Remote:        <project>-<nid>  (omit for probe)
 
 ## Setup issues
-<Everything flagged in Steps 3, 4, and 5 as a setup/access problem — one
-bullet each, plain language, naming what the human needs to do about it
-(request fork access, check SSH key, start DDEV, etc.). If nothing was
-flagged: "None — clone, dependencies, and fork remote all set up cleanly.">
+<Everything flagged in Steps 3, 4, 5, and 6.5 as a setup/access problem —
+one bullet each, plain language, naming what the human needs to do about it
+(request fork access, check SSH key, start DDEV, reconcile a target-branch
+mismatch, etc.). If nothing was flagged: "None — clone, dependencies, and
+fork remote all set up cleanly.">
 ```
 
 **If `## Setup issues` is non-empty**, use the `wizard` skill to turn it into
