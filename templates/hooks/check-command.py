@@ -6,10 +6,46 @@ compound shell commands, and explicit shell -c wrappers. Does not resolve
 aliases, variable expansion, interactive stdin, or arbitrary script contents.
 """
 
+import fnmatch
 import json
 import os
+import re
 import shlex
 import sys
+
+# Binaries that dump file contents (to the transcript, another file, or a
+# remote host). Checked against SECRET_GLOBS/SECRET_DIR_NAMES below. git is
+# deliberately not included here — its own verb-based rules live separately,
+# and "git show HEAD:.env"-style content access is out of scope for this
+# best-effort guard.
+READ_BINARIES = {
+    'cat', 'less', 'more', 'tac', 'head', 'tail', 'grep', 'egrep', 'fgrep',
+    'awk', 'sed', 'strings', 'xxd', 'hexdump', 'od', 'base64',
+    'cp', 'scp', 'rsync', 'curl', 'vim', 'vi', 'nano', 'code', 'open', 'pbcopy',
+}
+SECRET_GLOBS = ('*.pem', '*.key', '*.pfx', '*.p12', 'id_rsa*', 'id_ed25519*', '.netrc', '.npmrc')
+SECRET_DIR_NAMES = ('secrets', '.ssh', '.aws')
+# .env.example/.sample/.dist/.template/.defaults are common, non-secret
+# checked-in documentation of required vars — don't flag those.
+ENV_SAFE_SUFFIXES = ('.example', '.sample', '.dist', '.template', '.defaults', '.test')
+
+
+def is_secret_path(token):
+    if token.startswith('-'):
+        return False
+    parts = re.split(r'[\\/]', token)
+    base = parts[-1]
+    if base == '.env' or (base.startswith('.env.') and not base.endswith(ENV_SAFE_SUFFIXES)):
+        return True
+    if any(fnmatch.fnmatch(base, pattern) for pattern in SECRET_GLOBS):
+        return True
+    return any(part in SECRET_DIR_NAMES for part in parts[:-1])
+
+
+def segment_end(tokens, start):
+    """Index of the next shell-punctuation token (;, &&, |, ...), or the end."""
+    return next((j for j in range(start, len(tokens))
+                if tokens[j] and all(c in ';&|()<>\n' for c in tokens[j])), len(tokens))
 
 
 def arguments(tokens, start, value_options):
@@ -46,10 +82,13 @@ def blocked(command, depth=0):
                     break
                 if not token.startswith('-'):
                     break
+        if binary in READ_BINARIES:
+            end = segment_end(tokens, index + 1)
+            if any(is_secret_path(t) for t in tokens[index + 1:end]):
+                return 'Reading credentials, keys, or secrets is blocked; use a redacted excerpt instead.'
         if binary not in ('git', 'glab'):
             continue
-        end = next((j for j in range(index + 1, len(tokens))
-                    if tokens[j] and all(c in ';&|()<>\n' for c in tokens[j])), len(tokens))
+        end = segment_end(tokens, index + 1)
         values = {'-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env'} if binary == 'git' else {'-R', '--repo', '--hostname', '--host'}
         sub = arguments(tokens, index + 1, values)
         if sub >= end:

@@ -17,6 +17,9 @@ const denied = [
   'env GITLAB_HOST=git.drupalcode.org glab --repo project/ai mr comment 1',
   'glab mr --repo project/ai create', 'glab api projects',
   'glab issue update 1', 'glab pipeline run', 'git push --force fork HEAD',
+  'cat .env', 'cat .env.local', 'grep API_KEY .env',
+  'bash -c "cat .env"', 'cat ~/.ssh/id_rsa', 'cat secrets/api.json',
+  'cp .env /tmp/x', 'cat server.pem',
 ];
 const allowed = [
   'git status', 'git -C module diff', 'git reset --soft HEAD~1',
@@ -26,6 +29,7 @@ const allowed = [
   'GITLAB_HOST=git.drupalcode.org glab mr list --repo project/ai',
   'glab --repo project/ai issue view 1', 'glab ci status',
   'python3 script.py', 'echo "git reset --hard"',
+  'cat .env.example', 'cat README.md', 'cat config/keys.php',
 ];
 for (const [commands, status] of [[denied, 2], [allowed, 0]]) {
   for (const command of commands) test(`hook ${status ? 'blocks' : 'allows'} ${command}`, () => {
