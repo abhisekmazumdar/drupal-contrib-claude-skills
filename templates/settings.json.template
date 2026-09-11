@@ -133,8 +133,24 @@
       "Edit(**/*.pem)",
       "Write(**/*.key)",
       "Edit(**/*.key)",
+      "Write(**/*.pfx)",
+      "Edit(**/*.pfx)",
+      "Write(**/*.p12)",
+      "Edit(**/*.p12)",
+      "Write(**/id_rsa*)",
+      "Edit(**/id_rsa*)",
+      "Write(**/id_ed25519*)",
+      "Edit(**/id_ed25519*)",
+      "Write(**/secrets/**)",
+      "Edit(**/secrets/**)",
       "Write(~/.ssh/**)",
-      "Edit(~/.ssh/**)"
+      "Edit(~/.ssh/**)",
+      "Write(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Write(~/.netrc)",
+      "Edit(~/.netrc)",
+      "Write(~/.npmrc)",
+      "Edit(~/.npmrc)"
     ]
   },
   "hooks": {

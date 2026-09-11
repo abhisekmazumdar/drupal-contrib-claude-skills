@@ -23,6 +23,13 @@ READ_BINARIES = {
     'awk', 'sed', 'strings', 'xxd', 'hexdump', 'od', 'base64',
     'cp', 'scp', 'rsync', 'curl', 'vim', 'vi', 'nano', 'code', 'open', 'pbcopy',
 }
+# Binaries whose whole purpose is writing their input/args to a file. `cp`,
+# `rsync`, etc. above already catch a secret *destination* argument (any
+# token in the segment is checked, not just the source), so they aren't
+# repeated here. This covers writers that take no filename argument at all —
+# the destination only shows up via redirection, which the generic '>'/'>>'
+# check below also catches, but `tee`/`dd` name their target directly.
+WRITE_BINARIES = {'tee', 'dd', 'install'}
 SECRET_GLOBS = ('*.pem', '*.key', '*.pfx', '*.p12', 'id_rsa*', 'id_ed25519*', '.netrc', '.npmrc')
 SECRET_DIR_NAMES = ('secrets', '.ssh', '.aws')
 # .env.example/.sample/.dist/.template/.defaults are common, non-secret
@@ -86,6 +93,12 @@ def blocked(command, depth=0):
             end = segment_end(tokens, index + 1)
             if any(is_secret_path(t) for t in tokens[index + 1:end]):
                 return 'Reading credentials, keys, or secrets is blocked; use a redacted excerpt instead.'
+        if binary in WRITE_BINARIES:
+            end = segment_end(tokens, index + 1)
+            if any(is_secret_path(t) for t in tokens[index + 1:end]):
+                return 'Writing credentials, keys, or secrets is blocked.'
+        if token in ('>', '>>') and index + 1 < len(tokens) and is_secret_path(tokens[index + 1]):
+            return 'Writing credentials, keys, or secrets is blocked.'
         if binary not in ('git', 'glab'):
             continue
         end = segment_end(tokens, index + 1)
