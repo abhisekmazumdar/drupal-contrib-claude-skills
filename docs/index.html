@@ -697,16 +697,21 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       </div>
       <p>
         The same script also blocks reading secret material via common dump commands
-        (<code>cat</code>, <code>grep</code>, <code>head</code>, <code>cp</code>, <code>curl</code>, and similar) —
+        (<code>cat</code>, <code>grep</code>, <code>head</code>, <code>cp</code>, <code>curl</code>, and similar), and
+        writing to it — via writer commands (<code>tee</code>, <code>dd</code>, <code>install</code>) and via shell
+        output redirection (<code>&gt;</code>/<code>&gt;&gt;</code>) — so Codex can't be routed around the deny list
+        below by shelling out instead of using its native edit tool. Both directions match the same paths:
         <code>.env</code>/<code>.env.*</code> (excluding non-secret suffixes like <code>.example</code>/<code>.sample</code>/<code>.dist</code>/<code>.template</code>/<code>.defaults</code>/<code>.test</code>),
         <code>*.pem</code>/<code>*.key</code>/<code>*.pfx</code>/<code>*.p12</code>, SSH private keys, <code>.netrc</code>/<code>.npmrc</code>,
         and anything under a <code>secrets/</code>, <code>.ssh/</code>, or <code>.aws/</code> path. It reuses the hook's
         shell-<code>-c</code>-unwrapping, so <code>bash -c "cat .env"</code> is caught the same as a bare <code>cat .env</code>.
         <code>templates/settings.json.template</code>'s permission <code>deny</code> list adds the Claude-Code-only
         complement — <code>Read</code>/<code>Write</code>/<code>Edit</code> denials on the same paths, which blocks
-        Claude's native file tools even with no Bash call involved. Codex has no equivalent per-tool permission
-        concept, so for Codex this hook is the only protection. Both layers are best-effort string/glob matching,
-        not a sandbox.
+        Claude's native file tools even with no Bash call involved. Every path there carries a matched
+        <code>Write(...)</code>/<code>Edit(...)</code> pair; Claude Code's permission matcher only honors
+        <code>Edit(path)</code> rules for file-write checks, so a lone <code>Write(...)</code> rule is never enforced.
+        Codex has no equivalent per-tool permission concept, so for Codex this hook is the only protection. Both
+        layers are best-effort string/glob matching, not a sandbox.
       </p>
     </section>
 
