@@ -706,12 +706,12 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         and anything under a <code>secrets/</code>, <code>.ssh/</code>, or <code>.aws/</code> path. It reuses the hook's
         shell-<code>-c</code>-unwrapping, so <code>bash -c "cat .env"</code> is caught the same as a bare <code>cat .env</code>.
         <code>templates/settings.json.template</code>'s permission <code>deny</code> list adds the Claude-Code-only
-        complement — <code>Read</code>/<code>Write</code>/<code>Edit</code> denials on the same paths, which blocks
-        Claude's native file tools even with no Bash call involved. Every path there carries a matched
-        <code>Write(...)</code>/<code>Edit(...)</code> pair; Claude Code's permission matcher only honors
-        <code>Edit(path)</code> rules for file-write checks, so a lone <code>Write(...)</code> rule is never enforced.
-        Codex has no equivalent per-tool permission concept, so for Codex this hook is the only protection. Both
-        layers are best-effort string/glob matching, not a sandbox.
+        complement — <code>Read</code>/<code>Edit</code> denials on the same paths, which blocks Claude's native file
+        tools even with no Bash call involved. There's deliberately no <code>Write(...)</code> rule for these paths:
+        Claude Code's permission matcher only honors <code>Edit(path)</code> rules for file-write checks, so a
+        <code>Write(...)</code> rule is dead weight the harness itself flags as unenforced — <code>Edit(...)</code>
+        alone already covers every file-editing tool. Codex has no equivalent per-tool permission concept, so for
+        Codex this hook is the only protection. Both layers are best-effort string/glob matching, not a sandbox.
       </p>
     </section>
 
