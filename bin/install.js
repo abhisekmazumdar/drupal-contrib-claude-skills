@@ -174,8 +174,13 @@ function writer(cwd, previous = {}, dryRun = false) {
   // entry entirely. `transformContent(content, entryName)` post-processes
   // the source content (e.g. the .md-frontmatter -> .toml conversion for
   // Codex agents) before it's written. Both default to identity/pass-through.
-  function copyManaged(source, destination, exclude = new Set(), { renameFile, transformContent, shallow } = {}) {
-    const written = new Set();
+  // `preserve` is a set of relative paths under `destination` that a sibling
+  // forceWrite() call (outside this walk, e.g. one needing a non-default
+  // file mode) already owns — excluding them here would otherwise get them
+  // pruned and then re-inserted as a "new" key by that sibling call, which
+  // moves them to the end of `files` and breaks idempotency between runs.
+  function copyManaged(source, destination, exclude = new Set(), { renameFile, transformContent, shallow, preserve } = {}) {
+    const written = new Set(preserve);
     (function walk(src, dest) {
       for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
         if (exclude.has(entry.name)) continue;
@@ -201,10 +206,9 @@ function writer(cwd, previous = {}, dryRun = false) {
   // everything inside is fully replaced on every run so the toolkit summary
   // (skills root, conventions, MCP setup) never goes stale. A file with no
   // markers yet gets the block appended, not overwritten.
-  function upsertBlock(relative, content, markerId) {
+  function upsertBlock(relative, content, markerId, { shared } = {}) {
     const destination = path.resolve(cwd, relative);
     if (!destination.startsWith(cwd + path.sep)) throw new Error(`Invalid destination: ${relative}`);
-    if (symlinkAncestor(cwd, destination)) throw new Error(`Refusing to write through a symlink: ${relative}`);
     const begin = `<!-- ${markerId}:begin -->`;
     const end = `<!-- ${markerId}:end -->`;
     const block = `${begin}\n<!-- Managed by ${markerId}. Edits inside this block are overwritten on the next \`npx ${markerId}\` run. -->\n${content.replace(/\n+$/, '')}\n${end}`;
@@ -217,6 +221,25 @@ function writer(cwd, previous = {}, dryRun = false) {
     else next = block + '\n';
     if (next === existing) {
       log.identical.push(relative);
+      return;
+    }
+    // A symlinked CLAUDE.md/AGENTS.md (kept as one shared file) can't be
+    // force-written through — that would double-append the block into
+    // whatever the link points at. Divert to a proposal like write() does,
+    // instead of crashing setup entirely, and leave the symlink untouched.
+    // `shared` covers the other half of the pair too: if CLAUDE.md and
+    // AGENTS.md resolve to the same real file (one linked to the other),
+    // the real file is just as unsafe to force-write as the link itself —
+    // whichever target is processed first would otherwise mutate it before
+    // the second target ever sees it was symlinked.
+    if (shared || symlinkAncestor(cwd, destination)) {
+      let proposal = path.join(cwd, '.drupal-contrib', 'proposals', relative);
+      if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
+      log.conflicts.push(`${relative} (preserved as a symlink; proposal: ${path.relative(cwd, proposal)})`);
+      if (!dryRun) {
+        fs.mkdirSync(path.dirname(proposal), { recursive: true });
+        fs.writeFileSync(proposal, next);
+      }
       return;
     }
     log.copied.push(relative);
@@ -252,18 +275,30 @@ function agentToml(content) {
 function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
   output.copyManaged(path.join(packageRoot, 'agents'), '.drupal-contrib/agents');
   output.write('.drupal-contrib/context.md', render(path.join(packageRoot, 'templates', 'context.md.template'), vars));
+  // If CLAUDE.md and AGENTS.md are kept as one shared file (either symlinked
+  // to the other), resolve that up front — whichever target's upsertBlock
+  // call runs first would otherwise mutate the real file before the second
+  // target ever gets a chance to notice it's shared.
+  const realpathOrNull = p => { try { return fs.realpathSync(p); } catch { return null; } };
+  const claudeReal = realpathOrNull(path.join(cwd, 'CLAUDE.md'));
+  const agentsReal = realpathOrNull(path.join(cwd, 'AGENTS.md'));
+  const sharedInstructionFile = Boolean(claudeReal && agentsReal && claudeReal === agentsReal);
   for (const target of targets) {
     const claude = target === 'claude-code';
     const root = claude ? '.claude' : '.codex';
     output.copyManaged(path.join(packageRoot, 'skills'), claude ? '.claude/skills' : '.agents/skills');
     const hookPath = path.join(cwd, root, 'hooks', 'block-dangerous-git.sh');
     // block-dangerous-git.sh needs the executable bit, so it's written
-    // separately with a mode; exclude it here to avoid writing (and
-    // logging) it twice.
-    output.copyManaged(path.join(packageRoot, 'templates', 'hooks'), `${root}/hooks`, new Set(['block-dangerous-git.sh']));
+    // separately with a mode; exclude it from the walk to avoid writing
+    // (and logging) it twice, and `preserve` it so copyManaged's prune()
+    // doesn't delete-then-let-forceWrite-re-add it (which would move it to
+    // the end of the lockfile's files map on every update run).
+    output.copyManaged(path.join(packageRoot, 'templates', 'hooks'), `${root}/hooks`, new Set(['block-dangerous-git.sh']), {
+      preserve: new Set([`${root}/hooks/block-dangerous-git.sh`]),
+    });
     output.forceWrite(`${root}/hooks/block-dangerous-git.sh`, fs.readFileSync(path.join(packageRoot, 'templates/hooks/block-dangerous-git.sh'), 'utf8'), 0o755);
     const instruction = claude ? 'CLAUDE.md' : 'AGENTS.md';
-    output.upsertBlock(instruction, fs.readFileSync(path.join(packageRoot, 'templates', `${instruction}.template`), 'utf8'), 'drupal-contrib-claude-skills');
+    output.upsertBlock(instruction, fs.readFileSync(path.join(packageRoot, 'templates', `${instruction}.template`), 'utf8'), 'drupal-contrib-claude-skills', { shared: sharedInstructionFile });
     if (claude) {
       output.copyManaged(path.join(packageRoot, 'agents'), '.claude/agents');
       // Serialize after substitution so quotes/backslashes in executable paths remain valid JSON.
