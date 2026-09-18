@@ -64,8 +64,13 @@ documents** — add/remove/rename a skill or agent, change an agent's role or
 persona, add an external skill, change the issue-record format, add a
 convention to this file — check whether `docs/index.html` needs the same
 update. It won't drift into correctness on its own; nothing regenerates it.
-There's no automated check for this yet, so treat it as a manual step at
-the end of any change that touches the tables/conventions below.
+`tests/docs-sync.test.js` (run in CI) catches the mechanical half of this —
+every `skills/`/`agents/` entry and every `bin/setup.js` `externalSkills`
+entry must have a matching row in `docs/index.html`'s Skills/Agents/External
+skills tables, in both directions, so a rename or removal fails CI instead
+of drifting silently. It does not check prose — role/persona descriptions,
+the issue-record format section, and other conventions below still need a
+manual check at the end of any change that touches them.
 
 ### Template vars belong only in `templates/`
 
