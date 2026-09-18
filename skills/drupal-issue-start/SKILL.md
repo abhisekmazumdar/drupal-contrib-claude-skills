@@ -508,20 +508,13 @@ Pass `<nid>`, `<project>`, `is_migrated`, `<site>` and its resolved `<webroot>`/
 
 ### Relaying agent pauses
 
-Delegated agents run as sub-agents and **cannot talk to the user directly mid-run**.
-When a delegated agent's run ends with a report starting with
-`[PAUSE — awaiting user decision]`:
+Delegated agents run as sub-agents and can't talk to the user directly mid-run. When a run ends with `[PAUSE — awaiting user decision]`:
 
-1. Relay the report to the user **verbatim** — do not summarize it, do not answer
-   its question yourself.
-2. Wait for the user's reply.
-3. Resume the same agent with the user's reply — or, if the agent cannot be
-   resumed, re-invoke it passing the pause report, the user's decision, and the
-   issue record so it continues from that exact step.
+1. Relay the report **verbatim** — don't summarize it, don't answer its question yourself.
+2. Wait for the reply.
+3. Resume the same agent with it — or, if it can't be resumed, re-invoke it with the pause report, the decision, and the issue record so it continues from that exact step.
 
-Never proceed past an agent's pause on the user's behalf, and never treat a pause
-report as the end of the work — the loop is only finished when the agent's final
-message is not a pause.
+Never proceed past a pause on the user's behalf. The loop ends only when an agent's final message isn't a pause.
 
 ---
 

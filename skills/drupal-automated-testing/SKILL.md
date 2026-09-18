@@ -6,116 +6,60 @@ description: >
 
 # Writing automated tests for Drupal
 
-## When to use this guidance
+Drupal's testing conventions are idiosyncratic — general PHP testing advice and default AI-agent instincts get them wrong. This guidance covers what differs.
 
-You are writing or modifying automated tests for a Drupal module, whether for
-core, contrib, or custom code. This guidance covers test type selection, common
-traps, and patterns that differ from general PHP testing advice. Drupal's testing
-conventions are idiosyncratic and AI agents frequently get them wrong by default.
+## When tests are needed
 
-## Guidance
+Bug fixes: almost always — without one the bug can silently return. Behaviour changes: almost always. Config-only changes: usually not. Modifying an existing feature? Find and update its existing test first. Adding one? Cover the happy path and the most likely error paths.
 
-### When tests are needed
+## Choose the right test type
 
-Bug fixes almost always need a test. Without one, the same bug can silently
-return. Behaviour changes almost always need a test. Configuration-only changes
-usually do not. If you are modifying an existing feature, find the existing test
-first and update it. If you are adding a new feature, write a new test covering
-the happy path and at least the most likely error paths.
+Reach for **Functional or Kernel first** — not Unit, despite what general PHP advice suggests. Drupal code is mostly services/hooks/entities wired through a DI container; integration-level tests are where the value is.
 
-### Choose the right test type
+- **Functional** (`\Drupal\Tests\BrowserTestBase`) — the default choice. Boots a real site with all config/schema installed; tests PHP APIs and UI both. Use for HTTP requests, forms, pages, or a dependency tree too complex to set up by hand.
+- **Kernel** (`\Drupal\KernelTests\KernelTestBase`) — services, APIs, hooks with no UI. Faster than Functional, but a minimal environment: no config installed, no entity tables created, no dependency resolution. Call `$this->installEntitySchema('node')`, `$this->installConfig(['my_module'])`, etc. explicitly. "Table does not exist" in a Kernel test almost always means a missing install call.
+- **FunctionalJavascript** (`\Drupal\FunctionalJavascriptTests\WebDriverTestBase`) — only for JS-driven UI (AJAX, modals, dynamic visibility). Prone to flakiness from async timing. Always assert `waitForElement`'s result — it returns `NULL` on no-match, and an unasserted `NULL` is a silent false pass:
+  ```php
+  // Wrong: doesn't wait for the result.
+  $this->assertSession()->waitForElement('css', '#page-title');
 
-Drupal has five test types. Reach for Functional or Kernel first. Internet
-documentation and AI agents frequently suggest unit tests as the starting point.
-In Drupal, that advice is wrong. Drupal code is mostly about integrating
-services, hooks, and entities through a dependency injection container, which
-makes integration-level tests far more valuable.
+  // Correct: waits and asserts.
+  $this->assertNotEmpty(
+    $this->assertSession()->waitForElement('css', '#page-title')
+  );
+  ```
+  After a button press that triggers AJAX: wait for the expected element, then assert.
+- **Unit** (`\Drupal\Tests\UnitTestCase`) — pure functions with no container dependency. Uncommon in Drupal.
+- **Build** (`\Drupal\BuildTests\Framework\BuildTestBase`) — codebase-layout scenarios like Composer dependency resolution.
 
-**Functional tests** (`\Drupal\Tests\BrowserTestBase`) are the best default
-choice. They boot a real Drupal site, install modules with all config and schema,
-and can test both PHP APIs and the UI. Use them when the feature involves HTTP
-requests, forms, pages, or when the module dependency tree is complex enough that
-setting everything up manually would be harder than letting Drupal do it.
+## Required class attributes
 
-**Kernel tests** (`\Drupal\KernelTests\KernelTestBase`) are good for testing
-services, APIs, and hook implementations that do not need a UI. They are faster
-than Functional tests but provide a minimal environment: no config is installed,
-no entity database tables are created, and module dependencies are not resolved
-automatically. You must call `$this->installEntitySchema('node')`,
-`$this->installConfig(['my_module'])`, and similar setup methods explicitly. If
-your Kernel test throws "table does not exist" errors, this is almost certainly
-the cause.
+Kernel/Functional/FunctionalJavascript classes need `#[RunTestsInSeparateProcesses]` (`use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;`) — hard requirement since Drupal 11.3, strongly recommended on 10.x. Unit tests run in-process; skip it there.
 
-**FunctionalJavascript tests** (`\Drupal\FunctionalJavascriptTests\WebDriverTestBase`)
-are needed only when the UI interaction involves JavaScript, such as AJAX form
-updates, modal dialogs, or dynamic element visibility. These tests are prone to
-flakiness because interactions are asynchronous. The critical pattern to follow:
+## Test namespaces
 
-```php
-// Wrong: does not wait for the element to appear.
-$this->assertSession()->waitForElement('css', '#page-title');
-
-// Correct: waits and asserts the result.
-$this->assertNotEmpty(
-  $this->assertSession()->waitForElement('css', '#page-title')
-);
-```
-
-Always explicitly assert the result of `waitForElement` and similar methods.
-They return `NULL` if the element is not found, and not asserting the return
-value silently produces a false-passing test. After pressing a button that
-triggers AJAX, wait for the expected element, then assert.
-
-**Unit tests** (`\Drupal\Tests\UnitTestCase`) are appropriate only for pure
-functions with no Drupal container dependencies. They are uncommon in Drupal.
-
-**Build tests** (`\Drupal\BuildTests\Framework\BuildTestBase`) test codebase
-layout scenarios such as Composer dependency resolution.
-
-### Required class attributes
-
-Kernel, Functional, and FunctionalJavascript test classes should declare the
-`#[RunTestsInSeparateProcesses]` attribute from PHPUnit (requires
-`use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;`). This became a
-hard requirement in Drupal 11.3 and is strongly recommended on 10.x. Unit tests
-run in-process and do not need this attribute.
-
-### Test namespaces
-
-Tests must be in the correct namespace or the test runner will not discover them:
+Wrong namespace = the test runner won't discover it:
 
 - Unit: `\Drupal\Tests\<module>\Unit`
 - Kernel: `\Drupal\Tests\<module>\Kernel`
 - Functional: `\Drupal\Tests\<module>\Functional`
-- FunctionalJavascript: `\Drupal\Tests\<module>\FunctionalJavascript`
+- FunctionalJavascript: `\Drupal\Tests\<module>\FunctionalJavascript` — capitalization matters
 
-The `FunctionalJavascript` capitalisation is important.
+## The dual-container trap in Functional tests
 
-### The dual-container trap in Functional tests
+Functional tests run two Drupal instances (PHPUnit process + web server) sharing one database but separate PHP memory. State set in one (a registered service, a set variable) is invisible to the other — source of confusing caching/service-registration bugs. A targeted cache clear or container rebuild may fix it; comment why when it does.
 
-Functional tests run two separate Drupal instances that share the same database
-but have separate PHP memory spaces: one in PHPUnit and one in the web server.
-State set in the test process (like registering a service or setting a variable)
-is not visible to the web server process, and vice versa. This causes confusing
-bugs around caching and service registration. If you hit these, targeted cache
-clears or container rebuilds may help, but always add a comment explaining why.
+## Running tests
 
-### Running tests
+Use DDEV. PHPUnit requires two env vars: `SIMPLETEST_BASE_URL` (the site's local HTTP address) and `SIMPLETEST_DB` (the DB connection string).
 
-Use DDEV. Set these two environment variables, which PHPUnit requires:
+## Reducing test repetition
 
-- `SIMPLETEST_BASE_URL`: the local HTTP address of your Drupal site
-- `SIMPLETEST_DB`: the database connection string
-
-### Reducing test repetition
-
-If you have multiple similar test cases, use `setUp()`, data providers, or the
-`#[TestWith]` attribute rather than duplicating code across test methods.
+Multiple similar cases? Use `setUp()`, data providers, or `#[TestWith]` — don't duplicate code across test methods.
 
 ## What not to do
 
-Do not write Nightwatch tests. They are JavaScript-based, prone to flakiness,
-and the Drupal community is moving toward Playwright as a replacement.
+Don't write Nightwatch tests — flaky, JS-based, the community's moving to Playwright.
 
 ## See also
 

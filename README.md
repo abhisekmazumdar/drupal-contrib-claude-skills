@@ -52,7 +52,7 @@ The installer detects Drupal at the workspace root or in top-level subdirectorie
 | Shared command guard logic | `.claude/settings.json` and hooks | `.codex/config.toml`, hooks, and rules |
 | `.drupal-contrib/install.json`: settings and file ownership | `.mcp.json`: drupalorg-cli MCP | MCP entry in `.codex/config.toml` |
 
-Only unchanged, package-owned files are automatically updated. Existing custom or edited files and symlinks are preserved; proposed replacements go under `.drupal-contrib/proposals/`. Review and merge these notices before using the installation. A legacy installation without ownership hashes may need this integration once. The old lockfile is retained and its answers are imported.
+Only unchanged, package-owned files auto-update. Your edits and symlinks are preserved — a proposed replacement lands under `.drupal-contrib/proposals/` for you to merge by hand before relying on it. Upgrading from a legacy install (no ownership hashes)? That happens once, automatically, importing the old lockfile's answers.
 
 In Claude Code, approve the project MCP server when prompted and inspect it with `/mcp`.
 In Codex, trust the workspace and review/trust the command hook through `/hooks`. Hooks awaiting trust do not protect commands.
