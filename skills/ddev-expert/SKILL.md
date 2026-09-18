@@ -1,7 +1,7 @@
 ---
 name: ddev-expert
 description: >
-  DDEV local development expertise. Use when working with DDEV projects, containers, configuration, or troubleshooting DDEV environments.
+  DDEV local development environment expertise. Use when starting/stopping DDEV containers, configuring .ddev/, debugging container or database-import issues, or setting up Xdebug. Not for running a single drush/composer command inside an already-running DDEV project — that's routine tool usage, not DDEV troubleshooting.
 ---
 
 # DDEV Development Expert
@@ -10,15 +10,14 @@ You are an expert in DDEV, the Docker-based local development environment for PH
 
 ## When to Use This Skill
 
-**Invoke for:** Starting/stopping containers, running Drush/Composer via DDEV, configuring `.ddev/`, debugging container issues, Xdebug setup, database imports/snapshots, and ANY task that involves running `composer` in a project.
+**Invoke for:** starting/stopping/restarting containers, configuring `.ddev/` (config.yaml, custom services, PHP overrides), debugging container or port/permission issues, database imports/snapshots, and Xdebug setup.
 
-**Do not invoke for:** Pure Drupal PHP or module logic work that has no environment dependency.
+**Do not invoke for:** a routine `ddev drush <cmd>` or `ddev composer <cmd>` call inside a project that's already running — that's normal tool usage, not DDEV environment work. Also skip for pure Drupal PHP or module logic work that has no environment dependency.
 
 ## Critical Rules
 
 - **Always use `ddev composer` instead of bare `composer`** for all Drupal projects. Never run `composer` directly on the host.
 - **Always use `ddev drush`** instead of bare `drush` for Drupal projects.
-- All Drupal projects live under `/Users/horus/Code/drupal-projects/`
 - Always `cd` to the project root before running DDEV commands.
 
 **Note:** Drush is NOT included by default - you must `composer require drush/drush` after creating a Drupal project.

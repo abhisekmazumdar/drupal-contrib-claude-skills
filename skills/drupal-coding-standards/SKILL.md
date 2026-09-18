@@ -1,14 +1,16 @@
 ---
 name: drupal-coding-standards
 description: >
-  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or directory, matching exactly what the Drupal CI pipeline runs. Use when the user asks to check coding standards, fix CS violations, run phpcs, or before committing contribution work.
+  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or directory, matching exactly what the Drupal CI pipeline runs. Also covers PHP-compatibility review for Drupal 11.x (deprecations, PHP attributes, PHPUnit upgrades, PHP 8.4 compat) via references/php-changes.md. Use when the user asks to check coding standards, fix CS violations, run phpcs, review PHP compatibility, or before committing contribution work.
 argument-hint: "[path]"
 ---
 
 # /drupal-coding-standards
 
 **Purpose:** Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file
-or directory, matching exactly what the Drupal CI pipeline runs.
+or directory, matching exactly what the Drupal CI pipeline runs. Also the place to check
+Drupal 11.x PHP-compatibility concerns (deprecations, PHP attributes, PHPUnit upgrades,
+PHP 8.4 compat) — see "PHP compatibility review" below.
 
 **Usage:**
 ```
@@ -157,6 +159,17 @@ Summarise:
 - Violations auto-fixed by PHPCBF
 - Violations manually fixed
 - Final PHPCS exit code (0 = pipeline will pass)
+
+---
+
+## PHP compatibility review
+
+When the user asks about PHP compatibility, deprecations, PHP attributes, PHPUnit
+upgrades, OOP hooks, fibers, or whether code will pass Drupal 11 CI on PHP-version
+grounds (as opposed to a style/PHPCS violation), read `references/php-changes.md`
+(resolve relative to this installed `SKILL.md`) and apply its checklist. This is a
+lookup, not part of the standard PHPCS/PHPCBF run above — consult it only for that
+specific PHP-compatibility question.
 
 ---
 

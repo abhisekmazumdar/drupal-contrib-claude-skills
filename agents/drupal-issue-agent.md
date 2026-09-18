@@ -17,7 +17,6 @@ skills:
   - drupal-issue-reroll
   - drupalorg-comment-format
   - ddev-expert
-  - drupal-php-changes
   - drupal-clone-contrib
   - how
   - blast-radius
@@ -352,7 +351,7 @@ Work through every item. Mark each `PASS`, `FAIL`, or `SKIP`:
 - No sensitive data in logs or error messages
 - File operations validated (existence, fclose after fopen)
 
-**Drupal 11 API** *(invoke `/drupal-php-changes` for the full PHP checklist)*
+**Drupal 11 API** *(see `drupal-coding-standards`'s `references/php-changes.md` for the full PHP checklist)*
 - No deprecated methods for the target branch
 - Schema changes have `hook_update_N` or install file updates
 - New entity types have annotation + interface + access handler
@@ -698,9 +697,9 @@ The sub-agent fetches origin, creates the worktree branch (with user approval), 
 
 ### B5. Implement
 
-Before writing any code, invoke `/drupal-php-changes` and run through its checklist
-to ensure all new code is compatible with Drupal 11 PHP standards (attributes,
-PHPUnit style, deprecations, PHP 8.4 compat).
+Before writing any code, read `drupal-coding-standards`'s `references/php-changes.md`
+and run through its checklist to ensure all new code is compatible with Drupal 11 PHP
+standards (attributes, PHPUnit style, deprecations, PHP 8.4 compat).
 
 Follow the approved plan file-by-file. Write code, then when all files for the
 plan are done, run pre-commit checks before staging anything:

@@ -1,26 +1,10 @@
----
-name: drupal-php-changes
-description: >
-  Apply knowledge of PHP-related changes introduced in Drupal 11.x when reviewing, fixing, or contributing to Drupal issues. Use when the user asks about PHP compatibility, deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, or when reviewing code that needs to pass Drupal 11 CI.
-argument-hint: "[drupal-version or topic]"
----
+# Drupal 11.x PHP changes
 
-# /drupal-php-changes
-
-**Purpose:** Apply awareness of PHP-related changes across Drupal 11.x when working
-on contribution issues, reviewing MRs, or writing new code. This skill covers:
-PHP version requirements, PHP Attribute adoption, PHPUnit changes, PHP 8.4
-compatibility, fibers, OOP hooks, database driver changes, and key deprecations.
-
-**Usage:**
-```
-/drupal-php-changes
-/drupal-php-changes 11.3
-/drupal-php-changes attributes
-/drupal-php-changes phpunit
-```
-
----
+Reference lookup for PHP-related changes across Drupal 11.x — deprecations,
+PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility.
+Consult this when reviewing, fixing, or writing code that needs to pass
+Drupal 11 CI, or when the user asks about PHP compatibility specifically
+(not on every coding-standards run — see the parent `SKILL.md`).
 
 ## PHP Version Requirements for Drupal 11
 

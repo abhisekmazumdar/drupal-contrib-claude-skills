@@ -445,15 +445,14 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <h3>Code quality &amp; testing</h3>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
-        <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs.</td></tr>
+        <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs. Also covers PHP-compatibility review for Drupal 11.x — deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility — via a <code>references/php-changes.md</code> lookup consulted only for that specific question.</td></tr>
         <tr><td><code>drupal-automated-testing</code></td><td>Guidance for writing/modifying Functional, Kernel, FunctionalJavascript, and Unit tests: PHPUnit attributes, test namespaces, the Functional dual-container trap, DDEV env vars.</td></tr>
-        <tr><td><code>drupal-php-changes</code></td><td>PHP-related changes across Drupal 11.x: deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility.</td></tr>
       </table>
 
       <h3>Environment</h3>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
-        <tr><td><code>ddev-expert</code></td><td>DDEV local environment expertise: containers, configuration, Drush/Composer via DDEV, Xdebug, database imports/snapshots.</td></tr>
+        <tr><td><code>ddev-expert</code></td><td>DDEV environment lifecycle: starting/stopping containers, <code>.ddev/</code> configuration, container/database-import troubleshooting, Xdebug setup. Does not trigger for a routine <code>ddev drush</code>/<code>ddev composer</code> call in an already-running project — that's normal tool usage, not DDEV environment work.</td></tr>
       </table>
 
       <div class="warn">
