@@ -64,9 +64,43 @@ function symlinkAncestor(cwd, destination) {
   return null;
 }
 
-function writer(cwd, previous = {}, dryRun = false) {
+// Validates the lockfile's `localOverrides`: project-relative paths (or
+// directory prefixes ending in `/`) the project has deliberately customized
+// and wants force-managed updates to stop overwriting.
+function localOverrides(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error('localOverrides in installation state must be an array of paths');
+  return value.map(entry => {
+    if (typeof entry !== 'string' || !entry.trim()) throw new Error('localOverrides entries must be non-empty strings');
+    const normalized = entry.trim().replace(/\\/g, '/').replace(/^\.\//, '');
+    if (path.isAbsolute(normalized) || normalized.split('/').includes('..')) {
+      throw new Error(`localOverrides entry must stay inside the workspace: ${entry}`);
+    }
+    return normalized;
+  });
+}
+
+function writer(cwd, previous = {}, dryRun = false, overrides = []) {
   const files = { ...previous };
   const log = { copied: [], identical: [], conflicts: [] };
+  const overridden = relative => overrides.some(entry => entry.endsWith('/') ? relative.startsWith(entry) : relative === entry);
+  // Stashes `content` at `.drupal-contrib/proposals/<relative>` instead of
+  // touching the destination, for the human to merge by hand.
+  function propose(relative, content, mode, reason) {
+    // Store proposals outside either client's discovery/config directories.
+    let proposal = path.join(cwd, '.drupal-contrib', 'proposals', relative);
+    if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
+    if (fs.existsSync(proposal) && (!fs.statSync(proposal).isFile() || fs.readFileSync(proposal, 'utf8') !== content)) {
+      proposal += `.proposed-${hash(content).slice(0, 12)}`;
+    }
+    log.conflicts.push(`${relative} (${reason}; proposal: ${path.relative(cwd, proposal)})`);
+    if (!dryRun) {
+      if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
+      fs.mkdirSync(path.dirname(proposal), { recursive: true });
+      if (!fs.existsSync(proposal)) fs.writeFileSync(proposal, content, { mode: mode || 0o644, flag: 'wx' });
+      else if (fs.readFileSync(proposal, 'utf8') !== content) throw new Error(`Proposal was edited: ${proposal}`);
+    }
+  }
   function write(relative, content, mode) {
     const destination = path.resolve(cwd, relative);
     if (!destination.startsWith(cwd + path.sep)) throw new Error(`Invalid destination: ${relative}`);
@@ -80,19 +114,7 @@ function writer(cwd, previous = {}, dryRun = false) {
       return;
     }
     if (linked || (exists && (old === null || previous[relative] !== hash(old)))) {
-      // Store proposals outside either client's discovery/config directories.
-      let proposal = path.join(cwd, '.drupal-contrib', 'proposals', relative);
-      if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
-      if (fs.existsSync(proposal) && (!fs.statSync(proposal).isFile() || fs.readFileSync(proposal, 'utf8') !== content)) {
-        proposal += `.proposed-${hash(content).slice(0, 12)}`;
-      }
-      log.conflicts.push(`${relative} (preserved; proposal: ${path.relative(cwd, proposal)})`);
-      if (!dryRun) {
-        if (symlinkAncestor(cwd, proposal)) throw new Error(`Unsafe proposal path: ${proposal}`);
-        fs.mkdirSync(path.dirname(proposal), { recursive: true });
-        if (!fs.existsSync(proposal)) fs.writeFileSync(proposal, content, { mode: mode || 0o644, flag: 'wx' });
-        else if (fs.readFileSync(proposal, 'utf8') !== content) throw new Error(`Proposal was edited: ${proposal}`);
-      }
+      propose(relative, content, mode, 'preserved');
       return;
     }
     log.copied.push(relative);
@@ -118,13 +140,25 @@ function writer(cwd, previous = {}, dryRun = false) {
   // never divert to a `.drupal-contrib/proposals/` stash on drift: they
   // always make the destination match what this version of the package
   // ships, so an update is never silently skipped because a file happened
-  // to differ on disk.
+  // to differ on disk. The one exception is a path the project listed in
+  // the lockfile's `localOverrides`: an explicit opt-out, so an existing
+  // copy that differs is kept and the shipped version becomes a proposal.
   function forceWrite(relative, content, mode) {
     const destination = path.resolve(cwd, relative);
     if (!destination.startsWith(cwd + path.sep)) throw new Error(`Invalid destination: ${relative}`);
     if (symlinkAncestor(cwd, destination)) throw new Error(`Refusing to write through a symlink: ${relative}`);
     const exists = fs.existsSync(destination);
     const old = exists && fs.statSync(destination).isFile() ? fs.readFileSync(destination, 'utf8') : null;
+    if (old !== null && old !== content && overridden(relative)) {
+      propose(relative, content, mode, 'local override kept');
+      return;
+    }
+    if (!exists && previous[relative] && overridden(relative)) {
+      // The toolkit wrote this once and the project then deleted it on
+      // purpose — an override covers a removal too, so don't resurrect it.
+      log.conflicts.push(`${relative} (local override: kept removed)`);
+      return;
+    }
     files[relative] = hash(content);
     if (old === content) {
       log.identical.push(relative);
@@ -149,6 +183,11 @@ function writer(cwd, previous = {}, dryRun = false) {
     const root = path.resolve(cwd, prefix);
     for (const relative of Object.keys(previous)) {
       if (!relative.startsWith(prefix) || written.has(relative)) continue;
+      if (overridden(relative)) {
+        // Dropped upstream, but the project owns this copy now — keep it.
+        log.conflicts.push(`${relative} (local override kept; no longer shipped)`);
+        continue;
+      }
       delete files[relative];
       const absolute = path.resolve(cwd, relative);
       if (!dryRun && !symlinkAncestor(cwd, absolute) && fs.existsSync(absolute)) {
@@ -272,7 +311,7 @@ function agentToml(content) {
   return `name = ${JSON.stringify(name)}\ndescription = ${JSON.stringify(description)}\ndeveloper_instructions = ${JSON.stringify(instructions)}\n`;
 }
 
-function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
+function installTargets({ cwd, packageRoot, targets, output, render, vars, externalSkills = [] }) {
   output.copyManaged(path.join(packageRoot, 'agents'), '.drupal-contrib/agents');
   output.write('.drupal-contrib/context.md', render(path.join(packageRoot, 'templates', 'context.md.template'), vars));
   // If CLAUDE.md and AGENTS.md are kept as one shared file (either symlinked
@@ -286,7 +325,14 @@ function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
   for (const target of targets) {
     const claude = target === 'claude-code';
     const root = claude ? '.claude' : '.codex';
-    output.copyManaged(path.join(packageRoot, 'skills'), claude ? '.claude/skills' : '.agents/skills');
+    const skillsRoot = claude ? '.claude/skills' : '.agents/skills';
+    // External skills share the skills root but are pulled by
+    // installExternal(), not this walk — preserve them or prune() deletes
+    // them on every re-run (permanently, when offline or --skip-external).
+    const externalDirs = externalSkills.map(name => `${skillsRoot}/${name}/`);
+    output.copyManaged(path.join(packageRoot, 'skills'), skillsRoot, new Set(), {
+      preserve: new Set(Object.keys(output.files).filter(relative => externalDirs.some(dir => relative.startsWith(dir)))),
+    });
     const hookPath = path.join(cwd, root, 'hooks', 'block-dangerous-git.sh');
     // block-dangerous-git.sh needs the executable bit, so it's written
     // separately with a mode; exclude it from the walk to avoid writing
@@ -327,4 +373,4 @@ function installTargets({ cwd, packageRoot, targets, output, render, vars }) {
   }
 }
 
-module.exports = { options, readState, writer, installTargets, agentToml, symlinkAncestor };
+module.exports = { options, readState, localOverrides, writer, installTargets, agentToml, symlinkAncestor };

@@ -39,7 +39,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run
 ```
 
 For a local checkout, use `npx /path/to/drupal-contrib-claude-skills --target both`.
-Use `--yes` to accept detected defaults and `--skip-external` to skip upstream downloads.
+Use `--yes` to accept detected defaults and `--skip-external` to skip upstream downloads (already-installed external skills are kept).
 The installer detects Drupal at the workspace root or in top-level subdirectories and records site settings for future runs.
 
 ## What gets installed
@@ -52,7 +52,13 @@ The installer detects Drupal at the workspace root or in top-level subdirectorie
 | Shared command guard logic | `.claude/settings.json` and hooks | `.codex/config.toml`, hooks, and rules |
 | `.drupal-contrib/install.json`: settings and file ownership | `.mcp.json`: drupalorg-cli MCP | MCP entry in `.codex/config.toml` |
 
-Only unchanged, package-owned files auto-update. Your edits and symlinks are preserved — a proposed replacement lands under `.drupal-contrib/proposals/` for you to merge by hand before relying on it. Upgrading from a legacy install (no ownership hashes)? That happens once, automatically, importing the old lockfile's answers.
+Skills, agents, and hook scripts always update to the shipped version, overwriting local edits. Everything else (settings, MCP config, `context.md`) auto-updates only while unchanged: your edits and symlinks are preserved and a proposed replacement lands under `.drupal-contrib/proposals/` for you to merge by hand before relying on it. To keep a customized skill, agent, or hook, list its path (or a directory ending in `/`) in `.drupal-contrib/install.json`:
+
+```json
+"localOverrides": [".claude/agents/drupal-issue-agent.md", ".drupal-contrib/agents/drupal-issue-agent.md"]
+```
+
+Listed files get the same treatment as settings: kept when they differ, never deleted, upstream version proposed. Listing a skill you deleted on purpose (e.g. `".claude/skills/drupal-issue-reroll/"`) keeps it deleted. Upgrading from a legacy install (no ownership hashes)? That happens once, automatically, importing the old lockfile's answers.
 
 In Claude Code, approve the project MCP server when prompted and inspect it with `/mcp`.
 In Codex, trust the workspace and review/trust the command hook through `/hooks`. Hooks awaiting trust do not protect commands.

@@ -7,7 +7,7 @@ const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
 const { installExternal } = require('./external-skills');
-const { options, readState, writer, installTargets, symlinkAncestor } = require('./install');
+const { options, readState, localOverrides, writer, installTargets, symlinkAncestor } = require('./install');
 
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const CWD = process.cwd();
@@ -124,7 +124,8 @@ async function main() {
   const targets = cli.target === 'both' ? ['claude-code', 'codex']
     : cli.target ? [cli.target] : state.targets || ['claude-code'];
   if (!Array.isArray(targets) || !targets.length || targets.some(target => !['claude-code', 'codex'].includes(target))) throw new Error('Invalid targets in installation state');
-  const output = writer(CWD, state.files, cli.dryRun);
+  const overrides = localOverrides(state.localOverrides);
+  const output = writer(CWD, state.files, cli.dryRun, overrides);
   const log = output.log;
 
   if (!findBin('python3')) console.log('Warning: Python 3 is required for the command guard; hooks will block shell calls until it is installed.');
@@ -220,8 +221,6 @@ async function main() {
     SITES_TABLE: buildSitesTable(sites, defaultSite),
   };
 
-  installTargets({ cwd: CWD, packageRoot: PACKAGE_ROOT, targets, output, render: renderTemplate, vars });
-
   // Externally-maintained skills — pulled at install time, never vendored in
   // this repo. Each pull is non-fatal: offline/npx failures print a manual
   // install command and setup continues.
@@ -288,6 +287,11 @@ async function main() {
     },
   ];
 
+  installTargets({
+    cwd: CWD, packageRoot: PACKAGE_ROOT, targets, output, render: renderTemplate, vars,
+    externalSkills: externalSkills.map(({ name }) => name),
+  });
+
   installExternal({
     cwd: CWD, targets, entries: externalSkills, output,
     dryRun: cli.dryRun, skipExternal: cli.skipExternal,
@@ -316,7 +320,9 @@ async function main() {
     fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
     fs.writeFileSync(LOCK_FILE, JSON.stringify({
       version: 1, targets: [...new Set([...(state.targets || []), ...targets])],
-      vars: { sites, defaultSite, drupalCliBin: drupalorgBin }, files: output.files,
+      vars: { sites, defaultSite, drupalCliBin: drupalorgBin },
+      ...(overrides.length ? { localOverrides: overrides } : {}),
+      files: output.files,
     }, null, 2) + '\n');
   }
 

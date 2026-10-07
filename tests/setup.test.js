@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { writer, agentToml } = require('../bin/install');
+const { writer, agentToml, localOverrides } = require('../bin/install');
 const { installExternal } = require('../bin/external-skills');
 
 const root = path.resolve(__dirname, '..');
@@ -102,6 +102,88 @@ test('preserves an AGENTS.md symlink and its target', t => {
   assert.ok(fs.lstatSync(path.join(cwd, 'AGENTS.md')).isSymbolicLink());
   assert.equal(read(cwd, 'AGENTS.md'), 'User instructions\n');
   assert.match(result, /Manual integration required/);
+});
+
+test('localOverrides keep customized force-managed files and stash upstream as a proposal', t => {
+  const cwd = workspace(t);
+  const first = writer(cwd);
+  first.forceWrite('.claude/agents/custom.md', 'v1');
+  first.forceWrite('.claude/skills/tuned/SKILL.md', 'v1');
+  first.forceWrite('.claude/skills/tuned/extra.md', 'v1');
+  first.forceWrite('.claude/agents/plain.md', 'v1');
+  put(cwd, '.claude/agents/custom.md', 'local');
+  put(cwd, '.claude/skills/tuned/SKILL.md', 'local');
+  put(cwd, '.claude/agents/plain.md', 'local');
+  const second = writer(cwd, first.files, false, ['.claude/agents/custom.md', '.claude/skills/tuned/']);
+  second.forceWrite('.claude/agents/custom.md', 'v2');
+  second.forceWrite('.claude/skills/tuned/SKILL.md', 'v2');
+  second.forceWrite('.claude/agents/plain.md', 'v2');
+  assert.equal(read(cwd, '.claude/agents/custom.md'), 'local');
+  assert.equal(read(cwd, '.drupal-contrib/proposals/.claude/agents/custom.md'), 'v2');
+  assert.equal(read(cwd, '.claude/skills/tuned/SKILL.md'), 'local');
+  assert.equal(read(cwd, '.claude/agents/plain.md'), 'v2', 'unlisted force-managed files still update');
+  assert.ok(second.log.conflicts.some(line => line.startsWith('.claude/agents/custom.md (local override kept')));
+  // Dropped upstream: an overridden path survives prune, an unlisted one doesn't.
+  second.prune('.claude/skills/', new Set(['.claude/skills/tuned/SKILL.md']));
+  assert.equal(read(cwd, '.claude/skills/tuned/extra.md'), 'v1');
+  second.prune('.claude/agents/', new Set(['.claude/agents/custom.md']));
+  assert.ok(!fs.existsSync(path.join(cwd, '.claude/agents/plain.md')));
+  // A deliberately deleted override stays deleted; an unlisted one comes back.
+  fs.rmSync(path.join(cwd, '.claude/skills/tuned/SKILL.md'));
+  fs.rmSync(path.join(cwd, '.claude/agents/custom.md'));
+  const removed = writer(cwd, second.files, false, ['.claude/skills/tuned/']);
+  removed.forceWrite('.claude/skills/tuned/SKILL.md', 'v3');
+  removed.forceWrite('.claude/agents/custom.md', 'v3');
+  assert.ok(!fs.existsSync(path.join(cwd, '.claude/skills/tuned/SKILL.md')));
+  assert.ok(removed.log.conflicts.some(line => line.startsWith('.claude/skills/tuned/SKILL.md (local override: kept removed')));
+  assert.equal(read(cwd, '.claude/agents/custom.md'), 'v3');
+  // A first install of an overridden path still writes it.
+  const fresh = writer(cwd, {}, false, ['.claude/skills/new/']);
+  fresh.forceWrite('.claude/skills/new/SKILL.md', 'v1');
+  assert.equal(read(cwd, '.claude/skills/new/SKILL.md'), 'v1');
+  // An override that matches upstream exactly is just identical, no proposal.
+  put(cwd, '.claude/agents/custom.md', 'v3');
+  const third = writer(cwd, second.files, false, ['.claude/agents/custom.md']);
+  third.forceWrite('.claude/agents/custom.md', 'v3');
+  assert.deepEqual(third.log.conflicts, []);
+});
+
+test('localOverrides are validated and survive a setup re-run', t => {
+  assert.deepEqual(localOverrides(undefined), []);
+  assert.deepEqual(localOverrides(['./.claude/agents/x.md']), ['.claude/agents/x.md']);
+  assert.throws(() => localOverrides('.claude/agents/x.md'), /array/);
+  assert.throws(() => localOverrides(['../escape.md']), /inside the workspace/);
+  assert.throws(() => localOverrides(['/abs.md']), /inside the workspace/);
+  const cwd = workspace(t);
+  fs.mkdirSync(path.join(cwd, 'web'));
+  setup(cwd, '--target', 'claude-code');
+  const agent = '.claude/agents/drupal-issue-agent.md';
+  put(cwd, agent, 'project-specific agent');
+  const lockPath = path.join(cwd, '.drupal-contrib/install.json');
+  const lock = JSON.parse(read(cwd, '.drupal-contrib/install.json'));
+  lock.localOverrides = [agent];
+  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2));
+  const output = setup(cwd);
+  assert.equal(read(cwd, agent), 'project-specific agent');
+  assert.equal(read(cwd, `.drupal-contrib/proposals/${agent}`), read(cwd, '.drupal-contrib/agents/drupal-issue-agent.md'));
+  assert.match(output, /local override kept/);
+  assert.deepEqual(JSON.parse(read(cwd, '.drupal-contrib/install.json')).localOverrides, [agent]);
+});
+
+test('re-running setup never prunes installer-recorded external skills', t => {
+  const cwd = workspace(t);
+  fs.mkdirSync(path.join(cwd, 'web'));
+  setup(cwd, '--target', 'claude-code');
+  // Simulate an earlier online run that pulled `how` through output.copy().
+  put(cwd, '.claude/skills/how/SKILL.md', 'external');
+  const lockPath = path.join(cwd, '.drupal-contrib/install.json');
+  const lock = JSON.parse(read(cwd, '.drupal-contrib/install.json'));
+  lock.files['.claude/skills/how/SKILL.md'] = 'recorded';
+  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2));
+  const output = setup(cwd);
+  assert.equal(read(cwd, '.claude/skills/how/SKILL.md'), 'external');
+  assert.doesNotMatch(output, /skills\/how\/SKILL\.md \(removed/);
+  assert.ok('.claude/skills/how/SKILL.md' in JSON.parse(read(cwd, '.drupal-contrib/install.json')).files);
 });
 
 test('updates owned files but preserves user edits, custom skills, and linked parents', t => {

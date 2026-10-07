@@ -15,3 +15,6 @@ limitation; independent testing must not silently become self-verification.
 Trust the project configuration and review/trust the installed hook with `/hooks`
 before relying on its Git protection. Resolve `.drupal-contrib/proposals/`
 notices first. Do not change global configuration or trust settings automatically.
+Installed skills, agents, and hook scripts are overwritten on every re-run; before
+customizing or deleting one, list its path under `localOverrides` in
+`.drupal-contrib/install.json` so the change survives.
