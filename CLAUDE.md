@@ -186,6 +186,8 @@ Re-running is non-interactive once the lockfile exists.
 
 A native GitLab MCP for `git.drupalcode.org` is tracked at [drupal.org/project/infrastructure/issues/3557469](https://www.drupal.org/project/infrastructure/issues/3557469); needs GitLab Duo (paid, not yet available). The `@modelcontextprotocol/server-gitlab` npm workaround only exposes write tools, all deny-listed — not useful until read tools exist. Don't add it back before that infrastructure issue resolves.
 
+**Optional, not installed:** [`ddev-drupal-agent-module-knowledge-mcp`](https://github.com/Drupal-AI/ddev-drupal-agent-module-knowledge-mcp), a DDEV add-on serving agent docs for ~10,300 contrib modules. It's user-installed (`ddev add-on get` + `claude mcp add --transport http agent-module-docs http://<project>.ddev.site:9130/mcp`), never added to `settings.json.template` or `setup.js`: it mutates `.ddev/`, needs a restart and a ~130 MB DB download (~380 MB unpacked), and its URL is per-site. `drupal-issue-agent` allowlists `mcp__agent-module-docs__{search_modules,get_module,read_doc}` and uses them in A3/B2 only when present. Rename the server and those `tools:` entries stop matching.
+
 ---
 
 ## What not to do

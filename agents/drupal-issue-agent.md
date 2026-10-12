@@ -5,7 +5,7 @@ description: >
   directly from user phrases — always go through /drupal-issue-start first. Handles
   full-lifecycle review (Path A) and implementation (Path B) once issue context, NID,
   project, MR list, and issue record are already in hand.
-tools: Read, Glob, Grep, Write, Edit, Bash, TodoWrite, WebFetch, Agent
+tools: Read, Glob, Grep, Write, Edit, Bash, TodoWrite, WebFetch, Agent, mcp__agent-module-docs__search_modules, mcp__agent-module-docs__get_module, mcp__agent-module-docs__read_doc
 skills:
   - drupal-issue-start
   - issue-record-update
@@ -277,6 +277,15 @@ If the module or the surrounding code is unfamiliar, use the `how` skill first
 to build a mental model of it before judging whether the diff fits — reviewing
 against a guessed-at structure produces false positives and false negatives
 alike.
+
+If the diff calls into a contrib module that isn't checked out locally (a
+dependency, or the module named in a "breaks with X" report), and the
+`agent-module-docs` MCP tools are available, use `get_module`/`read_doc` to
+learn its API instead of guessing. For a feature request, run `search_modules`
+on the requested capability: an existing module that already does it is a
+"needs discussion" signal for A9. Never use these docs for the module under
+review: they are a release snapshot, and the checkout is the source of truth.
+No such tools? Skip this step.
 
 ### A4. Static analysis
 
@@ -611,6 +620,11 @@ If this module hasn't been touched in this session before, use the `how`
 skill to build a mental model of its architecture before drafting the plan
 in B3 — a plan built on a guessed-at structure tends to miss the actual
 extension points.
+
+The same `agent-module-docs` lookup from A3 applies here: for contrib modules
+the plan integrates with but that aren't checked out, and, for a new feature,
+a `search_modules` check that no existing module already covers it. Mention any
+module you find in the plan.
 
 ### B3. Draft the implementation plan
 

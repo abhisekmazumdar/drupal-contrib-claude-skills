@@ -730,6 +730,24 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <a href="https://www.drupal.org/project/infrastructure/issues/3557469">drupal.org/project/infrastructure/issues/3557469</a>.
         It's blocked on GitLab Duo, a paid feature not yet available on Drupal's infrastructure.
       </p>
+
+      <h3>Optional: contrib module knowledge</h3>
+      <p>
+        <a href="https://github.com/Drupal-AI/ddev-drupal-agent-module-knowledge-mcp"><code>ddev-drupal-agent-module-knowledge-mcp</code></a>
+        is a DDEV add-on that serves agent-oriented docs for about 10,300 contrib modules over MCP. The installer
+        doesn't set it up: it writes into the site's <code>.ddev/</code>, needs a restart, downloads a database of
+        roughly 130&nbsp;MB (about 380&nbsp;MB unpacked), and its endpoint is specific to each site. To add it, run these from the site root:
+      </p>
+      <pre><code>ddev add-on get Drupal-AI/ddev-drupal-agent-module-knowledge-mcp
+ddev restart
+claude mcp add --transport http agent-module-docs http://&lt;project&gt;.ddev.site:9130/mcp</code></pre>
+      <p>
+        Keep the server name <code>agent-module-docs</code>: <code>drupal-issue-agent</code> allowlists its
+        <code>search_modules</code>, <code>get_module</code> and <code>read_doc</code> tools under that name. In
+        A3/B2 the agent uses them to look up contrib modules the issue touches but that aren't checked out, and to
+        check whether an existing module already covers a requested feature. It never uses them for the module under
+        review, since the docs are a release snapshot. Without the server, the step is skipped.
+      </p>
     </section>
 
     <section id="dev">
