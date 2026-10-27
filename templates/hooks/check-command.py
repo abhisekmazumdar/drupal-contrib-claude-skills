@@ -99,27 +99,13 @@ def blocked(command, depth=0):
                 return 'Writing credentials, keys, or secrets is blocked.'
         if token in ('>', '>>') and index + 1 < len(tokens) and is_secret_path(tokens[index + 1]):
             return 'Writing credentials, keys, or secrets is blocked.'
-        if binary not in ('git', 'glab'):
+        if binary != 'git':
             continue
         end = segment_end(tokens, index + 1)
-        values = {'-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env'} if binary == 'git' else {'-R', '--repo', '--hostname', '--host'}
-        sub = arguments(tokens, index + 1, values)
+        sub = arguments(tokens, index + 1, {'-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env'})
         if sub >= end:
             continue
         verb, args = tokens[sub], tokens[sub + 1:end]
-        if binary == 'glab':
-            if verb in ('api', 'note'):
-                return 'Use the supported read commands; public changes are drafted for the human.'
-            action_index = arguments(args, 0, {'-R', '--repo', '--hostname', '--host'})
-            action = args[action_index] if action_index < len(args) else ''
-            denied = {
-                'mr': {'note', 'comment', 'create', 'merge', 'approve', 'update', 'close'},
-                'issue': {'create', 'note', 'comment', 'update', 'close'},
-                'pipeline': {'run'}, 'ci': {'run'},
-            }
-            if action in denied.get(verb, set()):
-                return 'Public GitLab writes and pipeline triggers are reserved for the human.'
-            continue
         flags = {a for a in args if a.startswith('-')}
         short = ''.join(a[1:] for a in flags if not a.startswith('--'))
         if verb == 'reset' and '--hard' in flags:

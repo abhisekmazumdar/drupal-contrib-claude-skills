@@ -18,24 +18,37 @@ prefix_rule(
 
 prefix_rule(
     pattern = ["glab", "api"],
-    decision = "forbidden",
-    justification = "Use supported read commands; prepare public changes for the human to post.",
+    decision = "prompt",
+    justification = "glab api can write; confirm the call before it reaches GitLab.",
 )
 
 prefix_rule(
-    pattern = ["glab", "mr", ["note", "comment", "create", "merge", "approve", "update", "close"]],
-    decision = "forbidden",
-    justification = "Prepare the MR change or comment for the human to submit.",
+    pattern = ["glab", "mr", ["note", "comment", "create", "merge", "approve", "update", "close", "reopen"]],
+    decision = "prompt",
+    justification = "Confirm before posting or changing anything on the MR.",
 )
 
 prefix_rule(
-    pattern = ["glab", "issue", ["create", "note", "comment", "update", "close"]],
-    decision = "forbidden",
-    justification = "Prepare the issue change or comment for the human to submit.",
+    pattern = ["glab", "issue", ["create", "note", "comment", "update", "close", "reopen"]],
+    decision = "prompt",
+    justification = "Confirm before posting or changing anything on the issue.",
 )
 
 prefix_rule(
     pattern = ["glab", ["ci", "pipeline"], "run"],
-    decision = "forbidden",
-    justification = "Pipeline triggers are reserved for the human.",
+    decision = "prompt",
+    justification = "Confirm before triggering a pipeline.",
+)
+
+# Prefix rules cannot skip a leading -R/--repo; conservatively prompt.
+prefix_rule(
+    pattern = ["glab", ["-R", "--repo", "--hostname"]],
+    decision = "prompt",
+    justification = "Review the GitLab operation before elevated glab access.",
+)
+
+prefix_rule(
+    pattern = ["drupalorg", ["issue:assign", "issue:unassign", "issue:reassign", "issue:label", "issue:unlabel", "issue:relabel", "issue:fork", "issue:get-access", "self:update"]],
+    decision = "prompt",
+    justification = "Confirm before posting a /do: command to the issue or updating the CLI.",
 )

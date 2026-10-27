@@ -1,5 +1,6 @@
 #!/bin/bash
-# Blocks destructive Git commands and the toolkit's reserved GitLab writes.
+# Blocks destructive Git commands and secret-file reads/writes. GitLab writes
+# are not blocked here — settings.json's "ask" tier prompts for them instead.
 # Adapted from mattpocock/skills' git-guardrails-claude-code, trimmed for this
 # repo's workflow: `git push` (including --force-with-lease) is deliberately
 # NOT blocked here — drupal-issue-reroll force-pushes rerolled branches to the

@@ -13,10 +13,7 @@ const denied = [
   'git branch -D work', 'git branch --force --delete work',
   'git checkout -- .', 'git restore --worktree .', 'git restore :/',
   'git status && git -C module reset --hard',
-  'bash -lc "git -C module clean -fd"',
-  'env GITLAB_HOST=git.drupalcode.org glab --repo project/ai mr comment 1',
-  'glab mr --repo project/ai create', 'glab api projects',
-  'glab issue update 1', 'glab pipeline run', 'git push --force fork HEAD',
+  'bash -lc "git -C module clean -fd"', 'git push --force fork HEAD',
   'cat .env', 'cat .env.local', 'grep API_KEY .env',
   'bash -c "cat .env"', 'cat ~/.ssh/id_rsa', 'cat secrets/api.json',
   'cp .env /tmp/x', 'cat server.pem',
@@ -28,6 +25,9 @@ const allowed = [
   'git add src && git commit -m fix',
   'GITLAB_HOST=git.drupalcode.org glab mr list --repo project/ai',
   'glab --repo project/ai issue view 1', 'glab ci status',
+  // GitLab writes reach the permission layer, which asks — see permissions.test.js.
+  'env GITLAB_HOST=git.drupalcode.org glab --repo project/ai mr comment 1',
+  'glab mr note list 1 --repo project/ai', 'glab api projects',
   'python3 script.py', 'echo "git reset --hard"',
   'cat .env.example', 'cat README.md', 'cat config/keys.php',
 ];
@@ -41,7 +41,7 @@ test('malformed input blocks without exposing command credentials', () => {
   for (const input of ['not-json', '{}', '{"tool_input": {"command": 123}}']) {
     assert.equal(spawnSync('bash', [hook], { input, encoding: 'utf8' }).status, 2);
   }
-  const result = spawnSync('bash', [hook], { input: JSON.stringify({ tool_input: { command: 'glab api --token TOP_SECRET projects' } }), encoding: 'utf8' });
+  const result = spawnSync('bash', [hook], { input: JSON.stringify({ tool_input: { command: 'git push --force https://TOP_SECRET@example.com/x HEAD' } }), encoding: 'utf8' });
   assert.equal(result.status, 2);
   assert.doesNotMatch(result.stderr, /TOP_SECRET/);
 });
