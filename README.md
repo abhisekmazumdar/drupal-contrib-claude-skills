@@ -17,7 +17,7 @@ The workflows support [Drupal.org's AI contribution policy](https://www.drupal.o
 - [glab](https://gitlab.com/gitlab-org/cli), authenticated against `git.drupalcode.org`.
 - Network access for optional upstream skill downloads. Failures print manual installation commands.
 
-Codex needs repository skills, standalone custom agents, and `PreToolUse` hooks. Local configuration/rule checks used Codex CLI 0.153.4; Claude Code 2.1.236 was present during development. This is not a claim that a live Drupal issue has been exercised end-to-end in either client. Cloud sessions without access to your DDEV environment cannot run its local tests.
+Codex needs repository skills, standalone custom agents, and `PreToolUse` hooks. Local configuration/rule checks used Codex CLI 0.153.4; Claude Code 2.1.236 was present during development. This is not a claim that a live Drupal issue has been exercised end-to-end in either client. Cloud sessions without access to your DDEV environment cannot run its local tests. Codex adds a `Co-authored-by: Codex` commit trailer when your ChatGPT account or workspace enables commit attribution. That's an account setting the installer can't change, so turn it off there if you want the AI disclosure line to be the only attribution.
 
 ## Install
 
