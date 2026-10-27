@@ -30,10 +30,35 @@ Drupal.org projects fall into two categories. Always determine which before form
 - `> blockquote`
 - Cross-references: `#NID` for issues, `!NID` for MRs (GitLab syntax)
 
-The AI disclosure line still applies for migrated issues, but uses `_` for italic (Markdown):
-`_AI assisted ([actual assistant(s)]): [what each did]. All commits and decisions are mine._`
+The AI disclosure line below still applies for migrated issues, in its Markdown form.
 
-Name Claude Code, Codex, or both according to the work actually performed, including prior work recorded for this issue. Do not substitute the current client's name for another assistant's contribution.
+---
+
+## AI disclosure line — every issue, MR, and comment
+
+Follows Drupal.org's [AI policy disclosure rules](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): if the project's issue or MR template has a designated AI disclosure section, put the statement there; otherwise append it to the end of the issue summary, comment, or MR description, after a blank line. One italic line, a footnote, not a section. The label links to the policy; the wording after it mirrors the policy's own example ("Used … to help generate …").
+
+Markdown (migrated queues, MR descriptions):
+```
+_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting._
+```
+
+HTML (non-migrated queues):
+```
+<em><a href="https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure">AI disclosure</a>: Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting.</em>
+```
+
+- `<uses>` — only the ones that apply, always in this order: `research` (reading code, diffs, or threads; finding a root cause; analysing tests), `writing` (drafting this text or the issue/MR body), `code` (writing or changing code, tests, or patches). Join as "research and writing" or "research, writing and code".
+- `<what it did>` — up to three concrete actions as gerunds, e.g. "reviewing the MR diff, analysing the tests, summarising the thread". Count AI work recorded earlier in `issues/<nid>/` if it shaped this post.
+- Never name a tool, model, or vendor — always just "AI".
+- Never repeat or expand the line into a paragraph.
+- Disclose on every post, even for minor AI help. The policy only requires it for a "significant portion" of the code or text; this toolkit is deliberately stricter.
+- The policy asks for a "clear, human-written statement": the line is a draft the human reads and edits at the approval gate, like the rest of the post. Never post it unseen.
+
+Example (review comment, migrated queue):
+```
+_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with research and writing (reviewing the MR diff, analysing the tests, summarising the thread). The reasoning and positions are my own, and I reviewed everything before posting._
+```
 
 ---
 
@@ -149,7 +174,7 @@ restating its rules. Constraints specific to issue-queue content:
 - No greeting, no opener — start with the fact, status, or problem.
 - Status updates are one line: "The MR functions correctly. I'm marking this as RTBC."
 - When responding to reviewer feedback: be candid about position changes. If the reviewer was right, say so plainly. "You are right. I removed it." beats hedged corporate acknowledgement every time.
-- A light, honest self-awareness is fine in informal review threads. "After a long back-and-forth with Claude on it, we both came around to agreeing with you" reads as human and direct — don't sanitize it into bland acceptance.
+- A light, honest self-awareness is fine in informal review threads. "After a long back-and-forth with AI on it, we both came around to agreeing with you" reads as human and direct — don't sanitize it into bland acceptance.
 
 ---
 

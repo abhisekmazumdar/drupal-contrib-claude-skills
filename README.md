@@ -6,7 +6,7 @@ A shared Drupal contribution toolkit for Claude Code and Codex. Install it into 
 
 [Full documentation](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/) covers the skills, agents, multi-site workflow, and [client compatibility](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#clients).
 
-The workflows support [Drupal.org's AI contribution policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal). You remain responsible for reviewing submissions, disclosing the actual assistants involved, and following up with maintainers.
+The workflows support [Drupal.org's AI contribution policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal). You remain responsible for reviewing submissions, disclosing AI use, and following up with maintainers.
 
 ## Requirements
 

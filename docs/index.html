@@ -411,7 +411,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <p>Approve Claude's project MCP server interactively and inspect it with <code>/mcp</code>. In Codex, trust the workspace and review the hook through <code>/hooks</code> — a hook awaiting trust is skipped, not enforced. The installer never touches global trust or config.</p>
       <p>The shared shell wrapper calls <code>check-command.py</code> (needs Python 3), which recognizes destructive Git operations through <code>git -C</code>, combined flags, compound commands, and explicit shell wrappers. It blocks bare force-pushes; <code>--force-with-lease</code> stays available with approval. GitLab writes aren't blocked — they reach the permission layer, which asks first. Command arguments never get echoed into error messages.</p>
       <p>Codex rules govern commands requesting execution outside the sandbox. Its <code>PreToolUse</code> hook can deny a call but can't force an approval prompt — workflow approvals stay instructions, supplemented by native permissions and rules, not a full enforcement boundary. Hooks don't inspect script contents, aliases, dynamic shell expansion, or later interactive stdin.</p>
-      <p>Keep Nora's implementation separate from Milo's report-only testing — both may write local artifacts or exercise DDEV, so "report-only" isn't the same as a read-only sandbox. Both clients share <code>issues/</code>: serialize record updates, use separate worktrees for concurrent code work. AI declarations name whichever assistants actually contributed.</p>
+      <p>Keep Nora's implementation separate from Milo's report-only testing — both may write local artifacts or exercise DDEV, so "report-only" isn't the same as a read-only sandbox. Both clients share <code>issues/</code>: serialize record updates, use separate worktrees for concurrent code work.</p>
       <h3>Compatibility and validation</h3>
       <p>Target local macOS/Linux or WSL sessions with DDEV access. Native Windows and hosted cloud DDEV access are not validated. Codex must support repository skills, standalone custom agents, and trusted PreToolUse hooks. Local rule/configuration checks used Codex CLI 0.153.4; Claude Code 2.1.236 was available during development. No live Drupal issue lifecycle has been claimed as tested.</p>
       <p>Automated tests cover all targets, repeated installs, legacy and multi-site configuration, user-edited files, symlinks, offline and grouped external installs, JSON/TOML generation, and command-guard decisions. Browser screenshots require the requested connected session: a new Playwright browser does not inherit the user's open tab or login.</p>
@@ -619,11 +619,11 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
           Recon and issue-record writes are automatic exceptions. Public posts are drafted for the human. See
           <code>drupal-issue-agent</code>'s approval gates above.</li>
         <li><strong>AI involvement is disclosed, every time.</strong>
-          <code>drupal-gitlab</code> appends an <code>AI-Generated:</code> line to
-          every MR body; <code>drupalorg-comment-format</code> does the same for
-          issue comments (Markdown italic form for migrated/GitLab queues).
-          This isn't optional formatting. It's required before anything is
-          shown to the user for approval.</li>
+          Every drafted issue, MR description, and comment ends with one italic line:
+          <code>AI disclosure: Used AI to help with &lt;uses&gt; (&lt;what it did&gt;). The reasoning and positions are my own, and I reviewed everything before posting.</code>, with “AI disclosure” linking to Drupal.org's AI policy and the rest mirroring the policy's example wording. A template's own AI disclosure section takes its place when there is one. <code>settings.json</code> sets <code>attribution</code> to empty strings, so Claude Code adds no <code>Co-Authored-By</code> trailer or PR line naming itself, and this line stays the only disclosure.
+          <code>&lt;uses&gt;</code> is any of research, writing, code, in that order. It never names a tool or model.
+          <code>drupalorg-comment-format</code> holds the full rules (HTML form for classic queues, Markdown for migrated queues and MRs).
+          It's required before anything is shown to the user for approval.</li>
         <li><strong>No submission goes out untested.</strong> The pre-push
           preflight in A10/B5 blocks staging until PHPCS, PHPStan, and
           relevant tests pass locally, on top of whatever CI already

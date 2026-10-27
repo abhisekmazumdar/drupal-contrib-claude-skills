@@ -24,7 +24,7 @@ Role tool lists in Markdown describe Claude capabilities; Codex uses its native 
 
 If a nested delegation is unavailable (for example Nora cannot spawn Milo at the client's nesting limit), return a `[DELEGATE — <agent-name>]` handoff with the full inputs and resume phase. The main conversation runs that role as a sibling subagent, then resumes the caller with its report. This is a routing request, not user approval; relay any missing approval through the existing `[PAUSE]` protocol first.
 
-Both clients share `issues/`; avoid concurrent writers to the same issue record or module checkout. Use separate worktrees for concurrent code work and serialize record updates. Disclosures name the actual assistant(s) that contributed, including work inherited from the record.
+Both clients share `issues/`; avoid concurrent writers to the same issue record or module checkout. Use separate worktrees for concurrent code work and serialize record updates. AI disclosures never name a tool or model; they count AI work inherited from the record.
 
 ---
 

@@ -23,10 +23,10 @@ glab mr view <mr-iid> -R project/<repo>
 cat .gitlab/merge_request_templates/Default.md
 ```
 
-Fill in the template and save to `/tmp/mr_body.md`. Then append the required AI disclosure:
+Fill in the template and save to `/tmp/mr_body.md`. If the template has an AI disclosure section, fill it with the line below; otherwise end the body with it, after a blank line (no tool or model names; `<uses>` is any of `research`, `writing`, `code`, in that order — full rules in `drupalorg-comment-format`):
 
 ```
-AI-Generated: Yes (Used [tool] to [brief description of how AI was used].)
+_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting._
 ```
 
 Also include `Closes #{issue-id}` somewhere in the description body to auto-close the work item on merge.

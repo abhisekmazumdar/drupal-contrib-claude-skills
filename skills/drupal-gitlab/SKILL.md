@@ -171,8 +171,7 @@ UPSTREAM_ID=$(glab api --hostname git.drupalcode.org "/projects/project%2F<repo>
 
 # Step 2 — read the MR template, fill /tmp/mr_body.md, append AI disclosure
 cat .gitlab/merge_request_templates/Default.md
-# Append to /tmp/mr_body.md:
-# AI-Generated: Yes (Used [tool] to [brief description].)
+# End /tmp/mr_body.md with the AI disclosure line (see MR conventions below)
 
 # Step 3 — create via glab api
 glab api --hostname git.drupalcode.org \
@@ -189,7 +188,8 @@ MR conventions:
 - Title: `{type}: #{issue-id} Short summary` — Conventional Commits format
 - Include `Closes #{issue-id}` in the description body
 - Always set `remove_source_branch: true`
-- Append the AI disclosure line to every MR body
+- End every MR body with the AI disclosure line, after a blank line (or fill the template's AI disclosure section if it has one) — no tool or model names; `<uses>` is any of `research`, `writing`, `code`, in that order (full rules: `drupalorg-comment-format`):
+  `_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting._`
 - **Default to an issue fork even if you have maintainer push access** — it keeps the collaborative workflow consistent for other contributors; only push straight to origin when the user explicitly confirms they want a direct maintainer push
 
 ---
