@@ -157,6 +157,8 @@ Written by `drupal-issue-start` Phase 3, appended to by `issue-record-update`. `
 
 **Work Log archiving:** unbounded growth means every future session re-pays the cost of the whole history. `issue-record-update` Step 6 caps `## Work Log` at the 3 most recent sessions, archiving older ones to `issues/<nid>/history.md` (newest-archived first). Neither `drupal-issue-start` nor `drupal-issue-catchup` reads `history.md` by default — only when a session genuinely needs pre-archive context.
 
+**Linked workspaces:** one person can keep records for the same nid in two workspaces (e.g. a contributor workspace and a merge-maintainer one), and each goes stale without the other. `.drupal-contrib/linked-workspaces.md` (hand-written, never installer-managed — so it doesn't push `context.md` into the proposals path) lists the others by absolute path. `drupal-issue-start` Phase 1 and `drupal-issue-catchup` Step 1 read each linked `issues/<nid>/README.md` — header, At a Glance, Current State only, strictly read-only — and the report/briefing flags which record is stale, with Phase 2's live state as the tiebreaker.
+
 ---
 
 ## Testing setup changes

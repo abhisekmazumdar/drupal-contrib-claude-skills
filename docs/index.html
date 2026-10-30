@@ -596,6 +596,14 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         Neither <code>drupal-issue-start</code> nor <code>drupal-issue-catchup</code> reads <code>history.md</code>
         by default, only when a session genuinely needs pre-archive context.
       </p>
+      <h3>Linked workspaces</h3>
+      <p>
+        If you keep records for the same issues in more than one workspace (say, a contributor workspace and a
+        merge-maintainer one), list the others in <code>.drupal-contrib/linked-workspaces.md</code>: a table of
+        name, absolute path, and role, written by hand. <code>drupal-issue-start</code> and <code>drupal-issue-catchup</code> then read each linked
+        <code>issues/&lt;nid&gt;/README.md</code> (read-only, header and snapshot sections only) and their report
+        says which record is stale, using live issue state as the tiebreaker.
+      </p>
       <p>
         <code>issue-record-update</code> runs automatically at the end of any session that did something: code
         reviewed, changed, tested, or a comment/push attempted. A pure read-only catchup skips it.

@@ -83,6 +83,18 @@ genuinely needs pre-archive context (rare).
 
 **If the file does not exist:** Note this as a first-time visit. The directory and README will be created after Phase 2.
 
+**Linked workspaces.** If `.drupal-contrib/linked-workspaces.md` exists, check
+each row's `<path>/issues/<nid>/README.md`. For each one found, read only its
+header, `## At a Glance`, and `## Current State`, not its Work Log, and note
+its `**Last updated:**` date (no such line: use the file's mtime). The linked
+record is read-only: never write to it or touch that workspace's checkouts.
+
+A linked record that is newer than the local one, or exists when the local
+one doesn't, is context for this session: it can say an MR merged, a pick
+landed, or MRs were replaced since the local record was written. Where the
+two disagree, Phase 2's live state decides. Name the stale record in the
+Phase 4 report and correct the local one in Phase 3.
+
 ## Phase 2 — Fetch live issue context
 
 Run all applicable commands. For **non-migrated** issues:
@@ -282,6 +294,7 @@ what kind of fix is being proposed. Concrete and factual — no vague filler.>
 - **MRs:** <iid, branch, pipeline status — one bullet per open MR>
 - **Setup issues:** <verbatim from drupal-repo-setup's recon block, or "None">
 - **Latest discussion:** <1-2 sentences on the most recent comment thread>
+<If Phase 1 found a linked record:> - **Linked records:** <name>: `<path>/issues/<nid>/README.md` (last updated <date>) — one per linked record
 
 ## Related Issues
 <!-- Cross-references to issues that touch the same code, depend on this fix, or are
@@ -370,6 +383,7 @@ Present this in full. Do not skip sections.
 <If 2+ sites are configured:> - **Site:** <site>
 - **Status:** <current status>
 - **Record:** issues/<nid>/README.md (<first seen date | "first visit — just created">)
+<If Phase 1 found a linked record:> - **Linked record:** <name> (last updated <date>) — <"newer than the local record: <what it adds or contradicts, one line>" | "older, nothing new">. <If the two disagreed: "<which one> was stale; live state confirms <fact>.">
 
 ---
 

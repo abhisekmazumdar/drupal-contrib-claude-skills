@@ -53,6 +53,8 @@ cat issues/<nid>/README.md
 
 If it does not exist, tell the user:
 > "No local record found for issue `<nid>`. Run `/drupal-issue-start <url>` first to load the full context, then re-run this agent."
+
+If a linked workspace (see below) has a record for `<nid>`, add one line naming it and its `**Last updated:**` date — `drupal-issue-start` will read it.
 Stop here.
 
 Extract from the record:
@@ -70,6 +72,7 @@ Extract from the record:
   user's message explicitly asks to switch. When the line is absent, treat
   it as the .drupal-contrib/context.md default site.
 - **Related issues** from the `## Related Issues` section — if any have their own record at `issues/<related-nid>/README.md`, read those too and note any context relevant to the current issue
+- **Linked records** — if `.drupal-contrib/linked-workspaces.md` exists, check each row's `<path>/issues/<nid>/README.md`. Read only its header, `## At a Glance`, and `## Current State`, and note its `**Last updated:**` date (no such line: the file's mtime). Read-only: never write to it or touch that workspace's checkouts. Work done from the other workspace (a pick pushed, an MR replaced) may never show up as a comment, so this is often the only place it's visible
 
 The README only carries the 3 most recent Work Log sessions —
 `issue-record-update` archives older ones to `issues/<nid>/history.md`. That
@@ -144,6 +147,7 @@ Categorise new activity:
 | **Pipeline changes** | Status changed (passing/failing) since last session |
 | **Issue status change** | Label or state changes (e.g. moved to `state::rtbc`) |
 | **Review verdict change** | Anything since the last session that would change the `## At a Glance` verdict — a fix pushed, a thread resolved, a pipeline flip |
+| **Linked-record activity** | A linked record updated after the last session date here — what it says changed (MR merged, picks landed, MRs replaced). Confirm against the live state from Step 2 before trusting it |
 | **New related issues** | Any newly mentioned cross-references in comments, or found by the backlink scan, not yet in `## Related Issues` |
 
 ---
@@ -168,7 +172,9 @@ the specific gap, not an exhaustive checklist — and overwrite the section in
 place (it's a snapshot, never append-only), along with `Next action` and
 `Blocked on` sourced only from current state, not accumulated from prior
 sessions. Note in the Work Log entry that the verdict changed and from what
-to what. Also refresh the header's `**Last updated:**` to today.
+to what. Also refresh the header's `**Last updated:**` to today, and the
+`**Linked records:**` line in `## Current State` (one per linked record found,
+with its last-updated date; drop the line if none).
 
 If the record is already **up to date** (nothing new since last session), note that and continue.
 
@@ -206,6 +212,9 @@ here, rather than guessing at the reasoning.]
 
 **Related issues**
 [Any cross-references from the README, newly found in comments, or found by the backlink scan — label backlink-scan finds explicitly (e.g. "found via backlink scan"), with a one-liner on the relationship. Omit if none.]
+
+**Linked records**
+[Per linked record: workspace name, last updated, and what it adds or contradicts. If it disagreed with this record, say which was stale and what live state confirmed. Omit if none.]
 
 ---
 
