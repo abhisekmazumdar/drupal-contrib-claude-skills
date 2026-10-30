@@ -94,17 +94,22 @@ If any related issues were discovered this session, append them to the `## Relat
 - #<nid> <title> — <one line on the relationship>
 ```
 
-**Always overwrite `## At a Glance` in place** — this section is always a
-snapshot of *now*, never append-only (unlike Work Log and Related Issues):
-- If the RTBC-readiness verdict changed this session, update `**Verdict:**`
-  and `**Current MR:**`. The fact that it changed still belongs in this
-  session's log entry above (e.g. under "What was done": "Verdict moved
-  from Needs work — missing test to RTBC-ready after adding the Kernel
-  test").
-- Always replace `**Next action:**` and `**Blocked on:**` with this
-  session's current values, sourced only from what's true right now — never
-  merge in leftover items from a previous session's `Open items`. If
-  nothing is blocking, write "Nothing".
+**Always overwrite `## At a Glance` in place** with the review card
+(`references/review-card.md`, next to this `SKILL.md`) — a snapshot of
+*now*, never append-only (unlike Work Log and Related Issues). A record
+still carrying the older `**Verdict:**`/`**Next action:**` bullets gets them
+replaced by the card.
+- Update every row this session's work changed: a fix pushed (`Fix`,
+  `Tests`), a pipeline result (`Pipeline`), an e2e run (`Manually tested`), a
+  pick merged (`Cherry-picks`). Leave the rest as they were.
+- If the verdict changed, update the `Verdict:` line. The fact that it
+  changed still belongs in this session's log entry above (e.g. under "What
+  was done": "Verdict moved from Needs work — missing test to RTBC-ready
+  after adding the Kernel test").
+- Always replace `▶ Next` and `⏸ Waiting on` with this session's current
+  values, sourced only from what's true right now — never merge in leftover
+  items from a previous session's `Open items`. If nothing is in the way,
+  write "nothing".
 
 ---
 

@@ -585,7 +585,8 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <ul>
         <li><strong><code>## At a Glance</code></strong> and <strong><code>## Current State</code></strong> are <em>snapshots</em>, overwritten in place every session, never append-only.</li>
         <li><strong><code>## Work Log</code></strong> and <strong><code>## Related Issues</code></strong> are append-only.</li>
-        <li><code>Next action</code> / <code>Blocked on</code> are sourced only from the current session, never accumulated across sessions.</li>
+        <li><code>## At a Glance</code> holds the <strong>review card</strong>, the same block every review report opens with: the verdict, a fixed set of checks (pipeline, scope, fix, tests, manually tested, threads, branch, standards, plus RTBC trust, freezes, cherry-picks, and credit in a merge-maintainer workspace), each marked ✅ done, ❌ blocking, ⚠️ attention, ⏳ waiting, ➖ n/a, or ❔ not checked, and one next step with its owner. A check that didn't run shows ❔, never ✅. Format: <code>issue-record-update/references/review-card.md</code>.</li>
+        <li><code>▶ Next</code> / <code>⏸ Waiting on</code> are sourced only from the current session, never accumulated across sessions.</li>
         <li>The header's <code>**Status:**</code> field uses a fixed vocabulary so it's scannable across issues.</li>
         <li><code>**Site:**</code> appears in the header only once the workspace has 2+ configured sites.</li>
       </ul>

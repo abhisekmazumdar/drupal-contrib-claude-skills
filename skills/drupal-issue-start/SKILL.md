@@ -274,12 +274,9 @@ Write `issues/<nid>/README.md`:
 - **Last updated:** <today YYYY-MM-DD>
 
 ## At a Glance
-<!-- Overwritten in place every session — the four lines a human needs before
-     reading anything else. Never appended to. -->
-- **Verdict:** <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic> | No MR yet>
-- **Current MR:** <!<iid> (`<branch>`) — pipeline PASSING|FAILING|PENDING|n/a | "None">
-- **Next action:** <single concrete next step — not a list>
-- **Blocked on:** <the specific blocker, or "Nothing">
+<!-- Overwritten in place every session with the review card — the block a
+     human reads before anything else. Never appended to. -->
+<the review card from Phase 4, exactly as shown in chat, inside its ```text fence — format: `<skills-root>/issue-record-update/references/review-card.md`>
 
 ## Issue Summary
 <3-5 sentences: what is broken or missing, why it matters, current state of discussion,
@@ -331,13 +328,13 @@ just within one.
   predates multi-site and has no `**Site:**` line, add one.
 - Never touch the Work Log or Notes sections.
 
-**Always overwrite `## At a Glance` in place** with the verdict, current MR,
-and this session's single next action and blocker — this section is a
-snapshot of *now*, not a history; that's what the Work Log is for. Source
-`Next action`/`Blocked on` only from the current session's findings, never
-by accumulating prior sessions' open items — that's how these fields go
-stale. If there is nothing blocking progress, write "Nothing", not an empty
-value.
+**Always overwrite `## At a Glance` in place** with this session's review
+card (`<skills-root>/issue-record-update/references/review-card.md`) — a snapshot of *now*, not a history; that's what the Work Log
+is for. A record still carrying the older `**Verdict:**`/`**Next action:**`
+bullets gets them replaced by the card. Source `▶ Next` and `⏸ Waiting on`
+only from the current session's findings, never by accumulating prior
+sessions' open items — that's how these go stale. If nothing is in the way,
+write "nothing", not an empty value.
 
 **Always overwrite `## Current State` in place** the same way, with the MR
 list, setup issues, and latest-discussion summary gathered in Phase 2.
@@ -376,7 +373,14 @@ Also check: if related issues were found (from comments or the backlink scan) an
 
 Present this in full. Do not skip sections.
 
+**Start with the review card** (`<skills-root>/issue-record-update/references/review-card.md`), contributor rows only: the
+verdict, the eight checks with their marks, and one owned next step. Phase
+2.5 is a preliminary read, so rows it didn't actually establish stay ❔.
+Everything after the card is the detail behind it.
+
 ```
+<review card, in its ```text fence>
+
 ## Issue <nid>: <title>
 - **URL:** <full URL>
 - **Project:** <project> (<classic Drupal.org | GitLab work items>)
@@ -425,7 +429,7 @@ what the human needs to know before trusting anything below. If it reported
 <If no MR exists: "No MR yet — nothing to review. See Recommendation below.">
 
 <If an MR was checked out in Phase 2.5:>
-**Verdict: <RTBC-ready | Close — <gap> | Needs work — <gap> | Needs discussion — <topic>>**
+<The verdict is on the card above; don't restate it as a heading here.>
 
 <2-4 sentence plain-language description of what the diff actually does.>
 

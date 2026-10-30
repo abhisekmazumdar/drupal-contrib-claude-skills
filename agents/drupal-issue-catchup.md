@@ -62,10 +62,12 @@ Extract from the record:
 - **What was done** in the last session
 - **Open items** from the last session
 - **MR iid(s)** if any
-- **Prior review verdict, next action, and blocker** from `## At a Glance` —
-  this is a snapshot, not history, so it only tells you where things stood
-  as of the last session; compare it against fresh activity in Step 3 to see
-  if it's still accurate
+- **The prior review card** from `## At a Glance` (`<skills-root>/issue-record-update/references/review-card.md`) — each row's
+  mark, the verdict, `▶ Next`, and `⏸ Waiting on`. Older records may still
+  carry `**Verdict:**`/`**Next action:**`/`**Blocked on:**` bullets instead;
+  read those the same way. It's a snapshot, not history, so it only tells
+  you where things stood as of the last session; compare it against fresh
+  activity in Step 3 to see if it's still accurate
 - **`<site>`** from the header's `**Site:**` line, if present (only appears
   once the workspace has 2+ sites configured). Keep using that same site for
   the rest of this session — don't re-prompt or re-resolve it — unless the
@@ -168,10 +170,11 @@ scan:
 If activity since the last session would change the `## At a Glance`
 verdict (fix pushed, thread resolved, pipeline flipped), re-derive it using
 the same rule `drupal-issue-start` Phase 2.5 uses — a judgment call naming
-the specific gap, not an exhaustive checklist — and overwrite the section in
-place (it's a snapshot, never append-only), along with `Next action` and
-`Blocked on` sourced only from current state, not accumulated from prior
-sessions. Note in the Work Log entry that the verdict changed and from what
+the specific gap, not an exhaustive checklist — and rebuild the review card
+in place (it's a snapshot, never append-only): update the rows the new
+activity changed, the verdict, and `▶ Next`/`⏸ Waiting on` sourced only
+from current state, not accumulated from prior sessions. A record still
+carrying the older bullets gets them replaced by the card. Note in the Work Log entry that the verdict changed and from what
 to what. Also refresh the header's `**Last updated:**` to today, and the
 `**Linked records:**` line in `## Current State` (one per linked record found,
 with its last-updated date; drop the line if none).
@@ -184,7 +187,13 @@ If the record is already **up to date** (nothing new since last session), note t
 
 **[PAUSE — full stop after this]** Present the structured report below, then stop and wait for the user to reply before taking any action.
 
+Open with the current review card, every row whose mark changed since the
+record's card tagged `← was <old mark>` (see the card reference's "When it
+changes"). If nothing changed, show the card untouched and say so above it.
+
 ```
+<review card with ← was markers, in its ```text fence>
+
 ## Catch-up: Issue <nid> — <title>
 
 ### Since your last session (<last-session-date>)
@@ -202,8 +211,9 @@ If the record is already **up to date** (nothing new since last session), note t
 [Any label or status change — e.g. moved to Needs Review, RTBC applied]
 
 **Review verdict**
-[Prior verdict from the record → current verdict, if it changed. If
-unchanged, say so plainly: "Still <verdict> — same gap as last session."]
+[Prior verdict from the record → current verdict, if it changed, and which
+card rows moved it. If unchanged, say so plainly: "Still <verdict> — same
+gap as last session."]
 [If new activity hinges on a design decision the comment thread doesn't
 explain — a maintainer rejected an approach with no stated reason, or a
 constraint is assumed but never justified — use the `why` skill to dig up

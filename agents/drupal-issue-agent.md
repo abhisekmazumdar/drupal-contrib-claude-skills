@@ -441,17 +441,18 @@ section.
 **[PAUSE — hard stop]** Present the full report below and then **stop completely**.
 Do not begin any fix until the user replies with explicit approval.
 
-```
-## Issue <nid>: <title>
+Open with the review card (`<skills-root>/issue-record-update/references/review-card.md`), contributor rows only. This is the
+full review, so `Fix`, `Tests`, and `Standards` come from A3-A7 and can be
+✅ or ❌, not just a preliminary read. Then 1-2 sentences justifying the
+verdict, then the detail.
 
-### Verdict
-**<RTBC-ready | Close — <named gap> | Needs work — <named gap> | Needs discussion — <topic>>**
-<1-2 sentences justifying it. This is the actionable takeaway — everything
-below is the evidence for it, not a substitute for it.>
+```
+<review card, in its ```text fence>
+
+<1-2 sentences justifying the verdict. The card is the actionable takeaway —
+everything below is the evidence for it, not a substitute for it.>
 
 ### Summary
-- Pipeline: PASSING / FAILING / PENDING
-- Branch sync: up to date  |  ⚠ N commits behind origin/<DEFAULT_BRANCH>
 - PHPCS: X errors, Y warnings
 - PHPUnit: X passed, Y failed / not run
 - Review: X FAIL, Y PASS, Z SKIP
