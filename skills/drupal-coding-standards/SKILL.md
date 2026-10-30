@@ -1,7 +1,7 @@
 ---
 name: drupal-coding-standards
 description: >
-  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or directory, matching exactly what the Drupal CI pipeline runs. Also covers PHP-compatibility review for Drupal 11.x (deprecations, PHP attributes, PHPUnit upgrades, PHP 8.4 compat) via references/php-changes.md. Use when the user asks to check coding standards, fix CS violations, run phpcs, review PHP compatibility, or before committing contribution work.
+  Run Drupal coding standards checks (PHPCS) and auto-fix (PHPCBF) on a file or directory, matching exactly what the Drupal CI pipeline runs, plus the CI's CSpell, ESLint, and Stylelint jobs locally via ci_lint.py. Also covers PHP-compatibility review for Drupal 11.x (deprecations, PHP attributes, PHPUnit upgrades, PHP 8.4 compat) via references/php-changes.md. Use when the user asks to check coding standards, fix CS violations, run phpcs, cspell, eslint, or stylelint, fix a spelling/lint pipeline failure, review PHP compatibility, or before committing or pushing contribution work.
 argument-hint: "[path]"
 ---
 
@@ -159,6 +159,77 @@ Summarise:
 - Violations auto-fixed by PHPCBF
 - Violations manually fixed
 - Final PHPCS exit code (0 = pipeline will pass)
+
+---
+
+## CSpell, ESLint, Stylelint (the CI-only jobs)
+
+Run this before any push that changes code, comments, JS, CSS, or YAML. These
+three jobs used to run only in CI, so one unrecognized word in a docblock
+("hardcodeable", "upserts", "desync") or one CSS property out of order cost
+a push, a red pipeline, and a second push.
+
+`ci_lint.py` (next to this `SKILL.md`) runs them the way Drupal's
+gitlab_templates do: the module's own `.gitlab-ci.yml` variables (`SKIP_*`,
+`_CSPELL_WORDS`, `_CSPELL_IGNORE_PATHS`, `_*_EXTRA`, …), the cspell config
+gitlab_templates' `prepare-cspell.php` builds (ported into the script, so
+nothing is downloaded or executed from outside), core's
+ESLint/Stylelint/Prettier configs, and CI's exact commands, run inside the
+DDEV web container with core's `node_modules`. It forces a `ddev mutagen
+sync` before each job, so a file saved a second ago is what gets checked.
+The temporary files it needs (core config links, `.cspell_ignore_ci-lint.json`)
+are created only if absent and removed afterwards, even on Ctrl-C.
+
+**By default it checks only what the push changes**, so it takes seconds:
+files that differ from the base (committed or not) plus untracked ones. Each
+job runs only when there are files for it, so a PHP-only change runs cspell
+alone. Pass the MR's target branch as the base. Without `--base` it falls
+back to the branch's upstream (so only unpushed work), then `origin/HEAD`.
+
+```bash
+python3 "<skills-root>/drupal-coding-standards/ci_lint.py" <module-dir> --base origin/<target-branch>
+# the whole module, like CI (slow on modules with large bundled JS):
+python3 "<skills-root>/drupal-coding-standards/ci_lint.py" <module-dir> --all
+# one job, or a job the module's .gitlab-ci.yml skips:
+python3 "<skills-root>/drupal-coding-standards/ci_lint.py" <module-dir> --base origin/<target-branch> --only stylelint --include-skipped
+```
+
+Pass the module's host path (e.g. `<webroot>/modules/contrib/<project>`). It
+finds the DDEV root and webroot itself.
+
+- **Exit 0:** every job that CI would run passed. Jobs the module skips
+  (`SKIP_ESLINT: 1`) show as SKIP, same as CI.
+- **Exit 1:** a job failed. The output is the tool's own, same as in the
+  pipeline log. Fix and re-run.
+  - **cspell:** a real misspelling → use American English. A real
+    word the dictionaries lack (a project or API term) → add it to the
+    module's `.cspell-project-words.txt` (or the `_CSPELL_DICTIONARY` file),
+    one per line, the way that project already does. Don't add the word just
+    to silence a typo, and don't pick one fix for the human when it's ambiguous:
+    say which and why.
+  - **eslint/stylelint:** most failures are auto-fixable. Run the same tool with
+    `--fix` only after reporting what it will change.
+- **Exit 3:** core's `node_modules` aren't installed. CI runs `yarn install`
+  in core before these jobs. Locally that's a one-time install that adds
+  `<webroot>/core/node_modules` (several hundred MB, no tracked file changes).
+  It's a dependency install, so ask first, then run the command the script
+  prints and re-run. It survives `ddev stop`/`start`; a Composer update that
+  replaces core removes it, and the script says so again.
+- **Exit 2:** environment problem (no DDEV, no webroot, no merge base with
+  the base ref).
+  Report it. Don't skip silently: say the check didn't run, so the human
+  knows CI is the first place it will.
+
+`--dry-run` prints the commands and temp files without running or creating
+anything.
+
+Untracked files count as changed, since they're usually about to be added.
+One you won't commit gets checked locally but never in CI, which only sees
+the pushed tree.
+
+A changed CSS file deeper than one folder (`modules/foo/css/x.css`) isn't
+linted: CI's unquoted `./**/*.css` glob only reaches one folder deep, so CI
+doesn't lint it either. The script says when that happens.
 
 ---
 

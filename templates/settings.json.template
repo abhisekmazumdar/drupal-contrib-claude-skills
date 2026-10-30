@@ -13,6 +13,7 @@
       "Bash(ddev exec phpcbf *)",
       "Bash(ddev exec phpstan *)",
       "Bash(python3 .claude/skills/drupal-gitlab-inline-comments/fetch.py *)",
+      "Bash(python3 .claude/skills/drupal-coding-standards/ci_lint.py *)",
       "Bash(python3 .claude/skills/drupal-gitlab-inline-comments/fetch_issue_notes.py *)",
       "Bash(git status*)",
       "Bash(git -C * status*)",

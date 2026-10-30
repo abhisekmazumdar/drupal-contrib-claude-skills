@@ -449,7 +449,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <h3>Code quality &amp; testing</h3>
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
-        <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs. Also covers PHP-compatibility review for Drupal 11.x — deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility — via a <code>references/php-changes.md</code> lookup consulted only for that specific question.</td></tr>
+        <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs, and the CI's CSpell, ESLint, and Stylelint jobs locally through <code>ci_lint.py</code>: only the files the push changes by default (seconds), or <code>--all</code>, using the module's own <code>.gitlab-ci.yml</code> variables, a port of gitlab_templates' <code>prepare-cspell.php</code>, and core's configs, inside DDEV with core's <code>node_modules</code> (a one-time, approved <code>yarn install</code>). Also covers PHP-compatibility review for Drupal 11.x — deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility — via a <code>references/php-changes.md</code> lookup consulted only for that specific question.</td></tr>
         <tr><td><code>drupal-automated-testing</code></td><td>Guidance for writing/modifying Functional, Kernel, FunctionalJavascript, and Unit tests: PHPUnit attributes, test namespaces, the Functional dual-container trap, DDEV env vars.</td></tr>
       </table>
 

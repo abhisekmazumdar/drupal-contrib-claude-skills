@@ -17,7 +17,9 @@ any fix; most CI failures fall into one of these buckets.
 | `Headers already sent` | Functional test output leak | Remove any `echo`/`print`/`dpm()` left in code |
 | `Your requirements could not be resolved` | Composer version conflict | Check `composer.json` constraints against Drupal version |
 | `Branch is behind` / merge conflict in log | Branch needs reroll | Use the `drupal-issue-reroll` skill |
-| `CSpell: Issues found: N in N file` | British/non-standard spelling in code or comments | Use American English spelling (e.g. `serialization` not `serialisation`). CSpell only runs in CI, not locally — check any new words in docblocks, comments, and test method names |
+| `CSpell: Issues found: N in N file` | British/non-standard spelling in code or comments | Use American English spelling (e.g. `serialization` not `serialisation`). Reproduce locally with `drupal-coding-standards`' `ci_lint.py --only cspell` before pushing the fix; a genuine project term goes in `.cspell-project-words.txt` |
+| `stylelint` job: `order/properties-order`, `prettier/prettier` | CSS property order or quoting differs from core's `.stylelintrc.json` | Reproduce with `ci_lint.py --only stylelint` (add `--include-skipped` if the module sets `SKIP_STYLELINT`); `--fix` sorts properties per core's order list |
+| `eslint` job: `prettier/prettier`, `no-unused-vars`, etc. | JS/YAML differs from core's `.eslintrc.passing.json` + Prettier | Reproduce with `ci_lint.py --only eslint`; most are auto-fixable with `--fix` |
 
 If none of these match, read the full trace and identify the job name (PHPCS,
 PHPStan, phpunit) to narrow scope before investigating further. If the cause

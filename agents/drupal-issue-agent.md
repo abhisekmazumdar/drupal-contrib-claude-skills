@@ -502,8 +502,8 @@ For each approved fix that is a **bug fix with a cheap local test target**
 (a Unit or Kernel test that runs in seconds, not a full Functional suite),
 use the `tdd` skill's red-green discipline: write the failing test first,
 confirm it fails for the expected reason, then write the fix. Skip this for
-fixes with no cheap local test path (e.g. Functional-only coverage, CI-only
-checks like CSpell) — write the fix directly in that case.
+fixes with no cheap local test path (e.g. Functional-only coverage, or a
+CSpell/ESLint/Stylelint finding) — write the fix directly in that case.
 
 For each approved fix:
 1. Make the change (Edit tool)
@@ -523,7 +523,7 @@ For each approved fix:
    [ ] PHPStan clean (ddev exec from module root)
    [ ] No dump() / dpm() / kint() / var_dump() in changed files
    [ ] No leftover TODO or FIXME added in this fix
-   [ ] American English spelling in all new code, comments, doc comments, and test method names (CSpell runs in CI only — not locally)
+   [ ] CSpell / ESLint / Stylelint clean (drupal-coding-standards skill: `ci_lint.py <module-dir> --base origin/<target-branch>`) — American English in new code, comments, doc comments, and test method names
    [ ] Commit message matches project style (checked in step 4)
    [ ] Branch up to date with origin/<default-branch>
        → if behind: use drupal-issue-reroll skill before pushing
@@ -725,7 +725,7 @@ plan are done, run pre-commit checks before staging anything:
    [ ] Tests passing (Unit / Kernel as applicable)
    [ ] No dump() / dpm() / kint() / var_dump() in new code
    [ ] No leftover TODO or FIXME
-   [ ] American English spelling in all new code, comments, doc comments, and test method names (CSpell runs in CI only — not locally)
+   [ ] CSpell / ESLint / Stylelint clean (drupal-coding-standards skill: `ci_lint.py <module-dir> --base origin/<target-branch>`) — American English in new code, comments, doc comments, and test method names
    [ ] Commit message follows project style
    ```
 5. Only after all checks pass (git add, commit, push all require user approval):
