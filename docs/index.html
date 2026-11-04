@@ -351,12 +351,24 @@ npx /path/to/drupal-claude-skills</code></pre>
         report back to you, and nothing is written, edited, <code>composer require</code>'d, committed, or posted
         without your explicit go-ahead.
       </div>
+      <p>
+        Some upstream skills only run when <em>you</em> type them (<code>/blast-radius</code>, <code>/interrogate</code>,
+        <code>/how</code>, <code>/tdd</code>, <code>/why</code>, <code>/technical-writing</code>, <code>/unslop</code>;
+        <code>$name</code> in Codex). You don't have to remember them: the pause where one pays off ends with a
+        <strong>You run</strong> line naming the command and why it fits now, for example
+        <code>/blast-radius issues/3499692/impact-1a2b3c4.md</code> when a review's impact map has a HIGH item.
+        No line means none applies. See <a href="#external-skills">External skills</a>.
+      </p>
 
       <h3>Issue tracking</h3>
       <p>Every issue you work on gets a persistent record at <code>issues/&lt;nid&gt;/README.md</code>, the long-term memory for contribution work, read at the start of every session.</p>
       <pre><code>issues/
 └── 3499692/
-    └── README.md         ← summary, work log, notes</code></pre>
+    ├── README.md            ← summary, work log, notes
+    ├── history.md           ← archived work log sessions
+    ├── impact-&lt;sha&gt;.md      ← drupal-impact map of one reviewed commit
+    ├── screenshots/
+    └── e2e/                 ← Playwright specs from the test phase</code></pre>
     </section>
 
     <section id="repo-layout">
@@ -413,7 +425,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <p>Codex rules govern commands requesting execution outside the sandbox. Its <code>PreToolUse</code> hook can deny a call but can't force an approval prompt — workflow approvals stay instructions, supplemented by native permissions and rules, not a full enforcement boundary. Hooks don't inspect script contents, aliases, dynamic shell expansion, or later interactive stdin.</p>
       <p>Keep Nora's implementation separate from Milo's report-only testing — both may write local artifacts or exercise DDEV, so "report-only" isn't the same as a read-only sandbox. Both clients share <code>issues/</code>: serialize record updates, use separate worktrees for concurrent code work.</p>
       <h3>Compatibility and validation</h3>
-      <p>Target local macOS/Linux or WSL sessions with DDEV access. Native Windows and hosted cloud DDEV access are not validated. Codex must support repository skills, standalone custom agents, and trusted PreToolUse hooks. Local rule/configuration checks used Codex CLI 0.153.4; Claude Code 2.1.236 was available during development. No live Drupal issue lifecycle has been claimed as tested.</p>
+      <p>Target local macOS/Linux or WSL sessions with DDEV access. Native Windows and hosted cloud DDEV access are not validated. Codex must support repository skills, standalone custom agents, and trusted PreToolUse hooks. Local rule/configuration checks used Codex CLI 0.153.4; Claude Code 2.1.236 was available during development; agent skill loading (a <code>disable-model-invocation</code> skill never reaches an agent's preload or the Skill tool) was verified on 2.1.309. No live Drupal issue lifecycle has been claimed as tested.</p>
       <p>Automated tests cover all targets, repeated installs, legacy and multi-site configuration, user-edited files, symlinks, offline and grouped external installs, JSON/TOML generation, and command-guard decisions. Browser screenshots require the requested connected session: a new Playwright browser does not inherit the user's open tab or login.</p>
       <p>Before a release, exercise an issue in each client: load context, recon, review, relay an approval, delegate tests, save screenshots, and resume the record in the other client. Confirm hook trust and MCP connectivity on the actual host.</p>
       <p>Runtime references: <a href="https://learn.chatgpt.com/docs/build-skills">Codex skills</a>,
@@ -592,6 +604,12 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <li>The header's <code>**Status:**</code> field uses a fixed vocabulary so it's scannable across issues.</li>
         <li><code>**Site:**</code> appears in the header only once the workspace has 2+ configured sites.</li>
       </ul>
+      <p>
+        Other files in <code>issues/&lt;nid&gt;/</code>: <code>history.md</code> (archived Work Log, below),
+        <code>impact-&lt;short-sha&gt;.md</code> (the <code>drupal-impact</code> map from a review, one file per head
+        commit, never overwritten, so earlier reviews stay comparable), and <code>screenshots/</code> and
+        <code>e2e/</code> from the test phase.
+      </p>
       <h3>Work Log archiving</h3>
       <p>
         <code>issue-record-update</code> keeps the README's <code>## Work Log</code> capped at the 3 most recent
@@ -680,6 +698,11 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <li>Needs work with a named gap</li>
         <li>Needs discussion</li>
       </ul>
+      <p>
+        The full review starts from facts: <code>drupal-impact</code> maps what the diff touches and who depends on
+        it, with <code>file:line</code> evidence, and its HIGH items become review failures. That keeps the verdict
+        about real breakage, not a guess at it.
+      </p>
       <p>
         The goal is a mergeable, community-acceptable contribution, not an exhaustively long findings list.
         Cosmetic nitpicks that don't block correctness, security, or standards get mentioned once and set aside.
