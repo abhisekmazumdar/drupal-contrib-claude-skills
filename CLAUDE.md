@@ -97,7 +97,6 @@ None live in this repo — `bin/setup.js` pulls all of them at install time via 
 | `why` | `cursor/plugins` | user-run; suggested in `drupal-issue-catchup`'s briefing when a design decision is unexplained |
 | `tdd` | `cursor/plugins` | user-run; suggested at A9/B3 for a bug fix with a cheap Unit/Kernel test target |
 | `diagnosing-bugs` | `mattpocock/skills` | `drupal-issue-agent` A1, fallback for unrecognized CI failures |
-| `resolving-merge-conflicts` | `mattpocock/skills` | `drupal-issue-reroll` Step 3 |
 | `wizard` | `mattpocock/skills` | `drupal-repo-setup` Step 7, setup issues → runnable fix-it script |
 
 ```bash

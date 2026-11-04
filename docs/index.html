@@ -564,7 +564,6 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><td><code>why</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested in <code>drupal-issue-catchup</code>'s briefing when a design decision is unexplained</td></tr>
         <tr><td><code>tdd</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at A9/B3 for a bug fix with a cheap Unit/Kernel test target</td></tr>
         <tr><td><code>diagnosing-bugs</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-agent</code> A1, fallback for unrecognized CI failures</td></tr>
-        <tr><td><code>resolving-merge-conflicts</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-reroll</code> Step 3, conflict resolution</td></tr>
         <tr><td><code>wizard</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-repo-setup</code> Step 7, turning setup issues into a runnable fix-it script</td></tr>
       </table>
       <p><code>cursor/plugins</code> skills are nested under <code>pstack/skills/&lt;name&gt;</code> in that repo, and all seven of them (<code>how</code>, <code>why</code>, <code>blast-radius</code>, <code>interrogate</code>, <code>tdd</code>, <code>unslop</code>, <code>technical-writing</code>) are reserved for the user: the agents can't run them. Instead, the pause where each one pays off ends with a <strong>You run</strong> line naming the command and why now, so you don't have to remember them.</p>

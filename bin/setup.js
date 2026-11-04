@@ -276,11 +276,6 @@ async function main() {
       usedBy: 'Phased reproduce/hypothesize/isolate loop for hard bugs before drupal-issue-agent implements a fix.',
     },
     {
-      name: 'resolving-merge-conflicts',
-      repo: 'mattpocock/skills',
-      usedBy: 'Reads each side\'s originating issue/MR before resolving conflicts drupal-issue-reroll surfaces.',
-    },
-    {
       name: 'wizard',
       repo: 'mattpocock/skills',
       usedBy: 'Turns drupal-repo-setup recon\'s "## Setup issues" block into a runnable fix-it script for the human.',
