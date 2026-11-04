@@ -65,6 +65,8 @@ Site selection happens exactly **once** — `drupal-issue-start` Phase 0.5, matc
 
 Every `skills/<name>/SKILL.md` works without knowing the specific Drupal project layout. Path detection happens inside the skill (`find . -name "vendor/bin/phpcs"`), never baked in at install time.
 
+`drupal-impact` is the read-only, deterministic diff scanner (stdlib Python, no LLM) — so it has no `disable-model-invocation`.
+
 ### Installer file-management model
 
 `bin/install.js`'s `writer()` treats installed files three ways, chosen by whether a project is ever expected to hand-edit that file. **Adding a new installed file? Pick one explicitly** — don't assume `write`/`copy`'s conflict-safe default fits.
@@ -86,7 +88,7 @@ None live in this repo — `bin/setup.js` pulls all of them at install time via 
 | `playwright-cli` | `microsoft/playwright-cli` | `drupal-e2e-tester` Phase 3, browser e2e |
 | `drupalorg-cli` | `mglaman/drupalorg-cli` | `drupal-issue-start` and others, Drupal.org issue/MR data |
 | `how` | `cursor/plugins` | `drupal-issue-agent` A3/B2, unfamiliar code before review/planning |
-| `blast-radius` | `cursor/plugins` | `drupal-issue-agent` A9, before the RTBC verdict |
+| `blast-radius` | `cursor/plugins` | `drupal-issue-agent` A9, before the RTBC verdict — fed the local `drupal-impact` report as its starting map |
 | `unslop` | `cursor/plugins` | `drupalorg-comment-format`, `drupal-issue-start` Phase 3 |
 | `technical-writing` | `cursor/plugins` | same pre-output pass, for structure |
 | `interrogate` | `cursor/plugins` | `drupal-issue-agent` A9, offered explicitly, never automatic |

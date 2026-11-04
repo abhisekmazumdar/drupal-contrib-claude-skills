@@ -1,0 +1,7 @@
+impact_fixture.settings:
+  type: config_object
+  label: 'Impact fixture settings'
+  mapping:
+    greeting:
+      type: string
+      label: 'Greeting'

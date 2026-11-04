@@ -1,0 +1,5 @@
+services:
+  impact_fixture.greeter:
+    class: Drupal\impact_fixture\Greeter
+    arguments: ['@config.factory']
+  Drupal\impact_fixture\GreeterInterface: '@impact_fixture.greeter'

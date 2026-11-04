@@ -450,6 +450,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <table>
         <tr><th>Skill</th><th>What it does</th></tr>
         <tr><td><code>drupal-coding-standards</code></td><td>Runs PHPCS/PHPCBF matching exactly what Drupal's CI pipeline runs, and the CI's CSpell, ESLint, and Stylelint jobs locally through <code>ci_lint.py</code>: only the files the push changes by default (seconds), or <code>--all</code>, using the module's own <code>.gitlab-ci.yml</code> variables, a port of gitlab_templates' <code>prepare-cspell.php</code>, and core's configs, inside DDEV with core's <code>node_modules</code> (a one-time, approved <code>yarn install</code>). Also covers PHP-compatibility review for Drupal 11.x — deprecations, PHPUnit upgrades, PHP attributes, OOP hooks, fibers, PHP 8.4 compatibility — via a <code>references/php-changes.md</code> lookup consulted only for that specific question.</td></tr>
+        <tr><td><code>drupal-impact</code></td><td>Deterministic Drupal-aware impact scan of a diff (<code>drupal_impact.py</code>, stdlib Python, read-only): which services, public PHP APIs, hooks, plugins, routes, permissions, config schema and events it touches, every consumer in the module and in <code>--scan</code> roots (following inheritance, so providers built on a base class count) with <code>file:line</code>, the tests that name each piece, a HIGH/MEDIUM/LOW risk per piece with the rule that fired, and a Mermaid diagram. Feeds <code>drupal-issue-agent</code>'s A9 (before <code>blast-radius</code>) and B3, and <code>drupal-e2e-tester</code>'s affected-tests-first run. Every report lists what the scanner can't see.</td></tr>
         <tr><td><code>drupal-automated-testing</code></td><td>Guidance for writing/modifying Functional, Kernel, FunctionalJavascript, and Unit tests: PHPUnit attributes, test namespaces, the Functional dual-container trap, DDEV env vars.</td></tr>
       </table>
 
@@ -485,7 +486,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr>
           <td><code>drupal-e2e-tester</code></td>
           <td><span class="badge-persona">Milo</span></td>
-          <td>Dedicated test phase. PHPUnit via DDEV plus Playwright browser e2e. Report-only. It never edits code, so the implementing agent is never the one verifying its own work.</td>
+          <td>Dedicated test phase. PHPUnit via DDEV (the <code>drupal-impact</code> affected tests first, when given) plus Playwright browser e2e. Report-only. It never edits code, so the implementing agent is never the one verifying its own work.</td>
         </tr>
         <tr>
           <td><code>drupal-repo-setup</code></td>
@@ -543,7 +544,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><td><code>playwright-cli</code></td><td><code>microsoft/playwright-cli</code></td><td><code>drupal-e2e-tester</code> Phase 3, browser e2e</td></tr>
         <tr><td><code>drupalorg-cli</code></td><td><code>mglaman/drupalorg-cli</code></td><td><code>drupal-issue-start</code> and others, Drupal.org issue/MR data</td></tr>
         <tr><td><code>how</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A3/B2, unfamiliar code before review/planning</td></tr>
-        <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, before finalizing RTBC verdict</td></tr>
+        <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, before finalizing RTBC verdict, starting from the local <code>drupal-impact</code> report</td></tr>
         <tr><td><code>unslop</code></td><td><code>cursor/plugins</code></td><td><code>drupalorg-comment-format</code>, <code>drupal-issue-start</code> Phase 3, pre-output writing pass</td></tr>
         <tr><td><code>technical-writing</code></td><td><code>cursor/plugins</code></td><td>Same pre-output pass, for structure</td></tr>
         <tr><td><code>interrogate</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, offered explicitly, never automatic</td></tr>

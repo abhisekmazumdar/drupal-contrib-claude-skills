@@ -1,0 +1,7 @@
+impact_fixture.greeting:
+  path: '/impact-fixture/greeting'
+  defaults:
+    _controller: '\Drupal\impact_fixture\Controller\GreetingController::page'
+    _title: 'Greeting'
+  requirements:
+    _permission: 'view impact greetings'

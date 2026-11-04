@@ -48,6 +48,8 @@ covered is not an acceptable report.
 - **Manual testing steps** — the A8/B3 step list from `drupal-issue-agent`. This is
   the source script for the Playwright layer.
 - Changed-files list — what the diff touched, to focus coverage assessment
+- **Affected tests** (optional) — the "Tests to run first" list from a
+  `drupal-impact` report: test files that name a touched piece, with their suite
 
 **Site context:** every `ddev`/`drush` command below runs against `<site>` —
 `cd` into that site's root (`<drupal-path>`) first, or confirm the shell is
@@ -98,6 +100,12 @@ ddev exec bash -c "SIMPLETEST_BASE_URL=<site-url> \
   phpunit -c /var/www/html/web/core/phpunit.xml.dist \
   /var/www/html/web/modules/contrib/<project>/tests/src --testdox 2>&1" | tail -60
 ```
+
+When **affected tests** were passed, run those files first, each by path
+with the matching command above (Unit without DB, the rest with it), and
+report them as their own `Affected` row before the full suites. Then run the
+full suites as usual — the affected list says where to look first, it never
+replaces a suite.
 
 Skip a suite cleanly (and say so in the report) if the directory does not exist.
 Record: passed / failed / errored / skipped counts per suite, and the full failure
@@ -169,6 +177,7 @@ message back to the caller — it gets relayed to the human verbatim.
 ### PHPUnit
 | Suite | Result | Detail |
 |---|---|---|
+| Affected (from drupal-impact) | PASS / FAIL / NOT GIVEN | X passed, Y failed — files run |
 | Unit | PASS / FAIL / NOT PRESENT | X passed, Y failed |
 | Kernel | … | … |
 | Functional | … | … |

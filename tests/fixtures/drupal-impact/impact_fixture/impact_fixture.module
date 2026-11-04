@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ * Procedural hooks for the impact fixture.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function impact_fixture_help($route_name, RouteMatchInterface $route_match) {
+  if ($route_name === 'help.page.impact_fixture') {
+    return t('Greets people.');
+  }
+}

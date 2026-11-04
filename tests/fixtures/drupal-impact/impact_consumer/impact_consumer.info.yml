@@ -1,0 +1,6 @@
+name: Impact consumer
+type: module
+description: Depends on impact_fixture's API, so the scanner finds it through --scan.
+core_version_requirement: ^10.3 || ^11
+dependencies:
+  - impact_fixture:impact_fixture

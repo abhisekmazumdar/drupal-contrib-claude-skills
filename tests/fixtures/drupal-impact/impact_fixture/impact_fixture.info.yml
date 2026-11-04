@@ -1,0 +1,4 @@
+name: Impact fixture
+type: module
+description: Tiny module the drupal-impact scanner test edits.
+core_version_requirement: ^10.3 || ^11

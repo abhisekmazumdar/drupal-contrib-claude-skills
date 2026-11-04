@@ -19,6 +19,7 @@ skills:
   - ddev-expert
   - drupal-clone-contrib
   - how
+  - drupal-impact
   - blast-radius
   - interrogate
   - tdd
@@ -272,6 +273,8 @@ Store the result as `COMMITS_BEHIND`.
 For each file touched by the diff, read the **complete file** (not just the diff
 chunk) using the Read tool. New classes and interfaces require reading the whole
 file to spot missing implementations, wrong base classes, or incorrect annotations.
+If an `issues/<nid>/impact-*.md` report exists for the MR's head commit, read
+changed files in its order: HIGH pieces first.
 
 If the module or the surrounding code is unfamiliar, use the `how` skill first
 to build a mental model of it before judging whether the diff fits — reviewing
@@ -429,6 +432,13 @@ Format:
 ```
 
 ### A9. Present findings
+
+First run the `drupal-impact` skill on the MR diff: base = the MR's target
+branch, `--scan <webroot>/modules/contrib`, `--format all`. Save the report as
+`issues/<nid>/impact-<short-sha>.md` (new file per head commit, never
+overwritten). Fold each HIGH piece into Review Failures below — the consumer
+`file:line` is the evidence. Then give `blast-radius` the `impact.json` as its
+starting map.
 
 Before finalizing the verdict, use the `blast-radius` skill to check what the
 diff breaks **outside** itself — callers of a changed method signature, other
@@ -664,6 +674,10 @@ Write a structured plan covering:
 
 ### Risks and open questions
 - [anything unclear from the issue that needs human input]
+- **Impact:** [run `drupal-impact <module_dir> --symbols <the public symbols
+  the plan changes> --scan <webroot>/modules/contrib`; list each HIGH and
+  MEDIUM consumer (`file:line`) the plan must update or keep compatible, or
+  "no public symbols change"]
 ```
 
 **[PAUSE]** Present the plan and ask:
@@ -776,6 +790,7 @@ Invoke agent: drupal-e2e-tester
   site_url:    <site-url from .drupal-contrib/context.md>
   steps:       <the full A8 / B3 manual testing steps>
   changed:     <list of files touched by the diff>
+  affected_tests: <"Tests to run first" from the latest impact.json, or "none">
 ```
 
 **Rules:**
