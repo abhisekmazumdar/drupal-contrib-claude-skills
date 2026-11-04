@@ -68,8 +68,6 @@
       "Bash(find *)",
       "Bash(ls *)",
       "Bash(wc *)",
-      "Skill(unslop)",
-      "Skill(unslop:*)",
       "Skill(drupalorg-comment-format)",
       "Skill(drupalorg-comment-format:*)",
       "Skill(drupal-issue-start)",

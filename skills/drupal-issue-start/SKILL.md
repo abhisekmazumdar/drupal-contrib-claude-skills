@@ -342,12 +342,11 @@ list, setup issues, and latest-discussion summary gathered in Phase 2.
 ### Writing the record
 
 Write `## Issue Summary` and `## Current State` as short, clean bullet points a
-human can skim in a few seconds — not paragraphs. If the `technical-writing`
-skill is installed, use it to structure these sections; then run an `unslop`
-pass (same pattern `drupalorg-comment-format` uses) before writing the file,
-to strip AI-writing tells. If either skill isn't installed,
-apply the same discipline manually: short sentences, concrete nouns, no
-filler ("leverages", "robust", "comprehensive").
+human can skim in a few seconds — not paragraphs. Apply the discipline
+yourself: short sentences, concrete nouns, no filler ("leverages", "robust",
+"comprehensive"). The `technical-writing` and `unslop` skills are reserved
+for explicit user invocation, so never run them here; they're offered for
+drafted comments instead (`drupalorg-comment-format`).
 
 ### Opening the record in the connected IDE
 

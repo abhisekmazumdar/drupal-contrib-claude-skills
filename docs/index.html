@@ -465,7 +465,8 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <code>drupal-issue-reroll</code> mutate disk/git with no internal confirmation of their own. They're
         marked non-auto-triggering and only ever get invoked from behind another skill's <code>[PAUSE]</code>.
         Every other skill here is read-only, writes only append-only records under <code>issues/&lt;nid&gt;/</code>,
-        or already gates its own writes internally.
+        or already gates its own writes internally. The flag also keeps a skill out of an agent's preload, so
+        agents read these two skills' <code>SKILL.md</code> at the gated step instead of listing them.
       </div>
     </section>
 
@@ -543,18 +544,18 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><th>Skill</th><th>Upstream repo</th><th>Wired in at</th></tr>
         <tr><td><code>playwright-cli</code></td><td><code>microsoft/playwright-cli</code></td><td><code>drupal-e2e-tester</code> Phase 3, browser e2e</td></tr>
         <tr><td><code>drupalorg-cli</code></td><td><code>mglaman/drupalorg-cli</code></td><td><code>drupal-issue-start</code> and others, Drupal.org issue/MR data</td></tr>
-        <tr><td><code>how</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A3/B2, unfamiliar code before review/planning</td></tr>
-        <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, before finalizing RTBC verdict, starting from the local <code>drupal-impact</code> report</td></tr>
-        <tr><td><code>unslop</code></td><td><code>cursor/plugins</code></td><td><code>drupalorg-comment-format</code>, <code>drupal-issue-start</code> Phase 3, pre-output writing pass</td></tr>
-        <tr><td><code>technical-writing</code></td><td><code>cursor/plugins</code></td><td>Same pre-output pass, for structure</td></tr>
-        <tr><td><code>interrogate</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A9, offered explicitly, never automatic</td></tr>
-        <tr><td><code>why</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-catchup</code> Step 5, design-decision digging</td></tr>
-        <tr><td><code>tdd</code></td><td><code>cursor/plugins</code></td><td><code>drupal-issue-agent</code> A10, bug fixes with a cheap local test target</td></tr>
+        <tr><td><code>how</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at <code>drupal-issue-agent</code>'s A9/B3 pause when A3/B2 left the code unclear</td></tr>
+        <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at <code>drupal-issue-agent</code> A9 (and B3) on the saved <code>drupal-impact</code> report when it has a HIGH/MEDIUM piece</td></tr>
+        <tr><td><code>unslop</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested under every draft from <code>drupalorg-comment-format</code></td></tr>
+        <tr><td><code>technical-writing</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested alongside <code>unslop</code>, for structure</td></tr>
+        <tr><td><code>interrogate</code></td><td><code>cursor/plugins</code></td><td>User-run; offered at <code>drupal-issue-agent</code> A9 for a second opinion on the verdict</td></tr>
+        <tr><td><code>why</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested in <code>drupal-issue-catchup</code>'s briefing when a design decision is unexplained</td></tr>
+        <tr><td><code>tdd</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at A9/B3 for a bug fix with a cheap Unit/Kernel test target</td></tr>
         <tr><td><code>diagnosing-bugs</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-agent</code> A1, fallback for unrecognized CI failures</td></tr>
         <tr><td><code>resolving-merge-conflicts</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-reroll</code> Step 3, conflict resolution</td></tr>
         <tr><td><code>wizard</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-repo-setup</code> Step 7, turning setup issues into a runnable fix-it script</td></tr>
       </table>
-      <p><code>cursor/plugins</code> skills are nested under <code>pstack/skills/&lt;name&gt;</code> in that repo, and several (<code>blast-radius</code>, <code>technical-writing</code>, <code>interrogate</code>, <code>tdd</code>) require explicit slash-invocation rather than triggering automatically.</p>
+      <p><code>cursor/plugins</code> skills are nested under <code>pstack/skills/&lt;name&gt;</code> in that repo, and all seven of them (<code>how</code>, <code>why</code>, <code>blast-radius</code>, <code>interrogate</code>, <code>tdd</code>, <code>unslop</code>, <code>technical-writing</code>) are reserved for the user: the agents can't run them. Instead, the pause where each one pays off ends with a <strong>You run</strong> line naming the command and why now, so you don't have to remember them.</p>
     </section>
 
     <section id="multi-site">

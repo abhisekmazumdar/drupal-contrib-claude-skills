@@ -13,7 +13,6 @@ description: >
   module directory before reading files or making changes.
 tools: Bash, Read, TodoWrite
 skills:
-  - drupal-clone-contrib
   - drupalorg-cli
   - ddev-expert
   - wizard
@@ -92,7 +91,7 @@ or check out without the module directory.
 # drupal-clone-contrib skill handles the clone
 ```
 
-Invoke the `drupal-clone-contrib` skill with `<project>`, then set
+Read `<skills-root>/drupal-clone-contrib/SKILL.md` and follow it for `<project>` (it sets `disable-model-invocation`, so it can't be preloaded here), then set
 `<module_dir>` to the newly created directory and continue to Step 4.
 
 **Every other mode (`probe`, `checkout`, `worktree`):** **[PAUSE]** Present
@@ -115,7 +114,7 @@ Do not clone until the user says yes. Once approved:
 # drupal-clone-contrib skill handles the clone
 ```
 
-Invoke the `drupal-clone-contrib` skill with `<project>`.
+Read `<skills-root>/drupal-clone-contrib/SKILL.md` and follow it for `<project>` (it sets `disable-model-invocation`, so it can't be preloaded here).
 
 After cloning, set `<module_dir>` to the newly created directory.
 

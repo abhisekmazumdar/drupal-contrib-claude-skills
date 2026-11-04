@@ -11,12 +11,9 @@ description: >
 tools: Read, Glob, Grep, Write, Edit, Bash, TodoWrite, WebFetch
 skills:
   - drupalorg-cli
-  - drupal-gitlab
   - drupal-gitlab-inline-comments
   - drupal-related-issues
   - issue-record-update
-  - drupalorg-comment-format
-  - why
 ---
 
 # Sage
@@ -78,9 +75,8 @@ Extract from the record:
 
 The README only carries the 3 most recent Work Log sessions —
 `issue-record-update` archives older ones to `issues/<nid>/history.md`. That
-covers a normal catchup. Only read `history.md` when digging up cited
-rationale for the `why` skill (Step 5) genuinely requires pre-archive
-context — don't read it by default.
+covers a normal catchup. Only read `history.md` when an unexplained design
+decision (Step 5) genuinely needs pre-archive context — don't read it by default.
 
 ---
 
@@ -124,6 +120,8 @@ GITLAB_HOST=git.drupalcode.org glab ci status \
 GITLAB_HOST=git.drupalcode.org glab ci status \
   -b <branch> -R project/<project>
 ```
+Anything beyond these commands (job logs, other repos, unusual errors): read
+`<skills-root>/drupal-gitlab/SKILL.md` first.
 
 **d) Backlink scan** — other local issue records that mention this one but
 that this issue's own record doesn't yet list:
@@ -216,9 +214,8 @@ card rows moved it. If unchanged, say so plainly: "Still <verdict> — same
 gap as last session."]
 [If new activity hinges on a design decision the comment thread doesn't
 explain — a maintainer rejected an approach with no stated reason, or a
-constraint is assumed but never justified — use the `why` skill to dig up
-cited rationale from prior VCS/issue-queue history before presenting it
-here, rather than guessing at the reasoning.]
+constraint is assumed but never justified — say so plainly rather than
+guessing at the reasoning, and add the **You run** line below for `/why`.]
 
 **Related issues**
 [Any cross-references from the README, newly found in comments, or found by the backlink scan — label backlink-scan finds explicitly (e.g. "found via backlink scan"), with a one-liner on the relationship. Omit if none.]
@@ -244,6 +241,11 @@ here, rather than guessing at the reasoning.]
 
 Ask exactly:
 > "How would you like to proceed? I can tackle any of the steps above, draft a comment, or do something else entirely — just say the word."
+>
+> **You run:** `/why <the unexplained decision>` (Codex: `$why`) — digs up
+> the cited rationale from VCS and issue history. Only when Step 5 flagged
+> one; otherwise omit this line. `why` is reserved for explicit user
+> invocation: never run it, read its file, or imitate it yourself.
 
 **Do not take any action until the user replies.**
 
@@ -258,8 +260,10 @@ Once the user replies:
 - Delegate to the appropriate agent or skill, passing along the `<site>`
   resolved in Step 1 so nothing downstream has to re-resolve it:
   - Code fixes → use `drupal-issue-agent` (Path A fix loop)
-  - Rebase needed → use `drupal-issue-reroll` skill
-  - Draft a comment → use `drupalorg-comment-format` skill
+  - Rebase needed → `drupal-issue-reroll`: ask first, then read
+    `<skills-root>/drupal-issue-reroll/SKILL.md` and follow it
+  - Draft a comment → read `<skills-root>/drupalorg-comment-format/SKILL.md`
+    first and follow it (markup, AI disclosure line)
   - Repo not set up → use `drupal-repo-setup` agent
 
 Follow all approval gates from those agents — this agent does not bypass them.

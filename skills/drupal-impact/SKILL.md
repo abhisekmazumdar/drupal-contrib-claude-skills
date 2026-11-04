@@ -20,58 +20,36 @@ import and call graphs miss most of what a change can break. This scanner
 reads the diff, names the Drupal pieces it touches, and greps the module plus
 any `--scan` roots for their consumers and covering tests. It reports facts
 only — every consumer is a line it found in a file. The external
-`blast-radius` skill reasons about breakage grep can't show; give it this
-report as its starting map, so its effort goes on the hard part.
+`blast-radius` skill (user-run) reasons about breakage grep can't show; this
+report is its starting map, so its effort goes on the hard part.
 
-Resolve the script relative to this installed `SKILL.md`. In workflow
-examples, `<skills-root>` is the parent of this skill directory; it is
-supplied by the active client's workspace instructions.
-
-## Standalone use
-
-1. Plain script, from anywhere, with or without an agent:
-   ```bash
-   python3 "<skills-root>/drupal-impact/drupal_impact.py" <module_dir> --base origin/1.x
-   ```
-2. `/drupal-impact` in Claude Code, `$drupal-impact` in Codex.
-3. Only this skill, without the rest of the toolkit:
-   ```bash
-   npx skills add abhisekmazumdar/drupal-contrib-claude-skills --skill drupal-impact
-   ```
-   Offline, or without `npx`: copy `skills/drupal-impact/` from this repo into
-   your client's skills directory (`.claude/skills/drupal-impact/` or
-   `.agents/skills/drupal-impact/`). The script has no other dependency.
+Resolve the script relative to this installed `SKILL.md`; `<skills-root>`
+is the parent of this skill directory, supplied by the active client's
+workspace instructions. Run `--help` for every flag.
 
 ```bash
-python3 drupal_impact.py [MODULE_DIR]
-    [--base REF]              # default: merge-base of HEAD with origin's default branch
-    [--head REF]              # default: working tree, untracked files included
-    [--symbols A,B,...]       # no diff: impact of named symbols (planning)
-    [--scan PATH ...]         # extra roots to search for dependents
-    [--format md|json|mermaid|all]   # default md; all needs --out
-    [--out DIR]               # write impact.md / impact.json / impact.mmd
-    [--max-nodes N]           # Mermaid cap, default 40
-    [--fail-on high|medium]   # non-zero exit at that risk; default always 0
+python3 "<skills-root>/drupal-impact/drupal_impact.py" <module_dir> \
+  --base origin/<target-branch> --scan <webroot>/modules/contrib --format all --out <dir>
+# planning, no diff: FQCN or short name (Class::method), service ID, route,
+# permission, plugin ID, config name or hook name
+python3 "<skills-root>/drupal-impact/drupal_impact.py" <module_dir> --symbols A,B --scan <webroot>/modules/contrib
 ```
-
-`--symbols` takes FQCNs or short names (`GreeterInterface::greet`), service
-IDs, route names, permissions, plugin IDs, config names, or hook names. Names
-it can't find in the module are listed in the report's notes.
 
 ## Steps for the agent
 
 1. Resolve `<module_dir>` and the base ref. In an MR context the base is the
-   MR's target branch (`origin/<target-branch>`); otherwise let the script
-   pick the merge-base with the default branch.
+   MR's target branch (`origin/<target-branch>`); otherwise omit `--base` and
+   the script picks the merge-base with the default branch.
 2. Inside a Drupal site, pass `--scan <webroot>/modules/contrib` so other
-   modules' dependents are found. The module itself is skipped automatically
-   when it sits under that root. If you skip the scan, say so — the report
-   does too.
-3. Run with `--format all --out <dir>` and read `impact.json`. Write a summary
-   of at most 5 sentences, in plain language, above the report.
-4. **The summary may only mention pieces and consumers that are in the JSON.**
-   Never add a consumer you believe exists but the scan didn't list — put it
-   to `blast-radius` or the human as a question instead.
+   modules' dependents are found (the module itself is skipped there). If you
+   skip the scan, say so — the report does too.
+3. Read `impact.md`: it caps consumers at 15 per piece. Look a piece up in
+   `impact.json` only when you need its full consumer list — on a large MR the
+   JSON is far bigger than the Markdown. Write a summary of at most 5
+   sentences, in plain language, above the report.
+4. **The summary may only mention pieces and consumers that are in the
+   report.** Never add a consumer you believe exists but the scan didn't list
+   — put it to the human as a question instead.
 5. Inside the issue flow, save the report as a **new** file
    `issues/<nid>/impact-<short-sha>.md` (summary + `impact.md`), where
    `<short-sha>` is the head commit. If that file already exists, the same
@@ -98,6 +76,9 @@ not "safe". Detection rules and limits: `references/detection-rules.md`.
 
 ## Hand-off
 
-Pass `impact.json` to `blast-radius` as its starting map; its job is the
-breakage this scan can't see. Pass `tests_to_run` to whoever runs the tests,
-so the tests that name the touched pieces run first.
+When the report has a HIGH or MEDIUM piece, remind the human they can run
+`/blast-radius` (Codex: `$blast-radius`) on the saved report: it reasons about
+the breakage this scan can't see, starting from this map. It's reserved for
+explicit user invocation — never run it, read its file, or imitate it. Pass
+`tests_to_run` to whoever runs the tests, so the tests that name the touched
+pieces run first.

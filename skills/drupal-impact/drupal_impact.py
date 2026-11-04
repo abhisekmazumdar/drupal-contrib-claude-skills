@@ -1071,15 +1071,15 @@ def render_mermaid(r, max_nodes):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Map what a Drupal module change touches and what depends on it.")
-    ap.add_argument("module_dir", nargs="?", default=".")
-    ap.add_argument("--base")
-    ap.add_argument("--head")
-    ap.add_argument("--symbols")
-    ap.add_argument("--scan", nargs="+", default=[], metavar="PATH")
-    ap.add_argument("--format", choices=["md", "json", "mermaid", "all"], default="md")
-    ap.add_argument("--out")
-    ap.add_argument("--max-nodes", type=int, default=40)
-    ap.add_argument("--fail-on", choices=["high", "medium"])
+    ap.add_argument("module_dir", nargs="?", default=".", help="module checkout (default: .)")
+    ap.add_argument("--base", metavar="REF", help="default: merge-base of HEAD with origin's default branch")
+    ap.add_argument("--head", metavar="REF", help="default: working tree, untracked files included")
+    ap.add_argument("--symbols", metavar="A,B", help="no diff: impact of named symbols (planning)")
+    ap.add_argument("--scan", nargs="+", default=[], metavar="PATH", help="extra roots to search for dependents")
+    ap.add_argument("--format", choices=["md", "json", "mermaid", "all"], default="md", help="all needs --out")
+    ap.add_argument("--out", metavar="DIR", help="write impact.md / impact.json / impact.mmd here")
+    ap.add_argument("--max-nodes", type=int, default=40, metavar="N", help="Mermaid node cap (default 40)")
+    ap.add_argument("--fail-on", choices=["high", "medium"], help="exit 1 at this risk or above (default: always 0)")
     args = ap.parse_args(argv)
 
     if args.format == "all" and not args.out:

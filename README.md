@@ -86,7 +86,7 @@ The entry skill loads prior context, fetches issue/MR activity, performs automat
 | Milo (`drupal-e2e-tester`) | Independent PHPUnit/Playwright testing; never fixes module code |
 | Sage (`drupal-issue-catchup`) | Briefing on changes since the previous session |
 
-To map what a diff touches before reading it (services, hooks, plugins, routes, config schema, and their consumers), run `/drupal-impact <module-path>` on its own.
+To map what a diff touches before reading it (services, hooks, plugins, routes, config schema, and their consumers), run `/drupal-impact <module-path>` on its own, or install just that skill with `npx skills add abhisekmazumdar/drupal-contrib-claude-skills --skill drupal-impact` (offline: copy `skills/drupal-impact/` into your skills directory; the script is plain `python3 drupal_impact.py <module-dir>`).
 
 Code/dependency changes, commits, and pushes require scoped approval. Recon and issue-record maintenance are documented automatic exceptions. Public comments are drafted for the human to post. Hooks and client permissions supplement these workflow instructions; they are not identical security boundaries across clients.
 

@@ -79,6 +79,8 @@ Every `skills/<name>/SKILL.md` works without knowing the specific Drupal project
 
 Two skills set it: `drupal-clone-contrib` (runs `git clone` immediately, no internal confirmation) and `drupal-issue-reroll` (runs `git rebase` unprompted in Step 3 — only the push is gated). Both are only ever invoked from behind another skill's `[PAUSE]`; triggering them straight from a passing mention would skip that gate. Every other skill is read-only, writes only append-only to `issues/<nid>/`, or already gates its own writes — those stay auto-triggerable. Add a skill that mutates git/disk with no pause of its own? Set this field.
 
+The flag also keeps a skill out of an agent's `skills:` preload and out of the model's Skill tool (verified on 2.1.309: listed in `skills:`, its content never arrives). So never list a flagged skill in an agent's `skills:`. For these two local skills, the agent reads `<skills-root>/<name>/SKILL.md` at the gated step that names it — our own flag, set only against passing mentions. External flagged skills are different: their authors reserved them for the user, and Claude Code tells the model not to imitate them — see below. Agents load skills only where used: Nora doesn't preload `drupal-issue-start` (its caller, which hands it everything) or anything Wren does. `tests/agent-skills.test.js` enforces both.
+
 ### External skills are pulled, not vendored
 
 None live in this repo — `bin/setup.js` pulls all of them at install time via the `externalSkills` loop:
@@ -87,13 +89,13 @@ None live in this repo — `bin/setup.js` pulls all of them at install time via 
 |---|---|---|
 | `playwright-cli` | `microsoft/playwright-cli` | `drupal-e2e-tester` Phase 3, browser e2e |
 | `drupalorg-cli` | `mglaman/drupalorg-cli` | `drupal-issue-start` and others, Drupal.org issue/MR data |
-| `how` | `cursor/plugins` | `drupal-issue-agent` A3/B2, unfamiliar code before review/planning |
-| `blast-radius` | `cursor/plugins` | `drupal-issue-agent` A9, before the RTBC verdict — fed the local `drupal-impact` report as its starting map |
-| `unslop` | `cursor/plugins` | `drupalorg-comment-format`, `drupal-issue-start` Phase 3 |
-| `technical-writing` | `cursor/plugins` | same pre-output pass, for structure |
-| `interrogate` | `cursor/plugins` | `drupal-issue-agent` A9, offered explicitly, never automatic |
-| `why` | `cursor/plugins` | `drupal-issue-catchup` Step 5, design-decision digging |
-| `tdd` | `cursor/plugins` | `drupal-issue-agent` A10, bug fixes with a cheap local test target |
+| `how` | `cursor/plugins` | user-run; suggested in `drupal-issue-agent`'s A9/B3 pause when A3/B2 left the code unclear |
+| `blast-radius` | `cursor/plugins` | user-run; suggested at `drupal-issue-agent` A9 (and B3) on the saved `drupal-impact` report when it has a HIGH/MEDIUM piece |
+| `unslop` | `cursor/plugins` | user-run; suggested under every draft from `drupalorg-comment-format` |
+| `technical-writing` | `cursor/plugins` | user-run; suggested alongside `unslop`, for structure |
+| `interrogate` | `cursor/plugins` | user-run; offered at `drupal-issue-agent` A9 for a second opinion on the verdict |
+| `why` | `cursor/plugins` | user-run; suggested in `drupal-issue-catchup`'s briefing when a design decision is unexplained |
+| `tdd` | `cursor/plugins` | user-run; suggested at A9/B3 for a bug fix with a cheap Unit/Kernel test target |
 | `diagnosing-bugs` | `mattpocock/skills` | `drupal-issue-agent` A1, fallback for unrecognized CI failures |
 | `resolving-merge-conflicts` | `mattpocock/skills` | `drupal-issue-reroll` Step 3 |
 | `wizard` | `mattpocock/skills` | `drupal-repo-setup` Step 7, setup issues → runnable fix-it script |
@@ -102,7 +104,7 @@ None live in this repo — `bin/setup.js` pulls all of them at install time via 
 npx -y skills@latest add <owner/repo> --skill <name> --agent claude-code --copy -y
 ```
 
-Never copy their contents into `skills/` — updated via `npx skills update`. Each pull is non-fatal (offline prints the manual command and continues). Adding another: append to the `externalSkills` array in `bin/setup.js`, don't write a new bespoke block. `cursor/plugins` skills nest under `pstack/skills/<name>`; `blast-radius`/`technical-writing`/`interrogate`/`tdd` ship `disable-model-invocation: true` (explicit slash-invocation only). The loop groups by `repo` and pulls each repo's skills in one call — repeated `--skill` flags work, a comma-separated value silently falls back to an interactive picker and installs nothing.
+Never copy their contents into `skills/` — updated via `npx skills update`. Each pull is non-fatal (offline prints the manual command and continues). Adding another: append to the `externalSkills` array in `bin/setup.js`, don't write a new bespoke block. `cursor/plugins` skills nest under `pstack/skills/<name>`; all seven (`how`, `why`, `blast-radius`, `interrogate`, `tdd`, `unslop`, `technical-writing`) ship `disable-model-invocation: true` — reserved for the user. The flow never runs, reads or imitates them; it ends the relevant pause with a **You run** line (the `/name` or `$name` command and why now), only when its condition holds. That's the point of pulling them: the human gets reminded at the moment each one pays off. The loop groups by `repo` and pulls each repo's skills in one call — repeated `--skill` flags work, a comma-separated value silently falls back to an interactive picker and installs nothing.
 
 `writing-for-agents` (`mattpocock/skills`) and the `principle-*` micro-skills (`cursor/plugins`) are useful only for maintaining *this* repo, not an installed Drupal workspace — deliberately not in `externalSkills`. Pull them into this repo's own `.claude/skills/` for local dev only (`.gitignore` excludes `.claude/` for exactly this reason).
 

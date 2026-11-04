@@ -206,16 +206,20 @@ When drafting a **comment reply**:
 
 ## Output Format
 
-### Pre-output: plain-language and unslop passes (if available)
+### Pre-output: plain-language and unslop passes
 
-Before output, run the drafted text through:
-1. `technical-writing` (if installed) — for structure and a plain,
-   high-level register any queue reader can follow, per rule 8 above.
-2. `unslop` (if installed) — to strip residual AI writing patterns. This is
-   the automated catch for anything the Voice and Tone rules above missed.
+Before output, check the draft yourself against rule 8 and the Voice and
+Tone rules: short sentences, concrete claims, no filler.
 
-If neither skill is installed, apply the same rules manually before
-proceeding: short sentences, concrete claims, no filler.
+Then, below the draft, add one line reminding the human of the two writing
+skills they can run on it before posting — `technical-writing` (structure,
+a plain register any queue reader can follow) and `unslop` (residual AI
+writing patterns):
+
+> **You run:** `/technical-writing` then `/unslop` on this draft before posting (Codex: `$technical-writing`, `$unslop`).
+
+Both are reserved for explicit user invocation: never run them, read their
+files, or imitate them yourself.
 
 ---
 

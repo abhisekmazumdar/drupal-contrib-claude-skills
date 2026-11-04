@@ -7,22 +7,15 @@ description: >
   project, MR list, and issue record are already in hand.
 tools: Read, Glob, Grep, Write, Edit, Bash, TodoWrite, WebFetch, Agent, mcp__agent-module-docs__search_modules, mcp__agent-module-docs__get_module, mcp__agent-module-docs__read_doc
 skills:
-  - drupal-issue-start
   - issue-record-update
   - drupalorg-cli
   - drupal-gitlab
   - drupal-gitlab-inline-comments
   - drupal-automated-testing
   - drupal-coding-standards
-  - drupal-issue-reroll
   - drupalorg-comment-format
   - ddev-expert
-  - drupal-clone-contrib
-  - how
   - drupal-impact
-  - blast-radius
-  - interrogate
-  - tdd
   - diagnosing-bugs
 ---
 
@@ -97,7 +90,7 @@ These rules govern every phase and path below. Read them first.
 - **Gather first, act second.** Read and analyze freely; recon and issue-record maintenance are the documented automatic write exceptions. Code edits, dependency changes, staging, commits, and pushes require explicit approval for that work.
 - **At a `[PAUSE]` without the required decision, stop completely.** Present the structured report and wait. Preserve prior explicit approval for the same scope; a broad earlier instruction does not authorize a materially different action.
 - **Approvals are item-specific.** If the user approves items 1 and 3, fix only 1 and 3. Do not fix anything else noticed along the way, even if trivial.
-- **Clone operations require approval.** Cloning a contrib module creates files on disk. Always pause and ask the user before invoking `drupal-clone-contrib`.
+- **Clone operations require approval.** Cloning a contrib module creates files on disk. Cloning goes through the `drupal-repo-setup` agent, which gates it; never run `git clone` or `drupal-clone-contrib` yourself.
 - **Branch checkout requires approval.** Always show which branch will be checked out and ask the user to confirm before running `issue:checkout` or `glab mr checkout`.
 - **Never post to Drupal.org** without showing the draft and getting explicit approval.
 - **Never force-push** unless the user explicitly requests it. When a force-push IS needed (e.g. after a rebase), always use `--force-with-lease`, never bare `--force`.
@@ -276,10 +269,11 @@ file to spot missing implementations, wrong base classes, or incorrect annotatio
 If an `issues/<nid>/impact-*.md` report exists for the MR's head commit, read
 changed files in its order: HIGH pieces first.
 
-If the module or the surrounding code is unfamiliar, use the `how` skill first
-to build a mental model of it before judging whether the diff fits — reviewing
-against a guessed-at structure produces false positives and false negatives
-alike.
+If the module or the surrounding code is unfamiliar, map it before judging
+whether the diff fits — entry points, services, plugin managers, how the
+changed code is reached — since reviewing against a guessed-at structure
+produces false positives and false negatives alike. If it stays unclear,
+note it for the A9 "You run" line (`/how`).
 
 If the diff calls into a contrib module that isn't checked out locally (a
 dependency, or the module named in a "breaks with X" report), and the
@@ -437,16 +431,30 @@ First run the `drupal-impact` skill on the MR diff: base = the MR's target
 branch, `--scan <webroot>/modules/contrib`, `--format all`. Save the report as
 `issues/<nid>/impact-<short-sha>.md` (new file per head commit, never
 overwritten). Fold each HIGH piece into Review Failures below — the consumer
-`file:line` is the evidence. Then give `blast-radius` the `impact.json` as its
-starting map.
+`file:line` is the evidence. The scan checks what the diff breaks **outside**
+itself (callers of a changed signature, modules depending on a changed service
+or hook, config schema consumers), which the A7 checklist doesn't cover: A7
+verifies the diff is correct on its own terms, this verifies nothing else pays
+for it.
 
-Before finalizing the verdict, use the `blast-radius` skill to check what the
-diff breaks **outside** itself — callers of a changed method signature, other
-modules depending on a changed service or hook, config schema consumers.
-This is a check the A7 checklist doesn't cover — A7 verifies the diff is
-correct on its own terms, `blast-radius` verifies nothing else pays for it.
-Fold anything it finds into the Review Failures list below, not a separate
-section.
+**Skills only the user can run.** `blast-radius`, `interrogate`, `how`, `tdd`
+(and `why`, `unslop`, `technical-writing` elsewhere) are reserved for explicit
+user invocation: never invoke them, read their files, or imitate their
+workflow. Instead, end the pause message with one **You run** line per skill
+whose condition holds — the exact command (`/name` in Claude Code, `$name` in
+Codex) and why now. Nothing applies? Omit the line. At A9:
+- `/blast-radius issues/<nid>/impact-<short-sha>.md` — when the impact report
+  has a HIGH or MEDIUM piece, or the `--scan` was skipped: it digs into the
+  breakage grep can't see, starting from that map.
+- `/interrogate` — when the verdict is RTBC or close (always offered below).
+- `/how <area>` — when A3 left part of the code unclear.
+- `/tdd` on item N — when an item is a bug fix with a cheap Unit/Kernel test target.
+
+`drupal-issue-reroll` is different: this toolkit's own skill, gated by A9/A10's
+approvals. When a rebase is approved, read
+`<skills-root>/drupal-issue-reroll/SKILL.md` and follow it (it sets
+`disable-model-invocation` only so a passing mention can't trigger it, which
+also keeps it from being preloaded here).
 
 **[PAUSE — hard stop]** Present the full report below and then **stop completely**.
 Do not begin any fix until the user replies with explicit approval.
@@ -491,14 +499,13 @@ everything below is the evidence for it, not a substitute for it.>
 Then ask **exactly this**:
 > "Which items (by number) should I fix? Which will you handle yourself?
 > Should I draft a Drupal.org review comment?
-> Want a second opinion on this verdict first (`/interrogate`)?
+> Want a second opinion on this verdict first? Run `/interrogate` yourself.
 > I will not touch any code until you reply."
+>
+> **You run:** <the lines from the list above that apply, or omit>
 
-If the user asks for the second opinion, invoke the `interrogate` skill
-against this verdict — it's explicit-invocation only (disabled from
-triggering automatically), so it only runs here if asked for. Report back
-whether it agrees or disagrees with the verdict above, and why, before
-resuming the fix loop.
+If the user ran `/interrogate`, wait for them to share whether it agrees or
+disagrees with the verdict, and why, before resuming the fix loop.
 
 **Do not proceed to A10 under any circumstances until the user replies and
 explicitly names what they want done.** A vague "go ahead" is not sufficient —
@@ -511,7 +518,7 @@ anything else, even if you spotted it during review.
 
 For each approved fix that is a **bug fix with a cheap local test target**
 (a Unit or Kernel test that runs in seconds, not a full Functional suite),
-use the `tdd` skill's red-green discipline: write the failing test first,
+use red-green (or the user's own `/tdd` run, if they did one at A9): write the failing test first,
 confirm it fails for the expected reason, then write the fix. Skip this for
 fixes with no cheap local test path (e.g. Functional-only coverage, or a
 CSpell/ESLint/Stylelint finding) — write the fix directly in that case.
@@ -537,7 +544,7 @@ For each approved fix:
    [ ] CSpell / ESLint / Stylelint clean (drupal-coding-standards skill: `ci_lint.py <module-dir> --base origin/<target-branch>`) — American English in new code, comments, doc comments, and test method names
    [ ] Commit message matches project style (checked in step 4)
    [ ] Branch up to date with origin/<default-branch>
-       → if behind: use drupal-issue-reroll skill before pushing
+       → if behind: follow `<skills-root>/drupal-issue-reroll/SKILL.md` before pushing
    ```
 7. After all fixes pass preflight (requires user approval): `git -C <webroot>/modules/contrib/<project> push <project>-<nid> HEAD`
 8. Poll pipeline (check the issue fork first — that's where the branch was
@@ -627,10 +634,10 @@ Once the sub-agent reports the module is ready, read:
 - `<module>.routing.yml` — routes
 - `tests/src/` — existing test structure
 
-If this module hasn't been touched in this session before, use the `how`
-skill to build a mental model of its architecture before drafting the plan
-in B3 — a plan built on a guessed-at structure tends to miss the actual
-extension points.
+If this module hasn't been touched in this session before, map its
+architecture before drafting the plan in B3 — a plan built on a guessed-at
+structure tends to miss the actual extension points. If parts stay unclear,
+add the B3 "You run" line for `/how`.
 
 The same `agent-module-docs` lookup from A3 applies here: for contrib modules
 the plan integrates with but that aren't checked out, and, for a new feature,
@@ -683,6 +690,10 @@ Write a structured plan covering:
 **[PAUSE]** Present the plan and ask:
 > "Does this plan look right? Any changes before I start? Any open questions
 > answered in a later comment I may have missed?"
+>
+> **You run:** <only when it applies, per A9's rules: `/how <module>` if B2
+> left its architecture unclear; `/blast-radius` if the Impact bullet lists a
+> HIGH consumer; `/tdd` if the fix is a bug with a cheap Unit/Kernel test>
 
 Do NOT write any code until the user approves.
 
