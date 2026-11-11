@@ -38,7 +38,7 @@ ls .gitlab/issue_templates/
 cat ".gitlab/issue_templates/<TemplateName>.md"
 ```
 
-End `/tmp/issue_body.md` with the AI disclosure line, after a blank line (or fill the template's AI disclosure section if it has one) — same format as MR bodies (see [merge-requests.md](merge-requests.md)).
+End `/tmp/issue_body.md` with the collapsible AI disclosure, after a blank line (or fill the template's AI disclosure section if it has one) — same format as MR bodies (see [merge-requests.md](merge-requests.md)).
 
 Create:
 ```bash

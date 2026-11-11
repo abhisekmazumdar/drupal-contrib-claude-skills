@@ -23,10 +23,14 @@ glab mr view <mr-iid> -R project/<repo>
 cat .gitlab/merge_request_templates/Default.md
 ```
 
-Fill in the template and save to `/tmp/mr_body.md`. If the template has an AI disclosure section, fill it with the line below; otherwise end the body with it, after a blank line (no tool or model names; `<uses>` is any of `research`, `writing`, `code`, in that order — full rules in `drupalorg-comment-format`):
+Fill in the template and save to `/tmp/mr_body.md`. If the template has an AI disclosure section, fill it with the statement below as plain text; otherwise end the body with it, after a blank line (no tool or model names; `<uses>` is any of `research`, `writing`, `code`, in that order — full rules in `drupalorg-comment-format`):
 
 ```
-_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting._
+<details><summary>AI disclosure</summary>
+
+_Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting. ([Drupal.org AI policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure))_
+
+</details>
 ```
 
 Also include `Closes #{issue-id}` somewhere in the description body to auto-close the work item on merge.
@@ -57,7 +61,7 @@ glab api --hostname git.drupalcode.org \
 - Title format: `{type}: #{issue-id} Short summary` — Conventional Commits
 - Always `remove_source_branch: true`
 - Target branch: confirm with the user if not `main`
-- Always append the AI disclosure line
+- Always append the collapsible AI disclosure
 - Always include `Closes #{issue-id}` in the description
 - **Default to an issue fork even with maintainer push access** — it keeps the workflow consistent for other contributors; only push straight to origin when the user explicitly confirms a direct maintainer push
 

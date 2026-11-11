@@ -30,17 +30,21 @@ Drupal.org projects fall into two categories. Always determine which before form
 - `> blockquote`
 - Cross-references: `#NID` for issues, `!NID` for MRs (GitLab syntax)
 
-The AI disclosure line below still applies for migrated issues, in its Markdown form.
+The AI disclosure below still applies for migrated issues, in its collapsible Markdown form.
 
 ---
 
-## AI disclosure line — every issue, MR, and comment
+## AI disclosure — every issue, MR, and comment
 
-Follows Drupal.org's [AI policy disclosure rules](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): if the project's issue or MR template has a designated AI disclosure section, put the statement there; otherwise append it to the end of the issue summary, comment, or MR description, after a blank line. One italic line, a footnote, not a section. The label links to the policy; the wording after it mirrors the policy's own example ("Used … to help generate …").
+Follows Drupal.org's [AI policy disclosure rules](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): if the project's issue or MR template has a designated AI disclosure section, put the statement there; otherwise append it to the end of the issue summary, comment, or MR description, after a blank line. A footnote, not a section: on GitLab it collapses under a visible "AI disclosure" toggle so it doesn't take space; on classic Drupal.org it stays one italic line (`<details>` isn't verified to survive Drupal.org's text filter). The policy link sits in the text, never in `<summary>` — clicking there toggles instead of following it; the wording after it mirrors the policy's own example ("Used … to help generate …").
 
-Markdown (migrated queues, MR descriptions):
+Markdown (migrated queues, MR descriptions) — keep the blank lines inside `<details>`, or GitLab renders the italics and link as raw text:
 ```
-_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting._
+<details><summary>AI disclosure</summary>
+
+_Used AI to help with <uses> (<what it did>). The reasoning and positions are my own, and I reviewed everything before posting. ([Drupal.org AI policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure))_
+
+</details>
 ```
 
 HTML (non-migrated queues):
@@ -51,13 +55,17 @@ HTML (non-migrated queues):
 - `<uses>` — only the ones that apply, always in this order: `research` (reading code, diffs, or threads; finding a root cause; analysing tests), `writing` (drafting this text or the issue/MR body), `code` (writing or changing code, tests, or patches). Join as "research and writing" or "research, writing and code".
 - `<what it did>` — up to three concrete actions as gerunds, e.g. "reviewing the MR diff, analysing the tests, summarising the thread". Count AI work recorded earlier in `issues/<nid>/` if it shaped this post.
 - Never name a tool, model, or vendor — always just "AI".
-- Never repeat or expand the line into a paragraph.
+- Never repeat or expand the statement into a paragraph.
 - Disclose on every post, even for minor AI help. The policy only requires it for a "significant portion" of the code or text; this toolkit is deliberately stricter.
 - The policy asks for a "clear, human-written statement": the line is a draft the human reads and edits at the approval gate, like the rest of the post. Never post it unseen.
 
 Example (review comment, migrated queue):
 ```
-_[AI disclosure](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure): Used AI to help with research and writing (reviewing the MR diff, analysing the tests, summarising the thread). The reasoning and positions are my own, and I reviewed everything before posting._
+<details><summary>AI disclosure</summary>
+
+_Used AI to help with research and writing (reviewing the MR diff, analysing the tests, summarising the thread). The reasoning and positions are my own, and I reviewed everything before posting. ([Drupal.org AI policy](https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal#s-disclosure))_
+
+</details>
 ```
 
 ---

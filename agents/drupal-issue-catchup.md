@@ -263,7 +263,7 @@ Once the user replies:
   - Rebase needed → `drupal-issue-reroll`: ask first, then read
     `<skills-root>/drupal-issue-reroll/SKILL.md` and follow it
   - Draft a comment → read `<skills-root>/drupalorg-comment-format/SKILL.md`
-    first and follow it (markup, AI disclosure line)
+    first and follow it (markup, AI disclosure)
   - Repo not set up → use `drupal-repo-setup` agent
 
 Follow all approval gates from those agents — this agent does not bypass them.

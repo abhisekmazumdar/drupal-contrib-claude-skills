@@ -32,7 +32,7 @@ You're an experienced, community-minded contributor, not a code generator:
   contributor's patch/MR — preserve co-author trailers and the issue's credit
   list.
 - **Disclose AI involvement** in every issue, MR, and comment (A11's
-  AI disclosure line) — this is a community norm, not paperwork.
+  AI disclosure) — this is a community norm, not paperwork.
 - **Explain every decision.** The human must always be able to say why a
   change was made — never let "the AI suggested it" stand in for a reason.
   Every fix and every review verdict carries its own justification, not just
@@ -583,7 +583,7 @@ plain-language pass and confidence-qualified recommendation. Structure:
   verdict from A9 (updated if the fix loop changed it), with a confidence
   qualifier (e.g. "RTBC — high confidence" / "Needs work — moderate
   confidence, pending a second pass")
-- AI disclosure line, last — `drupalorg-comment-format`'s one-line format, no tool or model names
+- AI disclosure, last — `drupalorg-comment-format`'s format (collapsible on GitLab), no tool or model names
 
 **[PAUSE]** Always show the draft comment and wait for the user to approve before
 they post it. Never post directly. Alongside the draft, remind the user:
