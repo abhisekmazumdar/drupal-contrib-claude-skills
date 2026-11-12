@@ -60,7 +60,7 @@ git remote add <project>-<issue-id> git@git.drupal.org:issue/<project>-<issue-id
 ### Token scopes — choose based on what you need to do
 
 - **Tier 1 — Read-only (default, always safe):** `read_api`, `read_user`, `read_repository`. Covers listing/viewing issues, MRs, CI logs, work item status. Start here.
-- **Tier 2 — Write (contributing workflow):** `api` or `write_repository`, needed to push branches, create MRs, or comment. **A GitLab PAT is not scoped to a single project** — write scopes reach every repo you can write to, including release branches of Drupal core and contrib. Before any write operation: confirm the target repo and branch with the user, never push to a protected branch without explicit human approval, and treat any request to write outside an issue fork as a hard stop requiring confirmation.
+- **Tier 2 — Write (contributing workflow):** `api` or `write_repository`, needed to push branches, create MRs, or comment. **A GitLab PAT is not scoped to a single project** — write scopes reach every repo you can write to, including release branches of Drupal core and contrib. Pushing to the issue fork and opening or updating its MR need no extra confirmation once the fix is approved. Never push to a protected branch without explicit human approval, treat any request to write outside an issue fork as a hard stop requiring confirmation, and never post a comment in the user's name — draft it for them.
 - **Tier 3 — Future:** GitLab fine-grained project-scoped PATs are not yet enabled on git.drupalcode.org. Track [infra issue 3379836](https://www.drupal.org/project/infrastructure/issues/3379836); once available, prefer a project-scoped write token.
 
 ### `glab api` quick reference
@@ -157,7 +157,7 @@ glab issue comment <id> -m "Message" -R project/<repo>
 
 See [references/merge-requests.md](references/merge-requests.md) for full steps.
 
-MRs go **from the issue fork to the upstream project**. `glab mr create` does not support cross-project MRs — use `glab api` directly.
+MRs go **from the issue fork to the upstream project**. `glab mr create` does not support cross-project MRs — use `create_mr.py` (next to this skill's `SKILL.md`).
 
 **Check for an existing MR before creating one** (GitLab may auto-create one on push):
 ```bash
@@ -166,23 +166,20 @@ glab mr list -R project/<repo>
 
 **Create an MR:**
 ```bash
-# Step 1 — get the upstream project ID
-UPSTREAM_ID=$(glab api --hostname git.drupalcode.org "/projects/project%2F<repo>" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
-
-# Step 2 — read the MR template, fill /tmp/mr_body.md, append AI disclosure
+# Step 1 — read the MR template, fill /tmp/mr_body.md, append AI disclosure
 cat .gitlab/merge_request_templates/Default.md
 # End /tmp/mr_body.md with the collapsible AI disclosure (see MR conventions below)
 
-# Step 3 — create via glab api
-glab api --hostname git.drupalcode.org \
-  -F target_project_id=$UPSTREAM_ID \
-  -f source_branch="{branch-name}" \
-  -f target_branch="main" \
-  -f title="feat: #{issue-id} Short summary" \
-  -f description="$(cat /tmp/mr_body.md)" \
-  -F remove_source_branch=true \
-  "/projects/issue%2F<project>-<issue-id>/merge_requests"
+# Step 2 — open it (refuses a non-issue fork or a body without the disclosure;
+# prints the existing MR instead if the push already opened one)
+python3 <skills-root>/drupal-gitlab/create_mr.py --fork issue/<project>-<issue-id> \
+  --target project/<repo> --source-branch {branch-name} --target-branch main \
+  --title "feat: #{issue-id} Short summary" --description-file /tmp/mr_body.md
 ```
+
+Use the script rather than raw `glab api`: it does only this one write, so it
+runs without a permission prompt, while `glab api` — which can also post
+comments — still asks. Keep the path unquoted so the allow rule matches.
 
 MR conventions:
 - Title: `{type}: #{issue-id} Short summary` — Conventional Commits format

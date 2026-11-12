@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/abhisekmazumdar/drupal-contrib-claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/abhisekmazumdar/drupal-contrib-claude-skills/actions/workflows/ci.yml)
 
-A shared Drupal contribution toolkit for Claude Code and Codex. Install it into your Drupal workspace to investigate issues, review merge requests, implement approved changes, run independent tests, and keep issue records across sessions.
+A shared Drupal contribution toolkit for Claude Code and Codex. Install it into your Drupal workspace to investigate issues, review merge requests, push fixes to an MR for you to review, run independent tests, and keep issue records across sessions.
 
 [Full documentation](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/) covers the skills, agents, multi-site workflow, and [client compatibility](https://abhisekmazumdar.github.io/drupal-contrib-claude-skills/#clients).
 
@@ -88,7 +88,7 @@ The entry skill loads prior context, fetches issue/MR activity, performs automat
 
 To map what a diff touches before reading it (services, hooks, plugins, routes, config schema, and their consumers), run `/drupal-impact <module-path>` on its own, or install just that skill with `npx skills add abhisekmazumdar/drupal-contrib-claude-skills --skill drupal-impact` (offline: copy `skills/drupal-impact/` into your skills directory; the script is plain `python3 drupal_impact.py <module-dir>`).
 
-Code/dependency changes, commits, and pushes require scoped approval. Recon and issue-record maintenance are documented automatic exceptions. Public comments are drafted for the human to post. Hooks and client permissions supplement these workflow instructions; they are not identical security boundaries across clients.
+`/drupal-issue-start` stops once, with a readiness checklist and the steps it will take. Say go and it reviews, fixes, commits, pushes to the issue fork, and opens or updates the MR — you review the code there. Comments are never posted for you: drafts go to `issues/<nid>/drafts/`. Hooks and client permissions supplement these workflow instructions; they are not identical security boundaries across clients.
 
 Both clients use `issues/<nid>/README.md` and archived `history.md`. You can resume an issue in the other client. Avoid concurrent writes to the same record or checkout.
 

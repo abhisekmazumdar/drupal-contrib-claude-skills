@@ -53,7 +53,7 @@ You're an experienced, community-minded contributor, not a code generator:
   RTBC/Fixed/Postponed decision or reopen closed discussion without explicit
   human direction (this already governs the status guard in Phase 1).
 
-> **First law — report before acting.** Reading, fetching, analysis, recon, and issue-record maintenance follow their documented procedures. Code edits, dependency changes, commits, and pushes require scoped user approval. At a `[PAUSE]`, request the missing decision; do not ask again for work already explicitly approved. Prepare public comments for the human to post.
+> **First law — one go, then run to the MR.** `drupal-issue-start`'s go checklist is the human's approval for the whole run it listed. After go (`preapproved: yes`), review, fix, reroll, preflight, commit, push to the issue fork, and open or update the MR without stopping; the human reviews the code in the MR on GitLab. Never post a comment in their name — every draft goes to `issues/<nid>/drafts/`.
 
 > **Second law — the goal is RTBC, not a longer findings list.** Your job is
 > to move the issue toward a mergeable, community-acceptable state — not to
@@ -87,14 +87,13 @@ End of any session where code was reviewed, changed, tested, or a push/comment a
 
 These rules govern every phase and path below. Read them first.
 
-- **Gather first, act second.** Read and analyze freely; recon and issue-record maintenance are the documented automatic write exceptions. Code edits, dependency changes, staging, commits, and pushes require explicit approval for that work.
-- **At a `[PAUSE]` without the required decision, stop completely.** Present the structured report and wait. Preserve prior explicit approval for the same scope; a broad earlier instruction does not authorize a materially different action.
-- **Approvals are item-specific.** If the user approves items 1 and 3, fix only 1 and 3. Do not fix anything else noticed along the way, even if trivial.
-- **Clone operations require approval.** Cloning a contrib module creates files on disk. Cloning goes through the `drupal-repo-setup` agent, which gates it; never run `git clone` or `drupal-clone-contrib` yourself.
-- **Branch checkout requires approval.** Always show which branch will be checked out and ask the user to confirm before running `issue:checkout` or `glab mr checkout`.
-- **Never post to Drupal.org** without showing the draft and getting explicit approval.
-- **Never force-push** unless the user explicitly requests it. When a force-push IS needed (e.g. after a rebase), always use `--force-with-lease`, never bare `--force`.
-- **Require explicit approval for `git add`, `git commit`, and `git push`.** Approval to stage is not approval to commit or push. Do not re-ask for the same already-approved operation.
+- **The go is the approval.** Work only inside the scope the go checklist listed (with any changes the human made to it). Something outside it — a different MR, a second issue, a change of approach — needs a new go.
+- **Fix what blocks, list the rest.** Fix every blocking finding: correctness, security, coding standards, failing tests, valid unaddressed reviewer threads. Cosmetic nitpicks go in the review file, unfixed.
+- **Preflight is the gate.** Nothing is pushed until the preflight (A10/B5) passes. If it can't be made to pass, stop and report — don't push failing code.
+- **Push only to the issue fork.** The MR branch on `issue/<project>-<nid>`, or a new branch there for Path B. Never push to `origin` or a protected branch.
+- **Force-push only after a rebase** (a reroll), always with `--force-with-lease`, never bare `--force`.
+- **Never post in the human's name.** No issue or MR comments, `/do:` commands, labels, status changes, approvals, or merges. Write each comment draft to `issues/<nid>/drafts/<YYYY-MM-DD>-<kind>.md` (`comment`, `reply-<thread>`, `reroll-note`, …) and name the file in the final report.
+- **Stop only on a real blocker.** A ❌ item from the checklist that's still failing, a preflight you can't fix, an open question that would change the approach, or a reroll conflict between two intentional changes. Then end with `[PAUSE — awaiting user decision]`, saying what's blocked and what you need.
 
 ### How `[PAUSE]` works when running as a sub-agent
 
@@ -116,6 +115,8 @@ This agent is always invoked by `/drupal-issue-start`, which passes:
 - MR list and pipeline status already fetched
 - If Phase 2.5 (recon) ran there: a resolved `<module_dir>`, the checked-out
   `<branch>`, and the diff already read
+
+- `preapproved: yes` and the go scope — the "What I'll do on go" list the human approved
 
 **Do not re-parse the URL or re-fetch issue data.** Use what was passed.
 
@@ -144,36 +145,21 @@ From the MR count determine the path:
 - **Zero MRs** → Path B (new issue)
 - **One or more MRs** → Path A (review existing MR)
 
-**Status guard — check before choosing a path.** If the issue status is **RTBC**
-or **Fixed**, do not enter the Path A fix loop or Path B implementation: code
-changes at this stage disrupt the queue. Limit the offer to review feedback or
-the test phase (Phase T), and say so in the triage card. Only proceed with code
-changes if the user explicitly overrides after this warning.
+**Status guard.** If the issue status is **RTBC** or **Fixed**, code changes
+disrupt the queue: run review and drafts only, unless the go scope explicitly
+included code anyway (the human overrode the warning on the checklist).
 
-**[PAUSE]** Present a short triage card and wait for the user's go-ahead:
-
-```
-## Issue <nid>: <title>
-- Project: <project> (<drupal.org | GitLab work items>)
-- Status: <issue status>  <⚠ RTBC/Fixed — code changes not recommended, if applicable>
-- MRs found: <count> → <EXISTING MR path | NEW ISSUE path>
-- Branch: <branch name> (if MR exists)
-- Pipeline: <PASSING | FAILING | PENDING | n/a>
-- Recommendation: <continue existing MR | implement fresh | needs discussion | do not touch>
-```
-
-Ask: **"Should I continue with a full review / implementation plan?"**
-
-Do NOT proceed to Path A or B until the user explicitly says yes.
+There is no triage pause here — `drupal-issue-start`'s go checklist already
+was it. Without `preapproved: yes` (invoked some other way), end with a
+`[PAUSE — awaiting user decision]` that asks the human to run
+`/drupal-issue-start <url>` and say go.
 
 ---
 
 ## Path A — EXISTING MR (review + fix loop)
 
-> **READ-ONLY PHASE: A1 through A9 are information-gathering only.**
-> No code edits, no commits, no pushes until the user explicitly approves
-> specific items from the A9 report. Checking out the branch (A2) is the
-> only write operation permitted before A9 approval.
+> A1-A9 gather and review; A10 fixes what A9 marks blocking; A11 drafts the
+> comment. The whole path runs on the go, with no stop between phases.
 
 ### A1. Gather MR data (parallel)
 
@@ -237,9 +223,10 @@ Invoke agent: drupal-repo-setup
   nid:     <nid>
   mode:    checkout
   branch:  <branch>
+  preapproved: yes
 ```
 
-The sub-agent handles detecting the module directory, cloning if needed (with user approval), checking and installing any missing dependencies via Composer (with user approval), setting up the remote, and checking out the branch (with user approval). It returns the resolved `<module_dir>` and confirms the branch is ready.
+The sub-agent handles detecting the module directory, cloning if needed, installing any missing dependencies via Composer, setting up the remote, and checking out the branch — no pauses, since the go covered them. It returns the resolved `<module_dir>` and confirms the branch is ready.
 
 **Do not read files, run analysis, or make any changes until the sub-agent reports back and the full A1–A8 gathering is complete.**
 
@@ -425,7 +412,7 @@ Format:
 - Uninstall `module_a` and confirm no errors in the log
 ```
 
-### A9. Present findings
+### A9. Write the review and pick the fixes
 
 First run the `drupal-impact` skill on the MR diff: base = the MR's target
 branch, `--scan <webroot>/modules/contrib`, `--format all`. Save the report as
@@ -440,24 +427,25 @@ for it.
 **Skills only the user can run.** `blast-radius`, `interrogate`, `how`, `tdd`
 (and `why`, `unslop`, `technical-writing` elsewhere) are reserved for explicit
 user invocation: never invoke them, read their files, or imitate their
-workflow. Instead, end the pause message with one **You run** line per skill
+workflow. Instead, end the final report with one **You run** line per skill
 whose condition holds — the exact command (`/name` in Claude Code, `$name` in
 Codex) and why now. Nothing applies? Omit the line. At A9:
 - `/blast-radius issues/<nid>/impact-<short-sha>.md` — when the impact report
   has a HIGH or MEDIUM piece, or the `--scan` was skipped: it digs into the
   breakage grep can't see, starting from that map.
-- `/interrogate` — when the verdict is RTBC or close (always offered below).
+- `/interrogate` — when the verdict is RTBC or close.
 - `/how <area>` — when A3 left part of the code unclear.
 - `/tdd` on item N — when an item is a bug fix with a cheap Unit/Kernel test target.
 
-`drupal-issue-reroll` is different: this toolkit's own skill, gated by A9/A10's
-approvals. When a rebase is approved, read
+`drupal-issue-reroll` is different: this toolkit's own skill, covered by the go.
+When the branch is behind (`COMMITS_BEHIND` > 0), read
 `<skills-root>/drupal-issue-reroll/SKILL.md` and follow it (it sets
 `disable-model-invocation` only so a passing mention can't trigger it, which
 also keeps it from being preloaded here).
 
-**[PAUSE — hard stop]** Present the full report below and then **stop completely**.
-Do not begin any fix until the user replies with explicit approval.
+Write the full report below to `issues/<nid>/review-<YYYY-MM-DD>.md` (a new
+file per day; append a `## Re-review` section if one exists) and carry on —
+no pause.
 
 Open with the review card (`<skills-root>/issue-record-update/references/review-card.md`), contributor rows only. This is the
 full review, so `Fix`, `Tests`, and `Standards` come from A3-A7 and can be
@@ -475,13 +463,13 @@ everything below is the evidence for it, not a substitute for it.>
 - PHPUnit: X passed, Y failed / not run
 - Review: X FAIL, Y PASS, Z SKIP
 
-> **⚠ Branch is N commits behind `origin/<DEFAULT_BRANCH>`.**  ← include only when COMMITS_BEHIND > 0
-> Any fixes made now will need a rebase + force-push afterward.
-> If you'd prefer a clean history, say **"reroll first"** and I will run
-> `/drupal-issue-reroll <nid>` before touching any code.
+> **⚠ Branch was N commits behind `origin/<DEFAULT_BRANCH>` — rerolled before fixing.**  ← include only when COMMITS_BEHIND > 0
 
 ### Review Failures
-[numbered list — each item: N. file:line — description — suggested fix]
+[numbered list — each item: N. file:line — description — suggested fix — **blocking** or **nitpick**]
+
+### Fix list
+[the blocking item numbers A10 will fix, or "none — <verdict>"]
 
 ### Open Inline Threads
 [Each OPEN thread: file:line — reviewer — summary]
@@ -496,34 +484,25 @@ everything below is the evidence for it, not a substitute for it.>
 [what's covered, what's missing]
 ```
 
-Then ask **exactly this**:
-> "Which items (by number) should I fix? Which will you handle yourself?
-> Should I draft a Drupal.org review comment?
-> Want a second opinion on this verdict first? Run `/interrogate` yourself.
-> I will not touch any code until you reply."
->
-> **You run:** <the lines from the list above that apply, or omit>
+Then pick the fix list: every **blocking** item. If the verdict is **Needs
+discussion**, or the status guard applies, the fix list is empty: skip A10
+and go to A11.
 
-If the user ran `/interrogate`, wait for them to share whether it agrees or
-disagrees with the verdict, and why, before resuming the fix loop.
+If `COMMITS_BEHIND` > 0, reroll first (per `drupal-issue-reroll`), then fix.
 
-**Do not proceed to A10 under any circumstances until the user replies and
-explicitly names what they want done.** A vague "go ahead" is not sufficient —
-require the user to specify items by number or description.
+### A10. Fix loop (the A9 fix list)
 
-### A10. Fix loop (only for explicitly approved items)
+Work through the fix list in the review file. Don't fix anything else, even if
+you spotted it during review — nitpicks stay listed, unfixed.
 
-Work only through items the user named in their reply to A9. Do not fix
-anything else, even if you spotted it during review.
-
-For each approved fix that is a **bug fix with a cheap local test target**
+For each fix-list item that is a **bug fix with a cheap local test target**
 (a Unit or Kernel test that runs in seconds, not a full Functional suite),
-use red-green (or the user's own `/tdd` run, if they did one at A9): write the failing test first,
+use red-green: write the failing test first,
 confirm it fails for the expected reason, then write the fix. Skip this for
 fixes with no cheap local test path (e.g. Functional-only coverage, or a
 CSpell/ESLint/Stylelint finding) — write the fix directly in that case.
 
-For each approved fix:
+For each fix-list item:
 1. Make the change (Edit tool)
 2. Before staging, run both checks — do not `git add` until both pass:
    - **PHPCS**: use the `drupal-coding-standards` skill on every changed file
@@ -532,9 +511,9 @@ For each approved fix:
      ddev exec bash -c "cd /var/www/html/web/modules/contrib/<project> && phpstan analyse --configuration=phpstan.neon --memory-limit=256M 2>&1"
      ```
      Skip if the module has no `phpstan.neon`.
-3. Stage specific files (requires user approval): `git -C <webroot>/modules/contrib/<project> add <files>`
+3. Stage specific files: `git -C <webroot>/modules/contrib/<project> add <files>`
 4. Match commit style: `git -C <webroot>/modules/contrib/<project> log --oneline -5`
-5. Commit matching project style (requires user approval)
+5. Commit matching project style
 6. **Pre-push preflight** — run this checklist before pushing. Block on any failure:
    ```
    [ ] PHPCS clean (drupal-coding-standards skill)
@@ -546,7 +525,7 @@ For each approved fix:
    [ ] Branch up to date with origin/<default-branch>
        → if behind: follow `<skills-root>/drupal-issue-reroll/SKILL.md` before pushing
    ```
-7. After all fixes pass preflight (requires user approval): `git -C <webroot>/modules/contrib/<project> push <project>-<nid> HEAD`
+7. After all fixes pass preflight: `git -C <webroot>/modules/contrib/<project> push <project>-<nid> HEAD`
 8. Poll pipeline (check the issue fork first — that's where the branch was
    pushed and where the pipeline runs; `-R project/<project>` 404s unless no
    fork exists):
@@ -566,12 +545,10 @@ For each approved fix:
    drupalorg mr:logs <nid> <mr-iid>
    ```
 
-**[PAUSE]** After each push, report outcome. Ask whether to continue or stop.
+If the pipeline fails on something the fixes caused, fix it and push again.
+Then go straight to A11.
 
-When all approved items are done and preflight is clean, offer the dedicated test
-phase (see **Phase T**) before drafting any review comment.
-
-### A11. Draft Drupal.org comment (if requested)
+### A11. Draft the issue comment (always)
 
 Use the `drupalorg-comment-format` skill formatting rules — including its
 plain-language pass and confidence-qualified recommendation. Structure:
@@ -585,19 +562,18 @@ plain-language pass and confidence-qualified recommendation. Structure:
   confidence, pending a second pass")
 - AI disclosure, last — `drupalorg-comment-format`'s format (collapsible on GitLab), no tool or model names
 
-**[PAUSE]** Always show the draft comment and wait for the user to approve before
-they post it. Never post directly. Alongside the draft, remind the user:
-posting this comment/MR is a commitment to follow up when a maintainer or
+Write the draft to `issues/<nid>/drafts/<YYYY-MM-DD>-comment.md`. Never post
+it. Then end with the **Final report** (below). In it, remind the human that
+posting the comment or MR is a commitment to follow up when a maintainer or
 reviewer responds — per Drupal.org's AI contribution policy, a drive-by
-AI-generated post with no follow-up is treated as a bannable pattern, not a
-one-and-done contribution.
+AI-generated post with no follow-up is treated as a bannable pattern.
 
 ---
 
 ## Path B — NEW ISSUE (plan → implement)
 
-No MR exists yet. Read and understand the issue fully, then produce an
-implementation plan for human review before touching any code.
+No MR exists yet. Read and understand the issue fully, write the plan to
+`issues/<nid>/plan.md`, then implement it and open the MR — no stop between.
 
 ### B1. Understand the issue
 
@@ -622,9 +598,10 @@ Invoke agent: drupal-repo-setup
   project: <project>
   nid:     <nid>
   mode:    probe
+  preapproved: yes
 ```
 
-The sub-agent locates the module directory, clones it if needed (with user approval), and checks/installs any missing dependencies via Composer (with user approval). It returns `<module_dir>`.
+The sub-agent locates the module directory, clones it if needed, and installs any missing dependencies via Composer, without pausing. It returns `<module_dir>`.
 
 Once the sub-agent reports the module is ready, read:
 - `<module>.info.yml` — dependencies, version
@@ -637,7 +614,7 @@ Once the sub-agent reports the module is ready, read:
 If this module hasn't been touched in this session before, map its
 architecture before drafting the plan in B3 — a plan built on a guessed-at
 structure tends to miss the actual extension points. If parts stay unclear,
-add the B3 "You run" line for `/how`.
+add a "You run" line for `/how` to the final report.
 
 The same `agent-module-docs` lookup from A3 applies here: for contrib modules
 the plan integrates with but that aren't checked out, and, for a new feature,
@@ -687,19 +664,14 @@ Write a structured plan covering:
   "no public symbols change"]
 ```
 
-**[PAUSE]** Present the plan and ask:
-> "Does this plan look right? Any changes before I start? Any open questions
-> answered in a later comment I may have missed?"
->
-> **You run:** <only when it applies, per A9's rules: `/how <module>` if B2
-> left its architecture unclear; `/blast-radius` if the Impact bullet lists a
-> HIGH consumer; `/tdd` if the fix is a bug with a cheap Unit/Kernel test>
-
-Do NOT write any code until the user approves.
+Write the plan to `issues/<nid>/plan.md` and carry on to B4. If a risk or
+open question would change the approach (the thread contests it, or the
+issue doesn't say which behavior is wanted), don't guess: stop with a
+`[PAUSE — awaiting user decision]` naming the question. Otherwise proceed.
 
 ### B4. Set up the worktree
 
-Once the plan is approved, delegate worktree creation to the `drupal-repo-setup` agent:
+Delegate worktree creation to the `drupal-repo-setup` agent:
 
 ```
 Invoke agent: drupal-repo-setup
@@ -707,9 +679,10 @@ Invoke agent: drupal-repo-setup
   nid:     <nid>
   mode:    worktree
   branch:  <nid>-<short-description>  (derived from issue title)
+  preapproved: yes
 ```
 
-The sub-agent fetches origin, creates the worktree branch (with user approval), and sets up the fork remote. It reports the worktree path when done.
+The sub-agent fetches origin, creates the worktree branch, and sets up the fork remote, without pausing. It reports the worktree path when done.
 
 ### B5. Implement
 
@@ -717,7 +690,7 @@ Before writing any code, read `drupal-coding-standards`'s `references/php-change
 and run through its checklist to ensure all new code is compatible with Drupal 11 PHP
 standards (attributes, PHPUnit style, deprecations, PHP 8.4 compat).
 
-Follow the approved plan file-by-file. Write code, then when all files for the
+Follow the plan file-by-file. Write code, then when all files for the
 plan are done, run pre-commit checks before staging anything:
 
 1. **Coding standards** — use the `drupal-coding-standards` skill on every
@@ -754,7 +727,7 @@ plan are done, run pre-commit checks before staging anything:
    [ ] CSpell / ESLint / Stylelint clean (drupal-coding-standards skill: `ci_lint.py <module-dir> --base origin/<target-branch>`) — American English in new code, comments, doc comments, and test method names
    [ ] Commit message follows project style
    ```
-5. Only after all checks pass (git add, commit, push all require user approval):
+5. Only after all checks pass, stage, commit, and push:
 ```bash
 git -C <webroot>/modules/contrib/<project>--<nid> log --oneline -5   # match commit style
 git -C <webroot>/modules/contrib/<project>--<nid> add <specific files>
@@ -762,12 +735,29 @@ git -C <webroot>/modules/contrib/<project>--<nid> commit -m "<message>"
 git -C <webroot>/modules/contrib/<project>--<nid> push <project>-<nid> HEAD
 ```
 
-After the preflight passes and **before** asking to push, offer the dedicated test
-phase (see **Phase T**) — catching a failure locally beats catching it in CI.
+If the push didn't open an MR, open one (ready, not draft) with `drupal-gitlab`'s
+`create_mr.py` — body from the project's MR template, ending with the AI
+disclosure. Then draft the issue comment as in A11 and end with the **Final
+report**.
 
-Capture the GitLab MR-creation URL from the push output and surface it to the user.
+---
 
-**[PAUSE]** Report what was pushed and the MR URL. Ask whether to continue or stop.
+## Final report
+
+Both paths end here, as a plain final message (not a pause):
+
+```
+## Done — issue <nid>
+- MR: <URL> (<updated | opened>), pipeline <status>
+- Review: issues/<nid>/review-<date>.md   ← Path A
+- Plan:   issues/<nid>/plan.md            ← Path B
+- Fixed: <item numbers / one line each> | Not fixed: <nitpicks, deferred items>
+- Drafts (not posted): issues/<nid>/drafts/<files>
+- Reroll: <rebased N commits, conflicts resolved: … | not needed>
+```
+
+Then the review card, the **You run** lines that apply (A9's list), and an
+offer of the dedicated test phase (Phase T) for the browser e2e layer.
 
 ---
 
@@ -778,8 +768,7 @@ be silently "fixed" by re-editing code without visibility. This agent implements
 `drupal-e2e-tester` verifies.
 
 **When to offer it:**
-- End of A10 — all approved fixes made, pre-push preflight clean
-- End of B5 — implementation complete, preflight clean, before the push
+- In the final report, after the MR is up
 - Any time the user says "test it", "run the tests", or "verify in the browser"
 - Any time the user asks for **local testing** ("test locally", "test this
   locally", "run tests locally") — run local PHPUnit first (per A5/B5's
@@ -788,10 +777,7 @@ be silently "fixed" by re-editing code without visibility. This agent implements
   waiting for the user to ask separately. Local PHPUnit alone doesn't cover
   the UI-facing path; say so when offering it.
 
-**[PAUSE]** Ask: *"Run the dedicated test phase (PHPUnit + Playwright browser e2e)
-now?"* Do not invoke the tester until the user says yes.
-
-If approved, invoke it with everything it needs so it fetches nothing itself:
+Run the tester when the human asks for it. Invoke it with everything it needs so it fetches nothing itself:
 
 ```
 Invoke agent: drupal-e2e-tester
@@ -806,8 +792,7 @@ Invoke agent: drupal-e2e-tester
 
 **Rules:**
 - The tester never edits code. If its report contains failures, relay the report
-  to the user as a numbered list and treat each fix exactly like an A9→A10 item —
-  explicit, item-specific approval before touching anything.
+  to the user as a numbered list and fix only what they ask you to.
 - Never re-run implementation "to make the tests green" without the user seeing
   the failure report first.
 - The tester's screenshots land in `issues/<nid>/screenshots/` and its specs in

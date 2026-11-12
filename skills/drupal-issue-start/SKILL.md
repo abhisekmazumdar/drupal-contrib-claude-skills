@@ -22,7 +22,7 @@ using native subagents; see the shared runtime conventions for fallback handling
 
 - The issue record at `issues/<nid>/README.md` is **always** read (and created if absent) **before** any other action.
 - The structured report is **always** shown to the human **before** any work is proposed.
-- Recon and issue-record maintenance run as documented below. Code and dependency changes require the human's direction and scoped approval.
+- Recon and issue-record maintenance run as documented below. Phase 4's report, ending in the go checklist, is the **one** stop: after the human says go, everything it lists runs to an open MR with no further pauses. Nothing is ever posted in the human's name; comment drafts go to `issues/<nid>/drafts/`.
 - After a session involving code or reviews, invoke `issue-record-update` automatically as described in Phase 6.
 
 ---
@@ -184,11 +184,16 @@ Invoke agent: drupal-repo-setup
   webroot: <webroot>    (resolved in Phase 0.5)
 ```
 
-This runs without a pause for clone/checkout/fork-remote — only a missing
-Composer dependency would pause it (per `drupal-repo-setup`'s own gates).
+This runs without a pause. A missing Composer dependency isn't installed in
+recon; it comes back as a setup issue and goes on the go checklist.
 Capture its `## Setup issues` block verbatim — fork access, push access,
 missing remote, DDEV not running, anything the human needs to know before
 trusting the rest of this report goes here, unfiltered.
+
+**Check GitLab auth** (opening or updating the MR needs it; read-only):
+```bash
+GITLAB_HOST=git.drupalcode.org glab auth status
+```
 
 **Now fetch the full inline reviewer threads — for this one picked MR only:**
 ```bash
@@ -241,7 +246,7 @@ When the full diff was fetched, read it and produce:
   - `Needs discussion — <what's contested>` — the approach itself is
     disputed in the thread, not a code-quality question
 - This is a **judgment call to orient the human**, not the exhaustive A7
-  checklist `drupal-issue-agent` runs after approval — do not run PHPStan/PHPUnit
+  checklist `drupal-issue-agent` runs after go — do not run PHPStan/PHPUnit
   here, do not enumerate every style nitpick. If something looks wrong,
   name it once; don't pad the verdict with a list.
 
@@ -481,7 +486,7 @@ Base this on status, MR state, the comment thread, and the Phase 2.5
 preliminary verdict — the diff itself was already read in Phase 2.5, so this
 recommendation should reflect what's actually in the MR, not just its title
 or metadata. The full A1-A9 correctness audit still only happens in
-`drupal-issue-agent` after the human approves proceeding.
+`drupal-issue-agent` after the human says go.
 
 ---
 
@@ -498,11 +503,41 @@ possible action>
 
 ---
 
-**What would you like to do?**
-I will not start any work until you tell me.
+### Ready to go?
+
+<One line per item: ✅ ready · ❌ blocked (say what's needed) · ⚠ handled on go · ➖ not applicable>
+- <✅|❌> Module cloned at `<module_dir>`
+- <✅|⚠|❌> Dependencies — <satisfied | missing: <list> — `ddev composer require …` runs on go>
+- <✅|❌> Issue fork `issue/<project>-<nid>` exists
+- <✅|❌> Push access to the fork (`ls-remote` reachable)
+- <✅|➖> Branch `<branch>` checked out (MR !<iid>) | ➖ no MR — new branch `<nid>-<slug>` gets created on go
+- <✅|⚠> Up to date with `origin/<default-branch>` | ⚠ <N> commits behind — reroll (rebase + `--force-with-lease`) on go
+- <✅|❌> DDEV running for <site>
+- <✅|❌> `glab` logged in to git.drupalcode.org
+
+### What I'll do on go
+
+<Numbered, specific to this issue — the exact run `drupal-issue-agent` will
+make. Example for an existing MR:>
+1. Full review of MR !<iid> → `issues/<nid>/review-<date>.md`
+2. Fix every blocking finding (<the named gap>) — nitpicks get listed, not fixed
+3. Reroll onto `origin/<default-branch>` (<N> behind)
+4. Preflight: PHPCS, PHPStan, CSpell/ESLint/Stylelint, relevant tests
+5. Commit and push to `<branch>` — MR !<iid> updates
+6. Draft the issue comment → `issues/<nid>/drafts/<date>-comment.md` (not posted)
+
+<For no MR: plan → `issues/<nid>/plan.md`, branch `<nid>-<slug>`, implement,
+preflight, push, open the MR (ready, not draft). For **Needs discussion** or
+**Do not touch**: review and draft only, no code — say so here.>
+
+Nothing gets posted in your name — comments, labels, status changes, and
+approvals stay with you. You review the code in the MR on GitLab.
+
+**Reply go to run all of it without further stops, or tell me what to change.**
+<If any line above is ❌: "Fix the ❌ items first, or tell me to skip the step each one blocks.">
 ```
 
-**[HARD STOP]** Wait for the human to reply. Do not invoke any other skill, do not analyze code, do not propose a plan.
+**[HARD STOP]** Wait for the human to reply. Do not invoke any other skill, do not analyze code, do not propose a plan. This is the only stop: a go authorizes every step listed above, including a listed Composer install and reroll.
 
 ---
 
@@ -512,7 +547,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 
 | Human says | Action |
 |---|---|
-| "review the MR" / "do a code review" / "work on it" / "implement" / "fix it" | Invoke `drupal-issue-agent` with `<nid>` and the loaded context |
+| "go" / "review the MR" / "work on it" / "implement" / "fix it" | Invoke `drupal-issue-agent` with `<nid>`, the loaded context, `preapproved: yes`, and the "What I'll do on go" list (with any changes the human asked for) as its scope |
 | "test it" / "run the tests" / "verify in the browser" / "test locally" / "test this locally" / "run tests locally" | Invoke `drupal-issue-agent`'s Phase T flow: run local PHPUnit first (per the trigger's own local-testing intent), then proactively offer the `drupal-e2e-tester` browser e2e layer as a follow-up rather than waiting for a separate ask |
 | "catch me up" / "what's new" / "what happened" | Invoke `drupal-issue-catchup` with `<nid>` |
 | "continue" / "pick up where we left off" | Re-read the Work Log, brief human on last session, ask what to do next |
@@ -531,7 +566,7 @@ Delegated agents run as sub-agents and can't talk to the user directly mid-run. 
 2. Wait for the reply.
 3. Resume the same agent with it — or, if it can't be resumed, re-invoke it with the pause report, the decision, and the issue record so it continues from that exact step.
 
-Never proceed past a pause on the user's behalf. The loop ends only when an agent's final message isn't a pause.
+Never proceed past a pause on the user's behalf. The loop ends only when an agent's final message isn't a pause. After go, a pause should be rare — a ❌ blocker hit mid-run, or a reroll conflict too risky to resolve alone.
 
 ---
 

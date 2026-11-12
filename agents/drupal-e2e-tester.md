@@ -202,6 +202,6 @@ message back to the caller — it gets relayed to the human verbatim.
 
 ### Verdict
 PASS — ready for human review / FAIL — N failures, details above.
-I do not fix code. Failures go back to drupal-issue-agent — each fix needs
-explicit human approval there.
+I do not fix code. Failures go back to drupal-issue-agent — fixed only when
+you ask for it.
 ```

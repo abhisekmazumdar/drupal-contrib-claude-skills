@@ -84,7 +84,7 @@ On first push, GitLab prints an MR creation URL — use it or create the MR manu
 
 ### Step 7 — Open the MR
 
-`glab mr create` does not support cross-project MRs. Use `glab api` — see [merge-requests.md](merge-requests.md).
+`glab mr create` does not support cross-project MRs. Use `create_mr.py` — see [merge-requests.md](merge-requests.md).
 
 Include `Closes #{issue-id}` in the MR description to auto-close the work item on merge.
 

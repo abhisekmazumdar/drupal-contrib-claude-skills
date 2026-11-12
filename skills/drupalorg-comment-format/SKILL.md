@@ -57,7 +57,7 @@ HTML (non-migrated queues):
 - Never name a tool, model, or vendor — always just "AI".
 - Never repeat or expand the statement into a paragraph.
 - Disclose on every post, even for minor AI help. The policy only requires it for a "significant portion" of the code or text; this toolkit is deliberately stricter.
-- The policy asks for a "clear, human-written statement": the line is a draft the human reads and edits at the approval gate, like the rest of the post. Never post it unseen.
+- The policy asks for a "clear, human-written statement": the line is part of a draft the human reads and edits in `issues/<nid>/drafts/`, like the rest of the post. Never post it.
 
 Example (review comment, migrated queue):
 ```

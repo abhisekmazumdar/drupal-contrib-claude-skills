@@ -6,13 +6,13 @@ Shared guidance for Claude Code and Codex. Read this file before issue work.
 
 A **Drupal 11 contribution workbench** — a local environment for contributing patches and MRs to Drupal.org contrib modules. There is no custom application code. All work targets modules under `{{DRUPAL_WEBROOT}}/modules/contrib/`.
 
-The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for direction. From there it delegates to `drupal-issue-agent` for review and implementation work, `drupal-e2e-tester` for the dedicated test phase (PHPUnit + Playwright browser e2e), or `drupal-issue-catchup` to sync after time away.
+The entry point for any contribution task is **`/drupal-issue-start <url>`** — give it an issue URL and it loads prior context, fetches live state, and waits for go. From there it delegates to `drupal-issue-agent` for review and implementation work, `drupal-e2e-tester` for the dedicated test phase (PHPUnit + Playwright browser e2e), or `drupal-issue-catchup` to sync after time away.
 
 ---
 
 ## Global Rule — Report Before Acting
 
-Present findings before requesting approval for code changes, dependency changes, commits, or pushes. Reading, fetching, automatic recon (clone/checkout/fork remote), and issue-record maintenance follow their documented procedures without an extra gate. Respect the scope of the user's approval; request a new decision when the next phase exceeds it. Never answer a delegated agent's approval question for the human. Draft public comments for the human to post.
+`/drupal-issue-start` stops once: a readiness checklist and the steps it will take. The human's go covers that whole run — review, fixes, reroll, Composer installs it listed, commit, push to the issue fork, and opening or updating the MR — with no further stops. The human reviews the code in the MR. Work outside that scope needs a new go. Never answer a delegated agent's pause for the human. Never post in the human's name: comment drafts go to `issues/<nid>/drafts/`.
 
 ## Runtime conventions
 
@@ -197,7 +197,7 @@ Skills live under `<skills-root>`. Shared role procedures are installed in `.dru
 - `drupal-repo-setup` — sub-agent for git/module setup: clone, remote, checkout, worktree
 
 ### Entry point skills
-- `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report, wait for direction
+- `drupal-issue-start` — **PRIMARY ENTRY POINT**: load/create issue record, fetch live context, present report and go checklist, wait for go
 - `issue-record-update` — append timestamped session log to `issues/<nid>/README.md` (writes directly, no confirmation)
 - `issue-record-screenshot` — capture a browser screenshot into `issues/<nid>/screenshots/` using the connected browser session
 - `drupalorg-comment-format` — draft and save comments to `issues/<nid>/comments/` (HTML for Drupal.org, GFM for GitLab)

@@ -1,6 +1,6 @@
 # Merge Requests
 
-MRs on Drupal GitLab flow **from the issue fork to the upstream project** (cross-project). `glab mr create` does not support cross-project MRs — use `glab api` directly.
+MRs on Drupal GitLab flow **from the issue fork to the upstream project** (cross-project). `glab mr create` does not support cross-project MRs — use `create_mr.py` (next to this skill's `SKILL.md`).
 
 ---
 
@@ -35,27 +35,20 @@ _Used AI to help with <uses> (<what it did>). The reasoning and positions are my
 
 Also include `Closes #{issue-id}` somewhere in the description body to auto-close the work item on merge.
 
-### Step 2 — Get the upstream project ID
+### Step 2 — Create the MR
 
 ```bash
-UPSTREAM_ID=$(glab api --hostname git.drupalcode.org \
-  "/projects/project%2F<repo>" \
-  | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+python3 <skills-root>/drupal-gitlab/create_mr.py --fork issue/<project>-<issue-id> \
+  --target project/<repo> --source-branch {branch-name} --target-branch main \
+  --title "feat: #{issue-id} Short summary" --description-file /tmp/mr_body.md
 ```
 
-### Step 3 — Create the MR via `glab api`
-
-```bash
-glab api --hostname git.drupalcode.org \
-  -F target_project_id=$UPSTREAM_ID \
-  -f source_branch="{branch-name}" \
-  -f target_branch="main" \
-  -f title="feat: #{issue-id} Short summary" \
-  -f description="$(cat /tmp/mr_body.md)" \
-  -F remove_source_branch=true \
-  "/projects/issue%2F<project>-<issue-id>/merge_requests" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('web_url') or d)"
-```
+The script looks up both project IDs, prints the existing MR if the push
+already opened one, and otherwise POSTs `/projects/<fork-id>/merge_requests`
+with `remove_source_branch=true`. It refuses a fork outside `issue/` and a body
+without the AI disclosure. Prefer it to raw `glab api`: it can only open an MR,
+so it runs without a permission prompt, while `glab api` (which can also post
+comments) still asks. Keep the path unquoted so the allow rule matches.
 
 **MR conventions:**
 - Title format: `{type}: #{issue-id} Short summary` — Conventional Commits
@@ -91,7 +84,7 @@ Use the GitLab web UI to toggle, or pass `-f draft=true/false` in the API call.
 
 ## Gotchas
 
-- **`glab mr create` cannot create cross-project MRs** — always use `glab api`
+- **`glab mr create` cannot create cross-project MRs** — always use `create_mr.py`
 - **Check for an existing MR before creating** — avoid duplicates
 - **`glab mr merge` is blocked** — direct users to the GitLab web UI merge button
 - **The fork must be provisioned before pushing** — pushing to a non-existent fork URL returns 404; see [contribution.md](contribution.md)

@@ -234,8 +234,8 @@
       <p>
         This package installs shared <strong>skills</strong> and client-specific <strong>agents</strong> into a Drupal
         workspace so either assistant can pick up a Drupal.org or GitLab work-item URL and carry it through the full
-        contribution lifecycle: review, implementation, testing, and issue-record keeping, with explicit
-        scoped approvals for code, dependency, and contribution changes.
+        contribution lifecycle: review, implementation, testing, and issue-record keeping. One go-ahead
+        covers the run to an open MR; nothing is ever posted in your name.
       </p>
       <p>
         The package itself is not a Drupal project. There's no PHP, no Composer, no web server here. Its
@@ -343,18 +343,23 @@ npx /path/to/drupal-claude-skills</code></pre>
       <p>
         The resulting report leads with a verdict (<strong>RTBC-ready</strong>, <strong>close with a named gap</strong>,
         <strong>needs work with a named gap</strong>, or <strong>needs discussion</strong>), plus anything you need to
-        know before trusting it: missing fork access, no push access, DDEV not running. Only <em>then</em>
-        does it ask what you want to do.
+        know before trusting it: missing fork access, no push access, DDEV not running. It ends with a
+        <strong>Ready to go?</strong> checklist (✅/❌/⚠ for clone, dependencies, fork, push access, branch,
+        upstream drift, DDEV, <code>glab</code> login) and a numbered <strong>What I'll do on go</strong> list.
       </p>
       <div class="note">
-        Beyond the automatic recon checkout, agents pause at every approval gate. The skill relays each pause
-        report back to you, and nothing is written, edited, <code>composer require</code>'d, committed, or posted
-        without your explicit go-ahead.
+        That checklist is the only stop. Say <strong>go</strong> and <code>drupal-issue-agent</code> reviews, fixes
+        every blocking finding, rerolls if behind, runs the preflight, commits, pushes to the issue fork, and opens
+        or updates the MR — you review the code there, on GitLab. The review lands in
+        <code>issues/&lt;nid&gt;/review-&lt;date&gt;.md</code> (or the plan in <code>plan.md</code>), and every
+        comment draft in <code>issues/&lt;nid&gt;/drafts/</code>, never posted. It only stops again on a real
+        blocker: a failing preflight, an open question that would change the approach, or a reroll conflict
+        between two intentional changes.
       </div>
       <p>
         Some upstream skills only run when <em>you</em> type them (<code>/blast-radius</code>, <code>/interrogate</code>,
         <code>/how</code>, <code>/tdd</code>, <code>/why</code>, <code>/technical-writing</code>, <code>/unslop</code>;
-        <code>$name</code> in Codex). You don't have to remember them: the pause where one pays off ends with a
+        <code>$name</code> in Codex). You don't have to remember them: the final report ends with a
         <strong>You run</strong> line naming the command and why it fits now, for example
         <code>/blast-radius issues/3499692/impact-1a2b3c4.md</code> when a review's impact map has a HIGH item.
         No line means none applies. See <a href="#external-skills">External skills</a>.
@@ -421,7 +426,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <p>External skills download into temporary staging, grouped by upstream repo per client, then copy through the same preservation checks. Re-runs never prune an installed external skill, even with <code>--skip-external</code> or offline. Their source lock entries persist for <code>npx skills update</code> (merge a proposed <code>skills-lock.json</code> first if one appears). Explicit-only upstream skills get missing Codex invocation-policy metadata added — existing metadata is preserved, conflicts get reported. Unsupported upstream tools stay a reported capability gap.</p>
       <h3>Activation and permission differences</h3>
       <p>Approve Claude's project MCP server interactively and inspect it with <code>/mcp</code>. In Codex, trust the workspace and review the hook through <code>/hooks</code> — a hook awaiting trust is skipped, not enforced. The installer never touches global trust or config.</p>
-      <p>The shared shell wrapper calls <code>check-command.py</code> (needs Python 3), which recognizes destructive Git operations through <code>git -C</code>, combined flags, compound commands, and explicit shell wrappers. It blocks bare force-pushes; <code>--force-with-lease</code> stays available with approval. GitLab writes aren't blocked — they reach the permission layer, which asks first. Command arguments never get echoed into error messages.</p>
+      <p>The shared shell wrapper calls <code>check-command.py</code> (needs Python 3), which recognizes destructive Git operations through <code>git -C</code>, combined flags, compound commands, and explicit shell wrappers. It blocks bare force-pushes; <code>--force-with-lease</code> stays available. GitLab writes aren't blocked — they reach the permission layer, which asks first. Command arguments never get echoed into error messages.</p>
       <p>Codex rules govern commands requesting execution outside the sandbox. Its <code>PreToolUse</code> hook can deny a call but can't force an approval prompt — workflow approvals stay instructions, supplemented by native permissions and rules, not a full enforcement boundary. Hooks don't inspect script contents, aliases, dynamic shell expansion, or later interactive stdin.</p>
       <p>Keep Nora's implementation separate from Milo's report-only testing — both may write local artifacts or exercise DDEV, so "report-only" isn't the same as a read-only sandbox. Both clients share <code>issues/</code>: serialize record updates, use separate worktrees for concurrent code work.</p>
       <h3>Compatibility and validation</h3>
@@ -504,7 +509,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr>
           <td><code>drupal-repo-setup</code></td>
           <td><span class="badge-persona">Wren</span></td>
-          <td>Git/repo plumbing: locates, clones, installs missing Composer dependencies (with approval), checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused since it's local and reversible; Composer install always pauses. After checkout, cross-checks the MR's actual GitLab target branch against the issue's declared version (a structured field for non-migrated issues, the last version-change comment for migrated ones) and flags a mismatch as a non-blocking setup issue.</td>
+          <td>Git/repo plumbing: locates, clones, installs missing Composer dependencies, checks out or worktrees a branch. <code>recon</code> mode (clone + checkout + fork-remote) runs unpaused and reports missing dependencies for the go checklist; after go (<code>preapproved: yes</code>) every step, Composer install included, runs unpaused. After checkout, cross-checks the MR's actual GitLab target branch against the issue's declared version (a structured field for non-migrated issues, the last version-change comment for migrated ones) and flags a mismatch as a non-blocking setup issue.</td>
         </tr>
         <tr>
           <td><code>drupal-issue-catchup</code></td>
@@ -534,7 +539,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <span class="node">drupal-issue-catchup (Sage)</span>
       </div>
       <p>
-        Sub-agents can't talk to the user mid-run, so approval gates use a <strong>pause-relay protocol</strong>:
+        Sub-agents can't talk to the user mid-run, so the rare post-go blocker uses a <strong>pause-relay protocol</strong>:
         an agent ends its run with a <code>[PAUSE — awaiting user decision]</code> report, <code>drupal-issue-start</code>
         relays it verbatim, and the agent resumes with the user's reply.
       </p>
@@ -556,7 +561,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><th>Skill</th><th>Upstream repo</th><th>Wired in at</th></tr>
         <tr><td><code>playwright-cli</code></td><td><code>microsoft/playwright-cli</code></td><td><code>drupal-e2e-tester</code> Phase 3, browser e2e</td></tr>
         <tr><td><code>drupalorg-cli</code></td><td><code>mglaman/drupalorg-cli</code></td><td><code>drupal-issue-start</code> and others, Drupal.org issue/MR data</td></tr>
-        <tr><td><code>how</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at <code>drupal-issue-agent</code>'s A9/B3 pause when A3/B2 left the code unclear</td></tr>
+        <tr><td><code>how</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested in <code>drupal-issue-agent</code>'s final report when A3/B2 left the code unclear</td></tr>
         <tr><td><code>blast-radius</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested at <code>drupal-issue-agent</code> A9 (and B3) on the saved <code>drupal-impact</code> report when it has a HIGH/MEDIUM piece</td></tr>
         <tr><td><code>unslop</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested under every draft from <code>drupalorg-comment-format</code></td></tr>
         <tr><td><code>technical-writing</code></td><td><code>cursor/plugins</code></td><td>User-run; suggested alongside <code>unslop</code>, for structure</td></tr>
@@ -566,7 +571,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <tr><td><code>diagnosing-bugs</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-issue-agent</code> A1, fallback for unrecognized CI failures</td></tr>
         <tr><td><code>wizard</code></td><td><code>mattpocock/skills</code></td><td><code>drupal-repo-setup</code> Step 7, turning setup issues into a runnable fix-it script</td></tr>
       </table>
-      <p><code>cursor/plugins</code> skills are nested under <code>pstack/skills/&lt;name&gt;</code> in that repo, and all seven of them (<code>how</code>, <code>why</code>, <code>blast-radius</code>, <code>interrogate</code>, <code>tdd</code>, <code>unslop</code>, <code>technical-writing</code>) are reserved for the user: the agents can't run them. Instead, the pause where each one pays off ends with a <strong>You run</strong> line naming the command and why now, so you don't have to remember them.</p>
+      <p><code>cursor/plugins</code> skills are nested under <code>pstack/skills/&lt;name&gt;</code> in that repo, and all seven of them (<code>how</code>, <code>why</code>, <code>blast-radius</code>, <code>interrogate</code>, <code>tdd</code>, <code>unslop</code>, <code>technical-writing</code>) are reserved for the user: the agents can't run them. Instead, the report where each one pays off ends with a <strong>You run</strong> line naming the command and why now, so you don't have to remember them.</p>
     </section>
 
     <section id="multi-site">
@@ -637,21 +642,20 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <a href="https://www.drupal.org/docs/develop/issues/issue-procedures-and-etiquette/policy-on-the-use-of-ai-when-contributing-to-drupal">Drupal.org's policy on the use of AI when contributing to Drupal</a>,
         not to work around it. The policy's core principle is that you are
         fully responsible for the integrity of your submission, and "the AI
-        wrote it" is never an acceptable answer. That's why every agent in
-        this repo is built around hard approval gates instead of autonomous
-        posting:
+        wrote it" is never an acceptable answer. That's why the agents push code
+        for you to review in the MR, but never post in your name:
       </p>
       <ul>
-        <li><strong>Nothing reaches Drupal.org without a human reading it first.</strong>
-          Code/dependency changes, staging, commits, and pushes require scoped approval.
-          Recon and issue-record writes are automatic exceptions. Public posts are drafted for the human. See
-          <code>drupal-issue-agent</code>'s approval gates above.</li>
+        <li><strong>No comment reaches Drupal.org without a human reading it first.</strong>
+          After one go, code goes to the issue fork and its MR — you review it there and stay responsible for it.
+          Comments, labels, status changes, and approvals are never made for you: drafts go to
+          <code>issues/&lt;nid&gt;/drafts/</code>. See <code>drupal-issue-agent</code>'s gates above.</li>
         <li><strong>AI involvement is disclosed, every time.</strong>
           Every drafted issue, MR description, and comment ends with an AI disclosure:
           <code>Used AI to help with &lt;uses&gt; (&lt;what it did&gt;). The reasoning and positions are my own, and I reviewed everything before posting.</code>, linking to Drupal.org's AI policy and mirroring the policy's example wording. On GitLab it sits in a collapsed <code>&lt;details&gt;</code> block whose visible label is “AI disclosure”, so it takes one row until someone expands it. On classic Drupal.org it stays one italic line, since <code>&lt;details&gt;</code> isn't verified to survive that text filter. A template's own AI disclosure section takes its place when there is one. <code>settings.json</code> sets <code>attribution</code> to empty strings, so Claude Code adds no <code>Co-Authored-By</code> trailer or PR line naming itself, and this stays the only disclosure. Codex can't be configured the same way: its <code>Co-authored-by: Codex</code> trailer follows a setting on your ChatGPT account or workspace (off when you sign in with an API key), not a project file, and it overrides <code>AGENTS.md</code>. To keep this disclosure the only one under Codex, turn that setting off on the account side, or remove the trailer when Codex shows you the commit for approval.
           <code>&lt;uses&gt;</code> is any of research, writing, code, in that order. It never names a tool or model.
           <code>drupalorg-comment-format</code> holds the full rules (HTML form for classic queues, Markdown for migrated queues and MRs).
-          It's required before anything is shown to the user for approval.</li>
+          It's applied to every draft before it's written.</li>
         <li><strong>No submission goes out untested.</strong> The pre-push
           preflight in A10/B5 blocks staging until PHPCS, PHPStan, and
           relevant tests pass locally, on top of whatever CI already
@@ -677,9 +681,9 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         The contribution responsibilities are expressed in prompts. Client permissions and
         trusted hooks additionally restrict supported commands, but are not a complete
         security boundary. The workflow still depends on the human
-        in the loop actually reads each <code>[PAUSE]</code> report and
-        approves deliberately rather than reflexively. If you're extending
-        this toolkit, keep new automation behind the same gates. See
+        actually reading the go checklist and reviewing the MR before
+        anyone relies on it. If you're extending this toolkit, never let
+        automation post in the human's name. See
         <a href="#dev">Developing this repo</a> for the conventions that keep
         it that way.
       </p>
@@ -728,7 +732,7 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
       <div class="note">
         <strong>Normal <code>git push</code> and <code>--force-with-lease</code> remain available; bare <code>--force</code> is blocked.</strong>
         <code>drupal-issue-reroll</code> force-pushes rerolled branches to the user's own issue fork as a normal,
-        expected step, guarded by <code>--force-with-lease</code> and scoped approval.
+        expected step, guarded by <code>--force-with-lease</code>; it runs without a prompt once the reroll's checks pass.
         See client-specific permission limits above.
       </div>
       <p>The same script also blocks reading and writing secret material — reading via <code>cat</code>/<code>grep</code>/<code>head</code>/<code>cp</code>/<code>curl</code> and similar; writing via <code>tee</code>/<code>dd</code>/<code>install</code> and shell redirection (<code>&gt;</code>/<code>&gt;&gt;</code>) — so Codex can't route around the deny list below by shelling out instead of using its native edit tool. It reuses the hook's shell-<code>-c</code>-unwrapping, so <code>bash -c "cat .env"</code> is caught the same as a bare <code>cat .env</code>.</p>
@@ -739,11 +743,11 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <li>anything under a <code>secrets/</code>, <code>.ssh/</code>, or <code>.aws/</code> path</li>
       </ul>
       <p><code>templates/settings.json.template</code>'s permission <code>deny</code> list adds the Claude-Code-only complement — <code>Read</code>/<code>Edit</code> denials on the same paths, blocking Claude's native file tools even with no Bash call involved. No <code>Write(...)</code> rule exists for these paths on purpose: Claude Code's permission matcher only honors <code>Edit(path)</code> for file-write checks, so a <code>Write(...)</code> rule would be dead weight the harness itself flags as unenforced — <code>Edit(...)</code> alone already covers every file-editing tool. Codex has no equivalent per-tool permission concept, so for Codex this hook is the only protection. Both layers are best-effort string/glob matching, not a sandbox.</p>
-      <p><strong>Anything that posts or pushes asks first, never blocks.</strong> These sit in the <code>ask</code> list (Codex: <code>decision = "prompt"</code> in <code>contribution.rules</code>):</p>
+      <p><strong>Anything posted in your name or that changes the branch's direction asks first, never blocks.</strong> Committing, pushing, pulling, rebasing, and opening or updating an MR don't ask — <code>git commit</code>/<code>push</code>/<code>pull</code>/<code>rebase</code>, <code>glab mr create</code>/<code>update</code>, and <code>drupal-gitlab</code>'s <code>create_mr.py</code> (an issue-fork-only MR opener) are allowed. These sit in the <code>ask</code> list (Codex: <code>decision = "prompt"</code> in <code>contribution.rules</code>):</p>
       <ul>
-        <li>GitLab writes — <code>glab mr</code>/<code>glab issue</code> note, comment, create, update, close, reopen; <code>glab mr merge</code>/<code>approve</code>; <code>glab ci run</code>; every <code>glab api</code> call</li>
+        <li>GitLab writes — <code>glab mr</code> note, comment, merge, approve, close, reopen; <code>glab issue</code> note, comment, create, update, close, reopen; <code>glab ci run</code>; every raw <code>glab api</code> call</li>
         <li><code>drupalorg</code> commands that post a <code>/do:</code> comment (<code>issue:assign</code>, <code>issue:label</code>, <code>issue:fork</code>, <code>issue:get-access</code>, and their variants) and <code>self:update</code></li>
-        <li><code>git commit</code>, <code>push</code>, <code>pull</code>, <code>rebase</code>, <code>merge</code>, <code>revert</code></li>
+        <li><code>git merge</code>, <code>revert</code></li>
         <li>Git commands that discard work the hook doesn't catch — <code>git stash drop</code>/<code>clear</code>, <code>git checkout -- &lt;path&gt;</code></li>
       </ul>
       <p>Ask rules may start with <code>*</code> (<code>Bash(*glab*mr note*)</code>): ask and deny rules match past any leading environment assignment, and matching too much only costs a prompt. Allow rules must start with the literal command, <code>GITLAB_HOST=git.drupalcode.org</code> prefix included — an allow rule doesn't match past an assignment of a variable Claude Code doesn't consider safe, and a leading <code>*</code> would auto-approve any command containing the text. <code>tests/permissions.test.js</code> enforces both.</p>

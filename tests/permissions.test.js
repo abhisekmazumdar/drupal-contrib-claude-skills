@@ -31,16 +31,14 @@ test('GitLab writes are asked, never denied', () => {
 const outward = [
   'GITLAB_HOST=git.drupalcode.org glab mr note 12 -m "hi" --repo project/ai',
   'glab --repo project/ai mr comment 12 -m hi',
-  'glab mr create --repo issue/ai-1',
-  'glab mr merge 12', 'glab mr approve 12', 'glab mr update 12 --draft', 'glab mr close 12',
+  'glab mr merge 12', 'glab mr approve 12', 'glab mr close 12',
   'GITLAB_HOST=git.drupalcode.org glab issue note 3 -m hi', 'glab issue comment 3 -m hi',
   'glab issue create -t x', 'glab issue update 3', 'glab issue close 3',
   'glab ci run', 'glab pipeline run',
   'glab api --hostname git.drupalcode.org -f title=x /projects/1/merge_requests',
   'drupalorg issue:assign 3540491', 'drupalorg issue:label 3540491 x', 'drupalorg issue:fork 3540491',
   'drupalorg issue:get-access 3540491', 'drupalorg self:update',
-  'git commit -m fix', 'git -C module commit -m fix',
-  'git push fork HEAD', 'git -C module push --force-with-lease fork HEAD',
+  'git merge main', 'git -C module revert HEAD',
   'git stash drop', 'git -C module stash clear', 'git checkout -- src/File.php', 'git checkout main -- src',
 ];
 for (const command of outward) test(`asks before ${command}`, () => assert.ok(asks(command)));
@@ -52,7 +50,16 @@ const reads = [
   'drupalorg issue:show 3540491', 'drupalorg mr:list 3540491',
   'git status', 'git checkout feature', 'git stash list',
 ];
-for (const command of reads) test(`does not ask before ${command}`, () => {
+// Code goes out without a prompt; only posts in the user's name and direction changes ask.
+const contributes = [
+  'git commit -m fix', 'git -C module commit -m fix',
+  'git push fork HEAD', 'git -C module push --force-with-lease fork HEAD',
+  'git pull', 'git -C module rebase origin/1.x',
+  'GITLAB_HOST=git.drupalcode.org glab mr create --repo issue/ai-1',
+  'GITLAB_HOST=git.drupalcode.org glab mr update 12 --ready -R project/ai',
+  'python3 .claude/skills/drupal-gitlab/create_mr.py --fork issue/ai-1 --target project/ai',
+];
+for (const command of [...reads, ...contributes]) test(`does not ask before ${command}`, () => {
   assert.ok(!asks(command));
   assert.ok(permissions.allow.some((rule) => matches(rule, command)));
 });

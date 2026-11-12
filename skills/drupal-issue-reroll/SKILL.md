@@ -115,31 +115,25 @@ git -C <MODULE_PATH> rebase origin/<DEFAULT_BRANCH>
    git -C <MODULE_PATH> diff --name-only --diff-filter=U
    ```
 
-2. Read each conflicted file in full. Before proposing a resolution, read the
+2. Read each conflicted file in full. Before resolving, read the
    originating issue/MR behind **each side** of the conflict: the incoming
    upstream commit and the local branch's own commit (`git log -1 --format=%B
    <sha>` gives the issue number). A conflict that looks like a trivial line
-   clash can hide two intentional, incompatible changes. For every conflict — trivial
-   or not — prepare a proposed resolution but **do not apply it yet**.
+   clash can hide two intentional, incompatible changes.
 
-3. **[PAUSE]** Present the full conflict report and wait for approval before editing any file:
-
-   ```
-   ## Rebase Conflicts Found
-
-   | File | Conflict type | Proposed resolution |
-   |------|--------------|-------------------|
-   | <file> | <e.g. whitespace / overlapping logic / both added lines> | <keep ours / keep theirs / merge — description> |
-
-   I will not edit any files until you approve these resolutions.
-   Should I proceed with the proposals above, or do you want to adjust any of them?
-   ```
-
-4. Only after the user approves, apply the resolutions using the Edit tool. After resolving all conflicts:
+3. Resolve each conflict with the Edit tool and record it for the Step 6
+   report — file, conflict type, resolution (keep ours / keep theirs / merge),
+   and why:
    ```bash
    git -C <MODULE_PATH> add <resolved-files>
    git -C <MODULE_PATH> rebase --continue
    ```
+
+4. **Stop instead of guessing** when the two sides are intentional,
+   incompatible changes (both issues meant their behavior, and keeping one
+   drops the other): `git -C <MODULE_PATH> rebase --abort`, then end with
+   `[PAUSE — awaiting user decision]` naming the files, both issues, and the
+   choice the human has to make. The branch is unchanged.
 
 5. If the rebase still fails after resolution attempts, run:
    ```bash
@@ -165,28 +159,13 @@ ddev exec bash -c "cd /var/www/html/<ddev-relative-MODULE_PATH> && \
 ```
 Skip if no `phpstan.neon` exists in the module root.
 
-If either check fails, **do not auto-fix**. Instead, present the violations and wait for approval:
-
-```
-## Quality Check Failures
-
-### PHPCS violations
-<list of errors/warnings with file and line>
-
-### PHPStan errors (if any)
-<list>
-
-Proposed fixes:
-- <file>: <what PHPCBF will auto-fix or what manual edit is needed>
-
-Shall I apply these fixes?
-```
-
-Only after the user approves, apply fixes (PHPCBF or Edit tool), re-run the check, and confirm it passes before proceeding. Do not push failing code.
+If either check fails, fix it (PHPCBF, or the Edit tool for what PHPCBF
+can't fix), re-run the check, and record what changed for the Step 6 report.
+If it still fails after that, stop and report it — do not push failing code.
 
 ### Step 5: Push
 
-**Requires user approval before running.**
+Push as soon as Step 4 passes — no separate approval.
 
 ```bash
 git -C <MODULE_PATH> push <FORK_REMOTE> <branch> --force-with-lease
@@ -206,7 +185,8 @@ against overwriting someone else's push).
 
 - Rebased onto: origin/<DEFAULT_BRANCH>
 - Commits carried over: <N>
-- Conflicts resolved: <N> (or "none")
+- Conflicts resolved: <N> (or "none") — one line each: file, resolution, why
+- Check fixes: <what PHPCBF/edits changed, or "none">
 - PHPCS: clean
 - PHPStan: clean (or "skipped — no phpstan.neon")
 - Pushed: yes (force-with-lease)
@@ -225,5 +205,5 @@ branch doesn't exist in the target project's own repo):
 - If the module directory is not a git clone, pause and ask the user before invoking `drupal-clone-contrib` — cloning creates files on disk and requires explicit approval.
 - Rerolling does NOT create a new MR — the existing MR updates automatically
   when the branch is pushed.
-- After a reroll, post a short comment on the issue noting the reroll so
-  reviewers know to re-check the diff.
+- After a reroll, draft a short comment noting the reroll so reviewers know
+  to re-check the diff — the user posts it, never you.
