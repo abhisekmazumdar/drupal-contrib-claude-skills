@@ -15,6 +15,7 @@ bin/
   setup.js               # CLI entry point
   install.js             # writer()/installTargets() — the actual file-writing logic
   external-skills.js     # pulls externalSkills at install time
+  local-setup.js         # applies the git-ignored local.json (personal settings)
 skills/                  # skill directories — each has a SKILL.md
 agents/                  # agent markdown files
 templates/
@@ -35,7 +36,7 @@ docs/index.html          # hand-written reference site — see below
 No build step, no `npm run` scripts. CI (`.github/workflows/ci.yml`) runs these; run the same after touching `bin/`, `skills/`, `agents/`, or `templates/`:
 
 ```bash
-node --check bin/setup.js bin/install.js bin/external-skills.js
+node --check bin/setup.js bin/install.js bin/external-skills.js bin/local-setup.js
 node --test tests/*.test.js   # includes tests/docs-sync.test.js — see below
 grep -rn "{{" skills/ agents/   # must be empty — {{VAR}} only belongs in templates/
 node -e "JSON.parse(require('fs').readFileSync('templates/settings.json.template','utf8').replace(/\{\{[A-Z_]+\}\}/g,'placeholder'))"
@@ -164,7 +165,7 @@ Written by `drupal-issue-start` Phase 3, appended to by `issue-record-update`. `
 
 **Linked workspaces:** one person can keep records for the same nid in two workspaces (e.g. a contributor workspace and a merge-maintainer one), and each goes stale without the other. `.drupal-contrib/linked-workspaces.md` (hand-written, never installer-managed — so it doesn't push `context.md` into the proposals path) lists the others by absolute path. `drupal-issue-start` Phase 1 and `drupal-issue-catchup` Step 1 read each linked `issues/<nid>/README.md` — header, At a Glance, Current State only, strictly read-only — and the report/briefing flags which record is stale, with Phase 2's live state as the tiebreaker.
 
-**Work log (opt-in):** `.drupal-contrib/work-log.md` (hand-written, never installer-managed, same reason) holds one command — its first non-blank, non-`#` line — for an external log such as a weekly-summary notes repo. `drupal-issue-start` Phase 0 and `drupal-issue-catchup` Step 0 run `<command> "<url>" --json` on every visit; `issue-record-update` Step 7 runs `<command> "<url>" --did "<TL;DR>" --json` at the end of a session that did something. The command must skip URLs it already holds and merge repeated `--did` text into the same entry. Failures warn, never stop. The file absent means nothing runs, so other installs are unaffected. The command path is per-user, so it's never in `settings.json.template`; the user allows it in `settings.local.json`. `tests/work-log.test.js` keeps the three call sites on the same file name and flags.
+**Work log (opt-in):** `.drupal-contrib/work-log.md` (never toolkit-owned output, same reason — only `local.json` below may create it, and never overwrites) holds one command — its first non-blank, non-`#` line — for an external log such as a weekly-summary notes repo. `drupal-issue-start` Phase 0 and `drupal-issue-catchup` Step 0 run `<command> "<url>" --json` on every visit; `issue-record-update` Step 7 runs `<command> "<url>" --did "<TL;DR>" --json` at the end of a session that did something. The command must skip URLs it already holds and merge repeated `--did` text into the same entry. Failures warn, never stop. The file absent means nothing runs, so other installs are unaffected. The command path is per-user, so it's never in `settings.json.template`. A git-ignored `local.json` at this repo's root (`{ "workLogCommand": "/abs/path", "workspaces": [...] }`) automates the per-user part: `bin/local-setup.js` creates `work-log.md` only if absent, adds `Bash(<command>:*)` to `.claude/settings.local.json` (Claude Code target only), and records the workspace in `workspaces`. Outside `writer()` and the lockfile on purpose — none of these are toolkit-owned. Only a local-clone install sees it (`npx github:` fetches without it). Tests set `DRUPAL_CONTRIB_LOCAL` to a missing path so a developer's real `local.json` never records temp dirs. `tests/work-log.test.js` keeps the three call sites on the same file name and flags.
 
 ---
 

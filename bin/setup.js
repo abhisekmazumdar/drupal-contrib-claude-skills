@@ -7,11 +7,14 @@ const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
 const { installExternal } = require('./external-skills');
+const { applyLocal } = require('./local-setup');
 const { options, readState, localOverrides, writer, installTargets, symlinkAncestor } = require('./install');
 
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const CWD = process.cwd();
 const LOCK_FILE = path.join(CWD, '.drupal-contrib', 'install.json');
+// Git-ignored personal settings; see bin/local-setup.js. Tests point this elsewhere.
+const LOCAL_FILE = process.env.DRUPAL_CONTRIB_LOCAL || path.join(PACKAGE_ROOT, 'local.json');
 const cli = options(process.argv.slice(2));
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -292,6 +295,8 @@ async function main() {
     dryRun: cli.dryRun, skipExternal: cli.skipExternal,
   });
 
+  const local = applyLocal({ cwd: CWD, file: LOCAL_FILE, targets, dryRun: cli.dryRun });
+
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n── Summary ──────────────────────────────────────────────────');
 
@@ -303,6 +308,11 @@ async function main() {
   if (log.identical.length) {
     console.log('\nAlready up to date:');
     for (const f of log.identical) console.log(`  =  ${f}`);
+  }
+
+  if (local.length) {
+    console.log('\nLocal settings (local.json):');
+    for (const f of local) console.log(`  +  ${f}`);
   }
 
   if (log.conflicts.length) {

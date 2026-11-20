@@ -6,3 +6,6 @@
 .agents/
 .drupal-contrib/
 skills-lock.json
+
+# Personal settings applied by bin/local-setup.js — never shipped.
+local.json

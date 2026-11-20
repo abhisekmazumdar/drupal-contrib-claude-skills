@@ -641,6 +641,13 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <code>.claude/settings.local.json</code> so it doesn't prompt.
       </p>
       <p>
+        Installing from a local clone? Put <code>{ "workLogCommand": "/abs/path/to/command" }</code> in a
+        <code>local.json</code> at the clone's root (git-ignored). Every install from that clone then creates
+        <code>work-log.md</code> if missing, allows the command in <code>settings.local.json</code>, and adds the
+        workspace to the file's <code>workspaces</code> list, so it doubles as a record of where the toolkit is
+        installed.
+      </p>
+      <p>
         <code>issue-record-update</code> runs automatically at the end of any session that did something: code
         reviewed, changed, tested, or a comment/push attempted. A pure read-only catchup skips it.
       </p>

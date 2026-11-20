@@ -21,7 +21,7 @@ function put(cwd, name, text) {
 }
 function read(cwd, name) { return fs.readFileSync(path.join(cwd, name), 'utf8'); }
 function setup(cwd, ...args) {
-  const result = spawnSync(process.execPath, [path.join(root, 'bin/setup.js'), '--yes', '--skip-external', ...args], { cwd, encoding: 'utf8', timeout: 15000 });
+  const result = spawnSync(process.execPath, [path.join(root, 'bin/setup.js'), '--yes', '--skip-external', ...args], { cwd, encoding: 'utf8', timeout: 15000, env: { ...process.env, DRUPAL_CONTRIB_LOCAL: path.join(cwd, '.no-local.json') } });
   assert.equal(result.status, 0, result.stderr + result.stdout);
   return result.stdout;
 }
