@@ -164,6 +164,8 @@ Written by `drupal-issue-start` Phase 3, appended to by `issue-record-update`. `
 
 **Linked workspaces:** one person can keep records for the same nid in two workspaces (e.g. a contributor workspace and a merge-maintainer one), and each goes stale without the other. `.drupal-contrib/linked-workspaces.md` (hand-written, never installer-managed — so it doesn't push `context.md` into the proposals path) lists the others by absolute path. `drupal-issue-start` Phase 1 and `drupal-issue-catchup` Step 1 read each linked `issues/<nid>/README.md` — header, At a Glance, Current State only, strictly read-only — and the report/briefing flags which record is stale, with Phase 2's live state as the tiebreaker.
 
+**Work log (opt-in):** `.drupal-contrib/work-log.md` (hand-written, never installer-managed, same reason) holds one command — its first non-blank, non-`#` line — for an external log such as a weekly-summary notes repo. `drupal-issue-start` Phase 0 and `drupal-issue-catchup` Step 0 run `<command> "<url>" --json` on every visit; `issue-record-update` Step 7 runs `<command> "<url>" --did "<TL;DR>" --json` at the end of a session that did something. The command must skip URLs it already holds and merge repeated `--did` text into the same entry. Failures warn, never stop. The file absent means nothing runs, so other installs are unaffected. The command path is per-user, so it's never in `settings.json.template`; the user allows it in `settings.local.json`. `tests/work-log.test.js` keeps the three call sites on the same file name and flags.
+
 ---
 
 ## Testing setup changes

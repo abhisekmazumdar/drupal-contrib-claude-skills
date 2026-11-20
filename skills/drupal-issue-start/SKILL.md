@@ -38,6 +38,19 @@ Extract `nid` and `project` from the URL:
 
 If the URL cannot be parsed, ask the user for the issue number and project name separately.
 
+**Work log (opt-in).** If `.drupal-contrib/work-log.md` exists, its first
+line that isn't blank or a `#` comment is a command. Run it with the issue URL
+(the one given, or the canonical URL for the parsed `<project>`/`<nid>`):
+
+```bash
+<command> "<issue-url>" --json
+```
+
+The command skips a URL it already holds, so running it on every visit is
+safe. If it fails, print one warning line and carry on — never stop the
+session for it. `issue-record-update` adds what was done to the same entry at
+the end of the session.
+
 ---
 
 ## Phase 0.5 — Resolve the site
@@ -574,7 +587,7 @@ Never proceed past a pause on the user's behalf. The loop ends only when an agen
 
 **If the session did something** — code was reviewed, changed, or pushed; a
 comment was drafted; tests were run — invoke `/issue-record-update <nid>`
-automatically at the end of the session. It appends the log entry (Steps 1-6
+automatically at the end of the session. It appends the log entry (Steps 1-7
 of that skill), then confirms:
 
 ```

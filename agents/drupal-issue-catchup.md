@@ -35,6 +35,8 @@ Accept any of:
 
 Extract `<nid>` and `<project>`. If the URL is a GitLab work-item URL, set `is_migrated=true`.
 
+If `.drupal-contrib/work-log.md` exists, log the issue URL with its command exactly as `drupal-issue-start` Phase 0 does (`<command> "<issue-url>" --json`, a warning on failure, never a stop). A catchup never adds `--did`.
+
 Load the drupalorg-cli reference:
 ```bash
 drupalorg skill:get drupalorg-cli

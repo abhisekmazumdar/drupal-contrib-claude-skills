@@ -629,6 +629,17 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <code>issues/&lt;nid&gt;/README.md</code> (read-only, header and snapshot sections only) and their report
         says which record is stale, using live issue state as the tiebreaker.
       </p>
+      <h3>Work log (opt-in)</h3>
+      <p>
+        To log every issue you touch in an outside notes file, put a command in
+        <code>.drupal-contrib/work-log.md</code> (written by hand; the first line that isn't blank or a
+        <code>#</code> comment). <code>drupal-issue-start</code> and <code>drupal-issue-catchup</code> run
+        <code>&lt;command&gt; "&lt;url&gt;" --json</code> on every visit, and <code>issue-record-update</code> runs
+        <code>&lt;command&gt; "&lt;url&gt;" --did "&lt;TL;DR&gt;" --json</code> at the end of a session that did
+        something. The command must skip URLs it already has and add repeated <code>--did</code> text to the same
+        entry. A failure prints a warning and the session carries on. Allow the command once in
+        <code>.claude/settings.local.json</code> so it doesn't prompt.
+      </p>
       <p>
         <code>issue-record-update</code> runs automatically at the end of any session that did something: code
         reviewed, changed, tested, or a comment/push attempted. A pure read-only catchup skips it.

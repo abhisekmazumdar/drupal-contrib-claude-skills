@@ -141,11 +141,28 @@ the only thing that happens here.
 
 ---
 
-## Step 7 — Confirm
+## Step 7 — Add what was done to the work log (opt-in)
+
+Skip this step unless `.drupal-contrib/work-log.md` exists. Its first line
+that isn't blank or a `#` comment is a command; run it with the record's
+`**URL:**` and this session's `TL;DR` from Step 4, as one line:
+
+```bash
+<command> "<issue-url>" --did "<TL;DR>" --json
+```
+
+The command adds the text to the URL's existing entry, or creates one. For a
+security issue, describe the work only (backport, review, advisory draft) —
+never the vulnerability, affected code, or exploit. If the command fails,
+print one warning line and continue.
+
+---
+
+## Step 8 — Confirm
 
 Tell the user: "Session logged in `issues/<nid>/README.md`." If Step 6
 archived anything, add: "Archived N older session(s) to
-`issues/<nid>/history.md`."
+`issues/<nid>/history.md`." If Step 7 ran, add: "Added to the work log."
 
 ---
 
