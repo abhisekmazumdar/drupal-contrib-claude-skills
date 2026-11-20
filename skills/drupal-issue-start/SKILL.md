@@ -24,6 +24,7 @@ using native subagents; see the shared runtime conventions for fallback handling
 - The structured report is **always** shown to the human **before** any work is proposed.
 - Recon and issue-record maintenance run as documented below. Phase 4's report, ending in the go checklist, is the **one** stop: after the human says go, everything it lists runs to an open MR with no further pauses. Nothing is ever posted in the human's name; comment drafts go to `issues/<nid>/drafts/`.
 - After a session involving code or reviews, invoke `issue-record-update` automatically as described in Phase 6.
+- **Security issues (`is_security=true`) stay private.** Never clone, fetch, add a remote for, or push to `issue/<project>-*` or `project/<project>`, never open an MR, and never push at all: the run ends at a local commit and the human moves it to the security repo. Never copy the issue's title, body, or vulnerability details into anything outside `issues/<nid>/` and the private security repo.
 
 ---
 
@@ -35,6 +36,14 @@ Extract `nid` and `project` from the URL:
 |---|---|---|---|
 | `https://www.drupal.org/project/<name>/issues/<nid>` | trailing number | `<name>` | classic queue |
 | `https://git.drupalcode.org/project/<name>/-/work_items/<nid>` | trailing number | `<name>` | set `is_migrated=true` |
+| `https://git.drupalcode.org/security/<sec-nid>-<slug>/-/work_items/<iid>` (or `/-/issues/<iid>`) | `security-<sec-nid>-<iid>` | from the issue (Phase 2) | set `is_security=true`, `<security_repo>` = `security/<sec-nid>-<slug>` |
+
+For a security issue, `<nid>` is the record key `security-<sec-nid>-<iid>`: item
+numbers restart at 1 in every security repo, so the bare `<iid>` would collide.
+Use it for `issues/<nid>/` and nowhere else — never as a drupal.org nid, an
+issue-fork name, or a branch name. `<project>` is the module's machine name;
+take it from the issue or repo description in Phase 2, and ask if it isn't
+stated.
 
 If the URL cannot be parsed, ask the user for the issue number and project name separately.
 
@@ -110,6 +119,18 @@ Phase 4 report and correct the local one in Phase 3.
 
 ## Phase 2 — Fetch live issue context
 
+For **security** issues (`is_security=true`), run only these — no `drupalorg`
+commands, no issue-fork or `project/` lookups:
+```bash
+GITLAB_HOST=git.drupalcode.org glab issue view <iid> --repo <security_repo>
+python3 "<skills-root>/drupal-gitlab-inline-comments/fetch_issue_notes.py" <security_repo>#<iid>
+GITLAB_HOST=git.drupalcode.org glab mr list --repo <security_repo>
+GITLAB_HOST=git.drupalcode.org glab ci status -b <branch> -R <security_repo>   # per open MR
+```
+Keep only the MRs that reference this issue (`#<iid>` or its title). A 403/404
+on `glab issue view` means no access: stop and tell the human, naming
+`<security_repo>`. Then continue with the backlink scan below.
+
 Run all applicable commands. For **non-migrated** issues:
 ```bash
 drupalorg issue:show <nid> --with-comments --format=llm
@@ -170,6 +191,12 @@ exhaustive list of findings.** Every review this skill produces ends with a
 judgment call (RTBC-ready / close, with the specific gap / needs work, with
 the specific gap / needs discussion), not an open-ended checklist. Cosmetic
 observations get mentioned once, not treated as blockers.
+
+**Security issues (`is_security=true`): skip the recon checkout entirely** — no
+`drupal-repo-setup` call. Review the picked MR from its diff instead
+(`GITLAB_HOST=git.drupalcode.org glab mr diff <mr-iid> --repo <security_repo>`), or
+skip to the "no review" case if it has none. The checkout happens on go, inside
+`drupal-issue-agent` (its "Security issues" section).
 
 **If zero open MRs exist:** nothing to check out or review. Invoke
 `drupal-repo-setup` in `recon` mode with no `<branch>` (clone-only, to confirm
@@ -543,6 +570,12 @@ make. Example for an existing MR:>
 preflight, push, open the MR (ready, not draft). For **Needs discussion** or
 **Do not touch**: review and draft only, no code — say so here.>
 
+<For a **security issue**: replace the fork/push/`glab` checklist lines with
+"<✅|❌> Read access to `<security_repo>`" and "<✅|❌> Module checkout at
+`<webroot>/modules/contrib/<project>`", and end the list at "Commit locally on
+`security-<iid>` — not pushed; you move it to `<security_repo>`". Never list a
+push or an MR.>
+
 Nothing gets posted in your name — comments, labels, status changes, and
 approvals stay with you. You review the code in the MR on GitLab.
 
@@ -569,7 +602,7 @@ Once the human replies, delegate to the appropriate agent or skill:
 | "this is related to #X" | Add the cross-reference to the `## Related Issues` section |
 | Specific instructions | Follow them, using the appropriate skills |
 
-Pass `<nid>`, `<project>`, `is_migrated`, `<site>` and its resolved `<webroot>`/`<drupal-path>` (from Phase 0.5), MR iids, the full issue record content, and — if Phase 2.5 ran a recon checkout — the resolved `<module_dir>` and `<branch>` it already set up, plus the diff already read, so `drupal-issue-agent` does not have to re-fetch, re-checkout, or re-resolve the site.
+Pass `<nid>`, `<project>`, `is_migrated`, `is_security` (and `<security_repo>`, `<iid>` when set), `<site>` and its resolved `<webroot>`/`<drupal-path>` (from Phase 0.5), MR iids, the full issue record content, and — if Phase 2.5 ran a recon checkout — the resolved `<module_dir>` and `<branch>` it already set up, plus the diff already read, so `drupal-issue-agent` does not have to re-fetch, re-checkout, or re-resolve the site.
 
 ### Relaying agent pauses
 

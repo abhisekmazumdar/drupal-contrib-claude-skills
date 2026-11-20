@@ -629,6 +629,15 @@ npx github:abhisekmazumdar/drupal-contrib-claude-skills --target both --dry-run<
         <code>issues/&lt;nid&gt;/README.md</code> (read-only, header and snapshot sections only) and their report
         says which record is stale, using live issue state as the tiebreaker.
       </p>
+      <h3>Security issues</h3>
+      <p>
+        <code>drupal-issue-start</code> also accepts private security issue links
+        (<code>git.drupalcode.org/security/&lt;sec-nid&gt;-&lt;slug&gt;/-/work_items/&lt;iid&gt;</code>). Their record
+        lives at <code>issues/security-&lt;sec-nid&gt;-&lt;iid&gt;/</code>, everything is fetched from the security
+        repo only, and the run on go ends at a <strong>local commit</strong> on <code>security-&lt;iid&gt;</code>:
+        nothing is pushed, no MR is opened, and the public issue fork and project repo are never touched. You move
+        the commit to the security repo yourself. Comment drafts are marked private.
+      </p>
       <h3>Work log (opt-in)</h3>
       <p>
         To log every issue you touch in an outside notes file, put a command in

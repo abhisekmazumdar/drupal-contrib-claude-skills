@@ -31,6 +31,7 @@ Catch the human up accurately, including work others did while they were away �
 Accept any of:
 - A Drupal.org URL: `https://www.drupal.org/project/<name>/issues/<nid>`
 - A GitLab work-item URL: `https://git.drupalcode.org/project/<name>/-/work_items/<nid>`
+- A security issue URL: `https://git.drupalcode.org/security/<sec-nid>-<slug>/-/work_items/<iid>` — set `is_security=true`, `<security_repo>` = `security/<sec-nid>-<slug>`, and `<nid>` = `security-<sec-nid>-<iid>` (the record key, as in `drupal-issue-start` Phase 0)
 - A bare NID (e.g. `3586461`)
 
 Extract `<nid>` and `<project>`. If the URL is a GitLab work-item URL, set `is_migrated=true`.
@@ -85,6 +86,12 @@ decision (Step 5) genuinely needs pre-archive context — don't read it by defau
 ## Step 2 — Fetch new activity (run in parallel)
 
 Fetch everything that has happened since the last session.
+
+**Security issues:** replace a)–c) with the `<security_repo>` commands in
+`drupal-issue-start` Phase 2 (`glab issue view`, `fetch_issue_notes.py
+<security_repo>#<iid>`, `glab mr list`, `glab ci status -R <security_repo>`),
+plus `glab mr note list <mr-iid> --repo <security_repo>`. Never look up
+`issue/` or `project/` repos for them.
 
 **a) Issue comments**
 

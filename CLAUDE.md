@@ -128,6 +128,10 @@ Every review — the light one in `drupal-issue-start` Phase 2.5, the full one i
 
 Keep `agents/*.md` and `SKILL.md` lean, but never fragment a sequential gated procedure — `drupal-issue-agent`'s A1-A11/B1-B5 phases stay inline, splitting them would break the agent's ability to track which phase it's resuming from after a blocker `[PAUSE]`. What belongs in `references/`: a lookup consulted only on one specific branch, not the always-active flow — e.g. `agents/drupal-issue-agent/references/ci-failure-patterns.md`, read only when A1 finds a failing pipeline. No `setup.js` changes needed; `copyManaged` already recurses. Before adding one: is this really a rare-branch lookup, or core sequence/an always-consulted checklist (like A7's)? If the latter, keep it inline.
 
+### Security issues stay private
+
+`drupal-issue-start` Phase 0 also accepts `git.drupalcode.org/security/<sec-nid>-<slug>/-/work_items/<iid>` (and `/-/issues/<iid>`), setting `is_security=true` and `<security_repo>`. `<nid>` becomes the record key `security-<sec-nid>-<iid>` (item numbers restart per security repo), used only for `issues/<nid>/`. Phase 2 fetches from `<security_repo>` only, Phase 2.5 skips recon, and `drupal-issue-agent`'s "Security issues" section overrides checkout and push: work in the existing module checkout on `security-<iid>`, commit locally, never push, never open an MR, never touch `issue/` or `project/` repos — a push there would disclose the fix before the advisory. `create_mr.py`'s `issue/`-only check is the backstop. Pushing or opening MRs in the security repo itself is deliberately not automated until its branch/MR conventions are verified. `drupal-issue-catchup` reads the same repo. `tests/security-issues.test.js` keeps the pattern and the no-push rule in all three.
+
 ### Agent handoff pattern
 
 Four agents, each with a persona name as a body-level identity — cosmetic only. The frontmatter `name:` (matching the filename) is what every invocation actually uses. **Never invoke by persona name, never change `name:` to match it.**

@@ -91,6 +91,7 @@ These rules govern every phase and path below. Read them first.
 - **Fix what blocks, list the rest.** Fix every blocking finding: correctness, security, coding standards, failing tests, valid unaddressed reviewer threads. Cosmetic nitpicks go in the review file, unfixed.
 - **Preflight is the gate.** Nothing is pushed until the preflight (A10/B5) passes. If it can't be made to pass, stop and report — don't push failing code.
 - **Push only to the issue fork.** The MR branch on `issue/<project>-<nid>`, or a new branch there for Path B. Never push to `origin` or a protected branch.
+- **Security issues never push.** With `is_security=true`, see "Security issues" below: the run ends at a local commit, whatever the go list says.
 - **Force-push only after a rebase** (a reroll), always with `--force-with-lease`, never bare `--force`.
 - **Never post in the human's name.** No issue or MR comments, `/do:` commands, labels, status changes, approvals, or merges. Write each comment draft to `issues/<nid>/drafts/<YYYY-MM-DD>-<kind>.md` (`comment`, `reply-<thread>`, `reroll-note`, …) and name the file in the final report.
 - **Stop only on a real blocker.** A ❌ item from the checklist that's still failing, a preflight you can't fix, an open question that would change the approach, or a reroll conflict between two intentional changes. Then end with `[PAUSE — awaiting user decision]`, saying what's blocked and what you need.
@@ -107,10 +108,34 @@ Never assume the caller will answer for the user. Never continue past a `[PAUSE]
 
 ---
 
+## Security issues (`is_security=true`)
+
+A security fix must stay private until the advisory is released. These
+override every step below that clones, adds a remote, pushes, or opens an MR:
+
+- **Never touch the public repos.** Don't invoke `drupal-repo-setup`; don't
+  clone, fetch, add a remote for, or push to `issue/<project>-*` or
+  `project/<project>`. Don't run `create_mr.py` or `glab mr create`.
+- **Checkout (A2/B4):** work in the module's existing checkout at
+  `<webroot>/modules/contrib/<project>`. If it's missing or has uncommitted
+  changes, `[PAUSE]` and ask — don't clone it. For Path A, add `<security_repo>`
+  as a remote named `security` (`git@git.drupalcode.org:<security_repo>.git`),
+  fetch the MR branch, and check it out as `security-<iid>`. For Path B, branch
+  `security-<iid>` from the default branch.
+- **Never push** (A10 step 7, B5): run the preflight, commit locally, and stop.
+  The final report gives the branch, the commit, and the push command for the
+  human to run themselves.
+- **Drafts:** start every file in `issues/<nid>/drafts/` with
+  `<!-- PRIVATE: security issue — post only in <security_repo> -->`.
+- **The rest is unchanged:** review, fix list, preflight, record update. The
+  issue record and the work-log `--did` text describe the work, never the
+  vulnerability.
+
 ## Phase 0 — Receive context from drupal-issue-start
 
 This agent is always invoked by `/drupal-issue-start`, which passes:
 - `<nid>`, `<project>`, `is_migrated` (parsed from the URL)
+- `is_security`, plus `<security_repo>` and `<iid>` when set
 - The full issue record from `issues/<nid>/README.md`
 - MR list and pipeline status already fetched
 - If Phase 2.5 (recon) ran there: a resolved `<module_dir>`, the checked-out

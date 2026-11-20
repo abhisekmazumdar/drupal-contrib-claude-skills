@@ -158,9 +158,10 @@ fixed upstream.
 
 ## Issue queue types
 
-Two URL forms are valid inputs to the agent:
+Three URL forms are valid inputs to the agent:
 - `https://www.drupal.org/project/<name>/issues/<nid>` — classic Drupal.org queue
 - `https://git.drupalcode.org/project/<name>/-/work_items/<nid>` — migrated GitLab queue
+- `https://git.drupalcode.org/security/<sec-nid>-<slug>/-/work_items/<iid>` — private security issue; never pushed, see `drupal-issue-agent`
 
 **Detection:** if `drupalorg issue:show <nid>` returns an empty `<issue_id>` and `<title>`, the project has migrated its issue queue to GitLab. Fetch issue body and comments from GitLab instead:
 
